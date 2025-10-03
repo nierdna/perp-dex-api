@@ -1,0 +1,5 @@
+## source venv/bin/activate    
+
+## curl -s "https://mainnet.zklighter.elliot.ai/api/v1/accountsByL1Address?l1_address=0x842E82c71d82d9F2E9c1F7De30B65D5574534E19"
+
+Lấy ACCOUNT_INDEX 
