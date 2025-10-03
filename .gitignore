@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+.env.local
+.envrc
+.python-version
+# OS
+.DS_Store
+# IDE
+.vscode/
+.idea/
+# Logs
+*.log
+# Coverage
+.coverage
+htmlcov/
+.coverage.*
+.pytest_cache/
+.mypy_cache/
+.pyre/
+# Notebooks
+.ipynb_checkpoints/
+# Cache
+.cache/
+# Node
+node_modules/
+# dotenv backups
+.env.backup
+# Project specific
+long_btc_sdk.log
