@@ -1,13 +1,13 @@
 {
-    "pair": "BTC-USDT",
-    "size_usd": 10,
-    "leverage": 1,
-    "type": "market",
-    "set_price_limit": null,
-    "percent_stop_loss": 50,
-    "percent_take_profit": 25,
-    "perpdex": {
-        "lighter": "long",
-        "paradex": "short"
-    }
+  "pair": "BTC-USDT",
+  "size_usd": 10,
+  "leverage": 5,
+  "type": "market",
+  "set_price_limit": null,
+  "percent_take_profit": 10,
+  "percent_stop_loss": -5,
+  "perpdex": {
+    "lighter": "long",
+    "paradex": "short"
+  }
 }

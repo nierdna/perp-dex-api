@@ -293,18 +293,15 @@ class LighterTradingBotSDK:
             
             is_long = side == 'long'
             
-            # Calculate TP/SL prices with leverage consideration
-            # percent_take_profit: +50% = lãi 50% ROI (adjusted for leverage)
-            # percent_stop_loss: -20% = lỗ 20% ROI (adjusted for leverage)
-            leverage_adj_tp = self.percent_take_profit / self.leverage
-            leverage_adj_sl = abs(self.percent_stop_loss) / self.leverage
-            
+            # Calculate TP/SL prices with validation
+            # percent_take_profit: +50% = lãi 50%
+            # percent_stop_loss: -20% = lỗ 20%
             if is_long:
-                tp_price = entry_price * (1 + leverage_adj_tp / 100)  # +50%/leverage
-                sl_price = entry_price * (1 - leverage_adj_sl / 100)  # -20%/leverage
+                tp_price = entry_price * (1 + self.percent_take_profit / 100)  # +50%
+                sl_price = entry_price * (1 + self.percent_stop_loss / 100)    # -20% (số âm)
             else:
-                tp_price = entry_price * (1 - leverage_adj_tp / 100)  # +50%/leverage khi giá giảm
-                sl_price = entry_price * (1 + leverage_adj_sl / 100)  # -20%/leverage khi giá tăng
+                tp_price = entry_price * (1 - self.percent_take_profit / 100)  # +50% khi giá giảm
+                sl_price = entry_price * (1 - self.percent_stop_loss / 100)    # -20% khi giá tăng
             
             # Validate SL price - Lighter is very strict, use tighter ranges
             if is_long:
