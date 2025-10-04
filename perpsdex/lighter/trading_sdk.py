@@ -5,6 +5,7 @@ Bot Trading BTC (LONG/SHORT) sử dụng Lighter SDK chính thức
 
 import asyncio
 import os
+import json
 from dotenv import load_dotenv
 from lighter import SignerClient, OrderApi, AccountApi
 from lighter.signer_client import create_api_key as generate_api_key
@@ -14,7 +15,7 @@ load_dotenv()
 class LighterTradingBotSDK:
     """Bot Trading BTC (LONG/SHORT) sử dụng Lighter SDK"""
     
-    def __init__(self):
+    def __init__(self, config=None):
         # Load config
         self.api_key = os.getenv('LIGHTER_PUBLIC_KEY')
         self.private_key = os.getenv('LIGHTER_PRIVATE_KEY')
@@ -23,11 +24,26 @@ class LighterTradingBotSDK:
         self.account_index = int(os.getenv('ACCOUNT_INDEX', '0'))
         self.api_key_index = int(os.getenv('LIGHTER_API_KEY_INDEX', '0'))
         
+        # Load config from JSON if provided
+        if config:
+            self.position_usd = config.get('size_usd', self.position_usd)
+            self.leverage = config.get('leverage', self.leverage)
+            self.order_type = config.get('type', 'market')  # market or limit
+            self.set_price_limit = config.get('set_price_limit')
+            self.percent_stop_loss = config.get('percent_stop_loss', 50)
+            self.percent_take_profit = config.get('percent_take_profit', 25)
+        
         print("🚀 Lighter Trading BTC Bot (SDK Version)")
         print(f"💰 Position Size: ${self.position_usd}")
         print(f"📊 Leverage: {self.leverage}x")
         print(f"🆔 Account Index: {self.account_index}")
         print(f"🔑 API Key Index: {self.api_key_index}")
+        if hasattr(self, 'order_type'):
+            print(f"📈 Order Type: {self.order_type}")
+            if self.order_type == 'limit' and self.set_price_limit:
+                print(f"🎯 Limit Price: ${self.set_price_limit}")
+            print(f"🛡️ Stop Loss: {self.percent_stop_loss}%")
+            print(f"🎯 Take Profit: {self.percent_take_profit}%")
         
         # Initialize clients
         self.signer_client = None
@@ -174,7 +190,15 @@ class LighterTradingBotSDK:
                 return {'success': False, 'error': 'Invalid side. Use long or short'}
 
             is_long = side == 'long'
-            entry_price = price_data['ask'] if is_long else price_data['bid']
+            
+            # Determine entry price based on order type
+            if hasattr(self, 'order_type') and self.order_type == 'limit' and self.set_price_limit:
+                entry_price = float(self.set_price_limit)
+                print(f"🎯 Using limit price: ${entry_price}")
+            else:
+                entry_price = price_data['ask'] if is_long else price_data['bid']
+                print(f"🎯 Using market price: ${entry_price}")
+            
             position_size_btc = round(self.position_usd / entry_price, 8)
 
             print(f"\n🎯 Đang đặt lệnh {side.upper()} ${self.position_usd} BTC...")
@@ -229,13 +253,20 @@ class LighterTradingBotSDK:
                 print("✅ Đặt lệnh thành công!")
                 print(f"📝 Tx Hash: {send_resp.tx_hash}")
 
-                return {
+                result = {
                     'success': True,
                     'order_id': getattr(created_order, 'client_order_index', None),
                     'entry_price': entry_price,
                     'position_size': base_amount,
                     'side': side,
                 }
+                
+                # Auto place TP/SL orders
+                if hasattr(self, 'percent_stop_loss') and hasattr(self, 'percent_take_profit'):
+                    tp_sl_result = await self.place_tp_sl_orders(entry_price, base_amount, side)
+                    result['tp_sl'] = tp_sl_result
+                
+                return result
             else:
                 err_msg = err or getattr(send_resp, 'message', 'Unknown error') if send_resp else err or 'Unknown error'
                 print(f"❌ Đặt lệnh thất bại: {err_msg}")
@@ -252,6 +283,151 @@ class LighterTradingBotSDK:
     async def place_short_order(self, price_data):
         """Đặt lệnh SHORT BTC"""
         return await self.place_order('short', price_data)
+    
+    async def place_tp_sl_orders(self, entry_price, position_size, side):
+        """Đặt Take Profit và Stop Loss orders tự động"""
+        try:
+            if not hasattr(self, 'percent_stop_loss') or not hasattr(self, 'percent_take_profit'):
+                print("⚠️  Không có config TP/SL, bỏ qua")
+                return {'success': True, 'tp_sl_placed': False}
+            
+            is_long = side == 'long'
+            
+            # Calculate TP/SL prices with validation
+            if is_long:
+                tp_price = entry_price * (1 + self.percent_take_profit / 100)
+                sl_price = entry_price * (1 - self.percent_stop_loss / 100)
+            else:
+                tp_price = entry_price * (1 - self.percent_take_profit / 100)
+                sl_price = entry_price * (1 + self.percent_stop_loss / 100)
+            
+            # Validate SL price - ensure it's not too far from entry
+            if is_long:
+                min_sl_price = entry_price * 0.7  # Max 30% drop
+                if sl_price < min_sl_price:
+                    sl_price = min_sl_price
+                    print(f"⚠️  SL price adjusted to minimum: ${sl_price:,.2f}")
+            else:
+                max_sl_price = entry_price * 1.3  # Max 30% rise
+                if sl_price > max_sl_price:
+                    sl_price = max_sl_price
+                    print(f"⚠️  SL price adjusted to maximum: ${sl_price:,.2f}")
+            
+            print(f"\n🎯 Đang đặt TP/SL orders...")
+            print(f"   📈 Take Profit: ${tp_price:,.2f} ({self.percent_take_profit}%)")
+            print(f"   🛡️ Stop Loss: ${sl_price:,.2f} ({self.percent_stop_loss}%)")
+            
+            # Get market metadata
+            details = await self.order_api.order_book_details(market_id=1)
+            if not details or not details.order_book_details:
+                return {'success': False, 'error': 'No market metadata for TP/SL'}
+            
+            ob = details.order_book_details[0]
+            size_decimals = ob.size_decimals
+            price_decimals = ob.price_decimals
+            min_base_amount = float(ob.min_base_amount)
+            
+            # Scale position size
+            base_amount = max(position_size, min_base_amount)
+            base_amount_int = int(round(base_amount * (10 ** size_decimals)))
+            
+            results = []
+            
+            # Place Take Profit order
+            import time
+            tp_client_order_index = int(time.time() * 1000) + 1
+            tp_price_int = int(round(tp_price * (10 ** price_decimals)))
+            
+            # TP order: opposite direction to close position
+            tp_is_ask = 1 if is_long else 0  # LONG -> sell to close, SHORT -> buy to close
+            
+            tp_order, tp_resp, tp_err = await self.signer_client.create_order(
+                1,  # market_index
+                tp_client_order_index,
+                base_amount_int,
+                tp_price_int,
+                tp_is_ask,
+                self.signer_client.ORDER_TYPE_LIMIT,
+                self.signer_client.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME,
+                True,  # reduce_only = True for TP/SL
+                self.signer_client.NIL_TRIGGER_PRICE,
+                self.signer_client.DEFAULT_28_DAY_ORDER_EXPIRY,
+            )
+            
+            if tp_err is None and tp_resp:
+                print(f"✅ Take Profit order placed: {tp_resp.tx_hash}")
+                results.append({'type': 'tp', 'success': True, 'tx_hash': tp_resp.tx_hash})
+            else:
+                print(f"❌ Take Profit order failed: {tp_err}")
+                results.append({'type': 'tp', 'success': False, 'error': tp_err})
+            
+            # Place Stop Loss order
+            sl_client_order_index = int(time.time() * 1000) + 2
+            sl_price_int = int(round(sl_price * (10 ** price_decimals)))
+            
+            # SL order: same direction as TP (to close position)
+            sl_is_ask = tp_is_ask
+            
+            sl_order, sl_resp, sl_err = await self.signer_client.create_order(
+                1,  # market_index
+                sl_client_order_index,
+                base_amount_int,
+                sl_price_int,
+                sl_is_ask,
+                self.signer_client.ORDER_TYPE_LIMIT,
+                self.signer_client.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME,
+                True,  # reduce_only = True for TP/SL
+                self.signer_client.NIL_TRIGGER_PRICE,
+                self.signer_client.DEFAULT_28_DAY_ORDER_EXPIRY,
+            )
+            
+            if sl_err is None and sl_resp:
+                print(f"✅ Stop Loss order placed: {sl_resp.tx_hash}")
+                results.append({'type': 'sl', 'success': True, 'tx_hash': sl_resp.tx_hash})
+            else:
+                print(f"❌ Stop Loss order failed: {sl_err}")
+                # Try with smaller SL percentage
+                if "accidental price" in str(sl_err).lower():
+                    print("🔄 Retrying with smaller SL percentage...")
+                    retry_sl_price = entry_price * 0.9 if is_long else entry_price * 1.1  # 10% instead
+                    retry_sl_price_int = int(round(retry_sl_price * (10 ** price_decimals)))
+                    
+                    sl_order2, sl_resp2, sl_err2 = await self.signer_client.create_order(
+                        1,  # market_index
+                        sl_client_order_index + 10,  # Different order index
+                        base_amount_int,
+                        retry_sl_price_int,
+                        sl_is_ask,
+                        self.signer_client.ORDER_TYPE_LIMIT,
+                        self.signer_client.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME,
+                        True,  # reduce_only = True for TP/SL
+                        self.signer_client.NIL_TRIGGER_PRICE,
+                        self.signer_client.DEFAULT_28_DAY_ORDER_EXPIRY,
+                    )
+                    
+                    if sl_err2 is None and sl_resp2:
+                        print(f"✅ Stop Loss order placed (retry): {sl_resp2.tx_hash}")
+                        results.append({'type': 'sl', 'success': True, 'tx_hash': sl_resp2.tx_hash})
+                    else:
+                        print(f"❌ Stop Loss retry also failed: {sl_err2}")
+                        results.append({'type': 'sl', 'success': False, 'error': sl_err2})
+                else:
+                    results.append({'type': 'sl', 'success': False, 'error': sl_err})
+            
+            tp_success = any(r['type'] == 'tp' and r['success'] for r in results)
+            sl_success = any(r['type'] == 'sl' and r['success'] for r in results)
+            
+            return {
+                'success': True,
+                'tp_sl_placed': True,
+                'tp_success': tp_success,
+                'sl_success': sl_success,
+                'results': results
+            }
+            
+        except Exception as e:
+            print(f"❌ Lỗi khi đặt TP/SL: {e}")
+            return {'success': False, 'error': str(e)}
     
     async def check_positions(self):
         """Kiểm tra positions hiện tại"""
