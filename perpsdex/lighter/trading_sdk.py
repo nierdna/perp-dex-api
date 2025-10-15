@@ -222,6 +222,8 @@ class LighterTradingBotSDK:
 
             # Scale theo decimals
             base_amount = max(position_size_btc, min_base_amount)
+            if position_size_btc < min_base_amount:
+                print(f"⚠️  Size adjusted: ${self.position_usd:.2f} → ${base_amount * entry_price:.2f} (min requirement)")
             base_amount_int = int(round(base_amount * (10 ** size_decimals)))
             price_int = int(round(entry_price * (10 ** price_decimals)))
 
@@ -261,10 +263,13 @@ class LighterTradingBotSDK:
                     'side': side,
                 }
                 
-                # Auto place TP/SL orders
-                if hasattr(self, 'percent_stop_loss') and hasattr(self, 'percent_take_profit'):
+                # Auto place TP/SL orders (only if not null)
+                if (hasattr(self, 'percent_stop_loss') and hasattr(self, 'percent_take_profit') and 
+                    self.percent_stop_loss is not None and self.percent_take_profit is not None):
                     tp_sl_result = await self.place_tp_sl_orders(entry_price, base_amount, side)
                     result['tp_sl'] = tp_sl_result
+                else:
+                    print("⚠️  TP/SL set to null - skipping TP/SL orders")
                 
                 return result
             else:
