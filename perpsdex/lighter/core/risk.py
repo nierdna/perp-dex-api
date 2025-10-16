@@ -171,10 +171,10 @@ class RiskManager:
                 base_amount_int,
                 tp_price_int,
                 tp_is_ask,
-                self.signer_client.ORDER_TYPE_LIMIT,
+                self.signer_client.ORDER_TYPE_TAKE_PROFIT_LIMIT,  # ✅ FIXED: Use TP order type
                 self.signer_client.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME,
                 True,  # reduce_only = True for TP/SL
-                self.signer_client.NIL_TRIGGER_PRICE,
+                tp_price_int,  # ✅ FIXED: trigger_price = tp_price
                 self.signer_client.DEFAULT_28_DAY_ORDER_EXPIRY,
             )
             
@@ -215,10 +215,10 @@ class RiskManager:
                 base_amount_int,
                 sl_price_int,
                 sl_is_ask,
-                self.signer_client.ORDER_TYPE_LIMIT,
+                self.signer_client.ORDER_TYPE_STOP_LOSS_LIMIT,  # ✅ FIXED: Use SL order type
                 self.signer_client.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME,
                 True,  # reduce_only = True for TP/SL
-                self.signer_client.NIL_TRIGGER_PRICE,
+                sl_price_int,  # ✅ FIXED: trigger_price = sl_price
                 self.signer_client.DEFAULT_28_DAY_ORDER_EXPIRY,
             )
             
@@ -270,10 +270,10 @@ class RiskManager:
                 base_amount_int,
                 retry_sl_price_int,
                 sl_is_ask,
-                self.signer_client.ORDER_TYPE_LIMIT,
+                self.signer_client.ORDER_TYPE_STOP_LOSS_LIMIT,  # ✅ FIXED: Use SL type
                 self.signer_client.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME,
                 True,
-                self.signer_client.NIL_TRIGGER_PRICE,
+                retry_sl_price_int,  # ✅ FIXED: trigger_price
                 self.signer_client.DEFAULT_28_DAY_ORDER_EXPIRY,
             )
             

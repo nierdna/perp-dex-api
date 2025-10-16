@@ -542,10 +542,28 @@
                 
                 resultEl.className = 'result success';
                 resultEl.style.display = 'block';
-                resultEl.innerHTML = `
-                    <strong>✅ Calculation Result:</strong>
-                    <pre>${JSON.stringify(data, null, 2)}</pre>
-                `;
+                
+                // Format đẹp hơn
+                let html = `<strong>✅ Kết Quả Tính Toán:</strong><br><br>`;
+                html += `📊 <strong>${data.symbol} ${data.side.toUpperCase()}</strong><br>`;
+                html += `💰 Entry: <strong>$${data.entry_price.toFixed(2)}</strong><br>`;
+                html += `📏 Size: ${data.position_size.toFixed(4)} ${data.symbol} ($${data.position_size_usd})<br>`;
+                html += `📊 Leverage: ${data.leverage}x<br><br>`;
+                
+                html += `🎯 <strong>TP/SL:</strong><br>`;
+                html += `   📈 Take Profit: <strong style="color: #10b981;">$${data.tp_price.toFixed(2)}</strong> (+ $${data.reward_amount.toFixed(2)})<br>`;
+                html += `   🛡️ Stop Loss: <strong style="color: #ef4444;">$${data.sl_price.toFixed(2)}</strong> (- $${data.risk_amount.toFixed(2)})<br>`;
+                html += `   ⚖️  R:R Ratio: <strong>${data.rr_ratio}</strong><br><br>`;
+                
+                if (data.sl_adjusted) {
+                    html += `⚠️ SL đã được điều chỉnh (safety limit)<br><br>`;
+                }
+                
+                html += `<pre style="font-size: 10px; max-height: 150px; overflow-y: auto;">${JSON.stringify(data, null, 2)}</pre>`;
+                
+                resultEl.innerHTML = html;
+                resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
             } catch (error) {
                 showError('calcResult', error.message);
             }
@@ -583,10 +601,44 @@
                 
                 resultEl.className = 'result success';
                 resultEl.style.display = 'block';
-                resultEl.innerHTML = `
-                    <strong>✅ Order Placed Successfully!</strong>
-                    <pre>${JSON.stringify(data, null, 2)}</pre>
-                `;
+                
+                // Format kết quả đẹp hơn
+                let html = `<strong>🎉 ORDER THÀNH CÔNG!</strong><br><br>`;
+                
+                if (data.entry) {
+                    html += `<strong>📝 Entry Order:</strong><br>`;
+                    html += `   TX: ${data.entry.tx_hash.substring(0, 20)}...<br>`;
+                    html += `   Price: $${data.entry.entry_price.toFixed(2)}<br>`;
+                    html += `   Size: ${data.entry.position_size} ${symbol}<br>`;
+                    html += `   Side: ${data.entry.side.toUpperCase()}<br><br>`;
+                }
+                
+                if (data.tp_sl && data.tp_sl.tp_success) {
+                    html += `<strong>📈 Take Profit:</strong><br>`;
+                    html += `   TX: ${data.tp_sl.tp_tx_hash.substring(0, 20)}...<br><br>`;
+                }
+                
+                if (data.tp_sl && data.tp_sl.sl_success) {
+                    html += `<strong>🛡️ Stop Loss:</strong><br>`;
+                    html += `   TX: ${data.tp_sl.sl_tx_hash.substring(0, 20)}...<br><br>`;
+                }
+                
+                html += `<pre style="font-size: 10px; max-height: 200px; overflow-y: auto;">${JSON.stringify(data, null, 2)}</pre>`;
+                
+                resultEl.innerHTML = html;
+                
+                // Scroll to result
+                resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+                // Show alert
+                alert(`✅ Order placed successfully!\nEntry TX: ${data.entry.tx_hash.substring(0, 16)}...`);
+                
+                // Auto refresh positions
+                setTimeout(() => {
+                    getPositions();
+                    getBalance();
+                }, 2000);
+                
             } catch (error) {
                 showError('orderResult', error.message);
             }
