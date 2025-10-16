@@ -1,11 +1,10 @@
 {
-  "pair": "BTC-USDT",
+  "pair": "ETH-USDT",
   "size_usd": 100,
   "leverage": 5,
   "type": "market",
   "set_price_limit": null,
-  "percent_take_profit": null,
-  "percent_stop_loss": null,
+  "rr_ratio": [1, 2],
   "perpdex": {
     "lighter": "long",
     "paradex": "short"

@@ -24,26 +24,56 @@ class LighterTradingBotSDK:
         self.account_index = int(os.getenv('ACCOUNT_INDEX', '0'))
         self.api_key_index = int(os.getenv('LIGHTER_API_KEY_INDEX', '0'))
         
+        # Default pair
+        self.pair = 'BTC-USDT'
+        self.symbol = 'BTC'
+        self.market_id = 1  # Default BTC market
+        
         # Load config from JSON if provided
         if config:
             self.position_usd = config.get('size_usd', self.position_usd)
             self.leverage = config.get('leverage', self.leverage)
             self.order_type = config.get('type', 'market')  # market or limit
             self.set_price_limit = config.get('set_price_limit')
-            self.percent_stop_loss = config.get('percent_stop_loss', 50)
-            self.percent_take_profit = config.get('percent_take_profit', 25)
+            
+            # Pair and market_id mapping
+            self.pair = config.get('pair', 'BTC-USDT')
+            self.symbol = self.pair.split('-')[0]  # BTC, ETH, etc.
+            
+            # Map pair to market_id (Lighter specific)
+            pair_to_market = {
+                'BTC-USDT': 1,
+                'ETH-USDT': 2,  # Cần verify với Lighter docs
+            }
+            self.market_id = pair_to_market.get(self.pair, 1)
+            
+            # R:R ratio support
+            self.rr_ratio = config.get('rr_ratio')  # [risk, reward] format
+            
+            # Legacy percent support (for backward compatibility)
+            self.percent_stop_loss = config.get('percent_stop_loss')
+            self.percent_take_profit = config.get('percent_take_profit')
         
-        print("🚀 Lighter Trading BTC Bot (SDK Version)")
+        print(f"🚀 Lighter Trading Bot (SDK Version) - {self.pair}")
         print(f"💰 Position Size: ${self.position_usd}")
         print(f"📊 Leverage: {self.leverage}x")
         print(f"🆔 Account Index: {self.account_index}")
         print(f"🔑 API Key Index: {self.api_key_index}")
+        print(f"📈 Market ID: {self.market_id}")
         if hasattr(self, 'order_type'):
             print(f"📈 Order Type: {self.order_type}")
             if self.order_type == 'limit' and self.set_price_limit:
                 print(f"🎯 Limit Price: ${self.set_price_limit}")
-            print(f"🛡️ Stop Loss: {self.percent_stop_loss}%")
-            print(f"🎯 Take Profit: {self.percent_take_profit}%")
+            
+            # Display R:R ratio if available
+            if hasattr(self, 'rr_ratio') and self.rr_ratio:
+                print(f"⚖️  R:R Ratio: {self.rr_ratio[0]}:{self.rr_ratio[1]} (Mất {self.rr_ratio[0]}, Ăn {self.rr_ratio[1]})")
+            
+            # Display TP/SL if available
+            if hasattr(self, 'percent_stop_loss') and self.percent_stop_loss is not None:
+                print(f"🛡️ Stop Loss: {self.percent_stop_loss}%")
+            if hasattr(self, 'percent_take_profit') and self.percent_take_profit is not None:
+                print(f"🎯 Take Profit: {self.percent_take_profit}%")
         
         # Initialize clients
         self.signer_client = None
@@ -113,20 +143,20 @@ class LighterTradingBotSDK:
             traceback.print_exc()
             return False
     
-    async def get_btc_price(self):
-        """Lấy giá BTC từ order book"""
+    async def get_price(self):
+        """Lấy giá từ order book"""
         try:
-            print("\n📈 Đang lấy giá BTC...")
+            print(f"\n📈 Đang lấy giá {self.symbol}...")
             
             # Sử dụng OrderApi để lấy order book (hàm async -> cần await)
-            order_book_data = await self.order_api.order_book_orders(market_id=1, limit=5)
+            order_book_data = await self.order_api.order_book_orders(market_id=self.market_id, limit=5)
             
             if order_book_data and order_book_data.bids and order_book_data.asks:
                 best_bid = float(order_book_data.bids[0].price)
                 best_ask = float(order_book_data.asks[0].price)
                 mid_price = (best_bid + best_ask) / 2
                 
-                print(f"💰 Giá BTC:")
+                print(f"💰 Giá {self.symbol}:")
                 print(f"   🟢 Bid: ${best_bid:,.2f}")
                 print(f"   🔴 Ask: ${best_ask:,.2f}")
                 print(f"   📊 Mid: ${mid_price:,.2f}")
@@ -137,7 +167,7 @@ class LighterTradingBotSDK:
                     'mid': mid_price
                 }
             else:
-                print("❌ Không lấy được giá BTC")
+                print(f"❌ Không lấy được giá {self.symbol}")
                 return None
                 
         except Exception as e:
@@ -145,6 +175,10 @@ class LighterTradingBotSDK:
             import traceback
             traceback.print_exc()
             return None
+    
+    async def get_btc_price(self):
+        """Legacy method for backward compatibility"""
+        return await self.get_price()
     
     async def get_account_balance(self):
         """Lấy balance của account"""
@@ -199,16 +233,16 @@ class LighterTradingBotSDK:
                 entry_price = price_data['ask'] if is_long else price_data['bid']
                 print(f"🎯 Using market price: ${entry_price}")
             
-            position_size_btc = round(self.position_usd / entry_price, 8)
+            position_size = round(self.position_usd / entry_price, 8)
 
-            print(f"\n🎯 Đang đặt lệnh {side.upper()} ${self.position_usd} BTC...")
+            print(f"\n🎯 Đang đặt lệnh {side.upper()} ${self.position_usd} {self.symbol}...")
             print(f"📊 Order Details:")
-            print(f"   💰 Position Size: {position_size_btc} BTC")
+            print(f"   💰 Position Size: {position_size} {self.symbol}")
             print(f"   💵 Entry Price: ${entry_price:,.2f}")
             print(f"   💸 Total Cost: ${self.position_usd:.2f}")
 
             # Lấy metadata market để scale đúng decimals
-            details = await self.order_api.order_book_details(market_id=1)
+            details = await self.order_api.order_book_details(market_id=self.market_id)
             if not details or not details.order_book_details:
                 return {'success': False, 'error': 'No market metadata'}
             ob = details.order_book_details[0]
@@ -216,13 +250,13 @@ class LighterTradingBotSDK:
             price_decimals = ob.price_decimals
             min_base_amount = float(ob.min_base_amount)
 
-            market_index = 1
+            market_index = self.market_id
             import time
             client_order_index = int(time.time() * 1000)
 
             # Scale theo decimals
-            base_amount = max(position_size_btc, min_base_amount)
-            if position_size_btc < min_base_amount:
+            base_amount = max(position_size, min_base_amount)
+            if position_size < min_base_amount:
                 print(f"⚠️  Size adjusted: ${self.position_usd:.2f} → ${base_amount * entry_price:.2f} (min requirement)")
             base_amount_int = int(round(base_amount * (10 ** size_decimals)))
             price_int = int(round(entry_price * (10 ** price_decimals)))
@@ -282,11 +316,11 @@ class LighterTradingBotSDK:
             return {'success': False, 'error': str(e)}
 
     async def place_long_order(self, price_data):
-        """Đặt lệnh LONG BTC"""
+        """Đặt lệnh LONG"""
         return await self.place_order('long', price_data)
 
     async def place_short_order(self, price_data):
-        """Đặt lệnh SHORT BTC"""
+        """Đặt lệnh SHORT"""
         return await self.place_order('short', price_data)
     
     async def place_tp_sl_orders(self, entry_price, position_size, side):
@@ -328,7 +362,7 @@ class LighterTradingBotSDK:
             print(f"   🛡️ Stop Loss: ${sl_price:,.2f} ({self.percent_stop_loss}%)")
             
             # Get market metadata
-            details = await self.order_api.order_book_details(market_id=1)
+            details = await self.order_api.order_book_details(market_id=self.market_id)
             if not details or not details.order_book_details:
                 return {'success': False, 'error': 'No market metadata for TP/SL'}
             
@@ -352,7 +386,7 @@ class LighterTradingBotSDK:
             tp_is_ask = 1 if is_long else 0  # LONG -> sell to close, SHORT -> buy to close
             
             tp_order, tp_resp, tp_err = await self.signer_client.create_order(
-                1,  # market_index
+                self.market_id,  # market_index
                 tp_client_order_index,
                 base_amount_int,
                 tp_price_int,
@@ -379,7 +413,7 @@ class LighterTradingBotSDK:
             sl_is_ask = tp_is_ask
             
             sl_order, sl_resp, sl_err = await self.signer_client.create_order(
-                1,  # market_index
+                self.market_id,  # market_index
                 sl_client_order_index,
                 base_amount_int,
                 sl_price_int,
@@ -403,7 +437,7 @@ class LighterTradingBotSDK:
                     retry_sl_price_int = int(round(retry_sl_price * (10 ** price_decimals)))
                     
                     sl_order2, sl_resp2, sl_err2 = await self.signer_client.create_order(
-                        1,  # market_index
+                        self.market_id,  # market_index
                         sl_client_order_index + 10,  # Different order index
                         base_amount_int,
                         retry_sl_price_int,
@@ -471,7 +505,7 @@ class LighterTradingBotSDK:
 
 async def main():
     """Main function"""
-    print("🤖 LIGHTER TRADING BTC BOT (SDK VERSION)")
+    print("🤖 LIGHTER TRADING BOT (SDK VERSION)")
     print("=" * 50)
     
     # Check API keys
@@ -480,7 +514,18 @@ async def main():
         print("📝 Vui lòng thêm LIGHTER_PUBLIC_KEY và LIGHTER_PRIVATE_KEY vào .env file")
         return
     
-    bot = LighterTradingBotSDK()
+    # Load config from JSON if exists
+    config = None
+    try:
+        config_path = os.path.join(os.path.dirname(__file__), '..', 'config.json')
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+            print(f"✅ Loaded config from {config_path}")
+    except Exception as e:
+        print(f"⚠️  Could not load config.json: {e}")
+    
+    bot = LighterTradingBotSDK(config=config)
     
     try:
         # Connect
@@ -488,10 +533,10 @@ async def main():
             print("❌ Không thể kết nối đến Lighter")
             return
         
-        # Lấy giá BTC
-        price_data = await bot.get_btc_price()
+        # Lấy giá
+        price_data = await bot.get_price()
         if not price_data:
-            print("❌ Không thể lấy giá BTC")
+            print(f"❌ Không thể lấy giá {bot.symbol}")
             return
         
         # Lấy balance
@@ -522,7 +567,7 @@ async def main():
                 print(f"\n🎉 THÀNH CÔNG!")
                 print(f"📝 Order ID: {result['order_id']}")
                 print(f"💰 Entry Price: ${result['entry_price']:,.2f}")
-                print(f"📊 Position Size: {result['position_size']} BTC")
+                print(f"📊 Position Size: {result['position_size']} {bot.symbol}")
             else:
                 print(f"\n❌ THẤT BẠI! Lỗi: {result.get('error')}")
         else:
