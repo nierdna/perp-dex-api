@@ -3,7 +3,12 @@ OrderExecutor - Đặt lệnh trên Lighter
 """
 
 import time
-from ..utils.calculator import Calculator
+import sys
+import os
+
+# Fix import path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.calculator import Calculator
 
 
 class OrderExecutor:
