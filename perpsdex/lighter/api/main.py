@@ -54,6 +54,7 @@ class OrderRequest(BaseModel):
     leverage: float = 1.0
     sl_percent: Optional[float] = None  # SL distance %
     rr_ratio: Optional[List[float]] = None  # [1, 2]
+    limit_price: Optional[float] = None  # For limit orders
 
 
 class BracketOrderRequest(BaseModel):
@@ -63,6 +64,7 @@ class BracketOrderRequest(BaseModel):
     leverage: float = 1.0
     sl_percent: float = 3.0  # Default 3%
     rr_ratio: List[float] = [1, 2]  # Default [1, 2]
+    entry_price: Optional[float] = None  # Custom entry price for calculation
 
 
 # =============== HELPER FUNCTIONS ===============
@@ -222,8 +224,20 @@ async def place_long_order(order: OrderRequest):
         if client.has_keys_mismatch():
             print("⚠️ WARNING: Placing order với keys mismatch (test mode)")
         
-        # Get price
+        # Check balance first
         market = MarketData(client.get_order_api(), client.get_account_api())
+        balance_result = await market.get_balance()
+        if not balance_result['success']:
+            raise HTTPException(status_code=400, detail="Failed to get balance")
+        
+        available_balance = balance_result['available']
+        if available_balance < order.size_usd:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient balance. Available: ${available_balance:.2f}, Required: ${order.size_usd}"
+            )
+        
+        # Get price
         market_id = get_market_id(order.symbol.upper())
         
         price_result = await market.get_price(market_id, order.symbol.upper())
@@ -282,6 +296,170 @@ async def place_long_order(order: OrderRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/orders/limit-long")
+async def place_limit_long_order(order: OrderRequest):
+    """
+    Đặt lệnh LONG với LIMIT price
+    
+    Body:
+    {
+        "symbol": "BTC",
+        "size_usd": 100,
+        "leverage": 5,
+        "sl_percent": 3,
+        "rr_ratio": [1, 2],
+        "limit_price": 110000  # NEW: Limit price
+    }
+    """
+    try:
+        client = await get_client()
+        
+        # Check keys mismatch
+        if client.has_keys_mismatch():
+            print("⚠️ WARNING: Placing LIMIT LONG order với keys mismatch (test mode)")
+        
+        # Check balance first
+        market = MarketData(client.get_order_api(), client.get_account_api())
+        balance_result = await market.get_balance()
+        if not balance_result['success']:
+            raise HTTPException(status_code=400, detail="Failed to get balance")
+        
+        available_balance = balance_result['available']
+        if available_balance < order.size_usd:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient balance. Available: ${available_balance:.2f}, Required: ${order.size_usd}"
+            )
+        
+        # Get market ID
+        market_id = get_market_id(order.symbol.upper())
+        
+        # Place LIMIT order (không cần get price vì đã có limit_price)
+        executor = OrderExecutor(client.get_signer_client(), client.get_order_api())
+        result = await executor.place_limit_order(
+            side='long',
+            limit_price=order.limit_price,  # NEW: Use limit price
+            position_size_usd=order.size_usd,
+            market_id=market_id,
+            symbol=order.symbol.upper(),
+            leverage=order.leverage
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result.get('error'))
+        
+        # Place TP/SL nếu có config
+        tp_sl_result = None
+        if order.sl_percent and order.rr_ratio:
+            sl_price = Calculator.calculate_sl_from_percent(order.limit_price, 'long', order.sl_percent)
+            tp_sl_calc = Calculator.calculate_tp_sl_from_rr_ratio(
+                order.limit_price, 'long', sl_price, order.rr_ratio
+            )
+            
+            risk_manager = RiskManager(client.get_signer_client(), client.get_order_api())
+            tp_sl_result = await risk_manager.place_tp_sl_orders(
+                entry_price=order.limit_price,
+                tp_price=tp_sl_calc['tp_price'],
+                sl_price=sl_price,
+                position_size=result['position_size'],
+                market_id=market_id,
+                is_long=True
+            )
+        
+        return {
+            "success": True,
+            "entry": {
+                "tx_hash": result['tx_hash'],
+                "entry_price": order.limit_price,
+                "position_size": result['position_size'],
+                "side": "long"
+            },
+            "tp_sl": tp_sl_result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/orders/limit-short")
+async def place_limit_short_order(order: OrderRequest):
+    """
+    Đặt lệnh SHORT với LIMIT price
+    
+    Body: Same as limit-long
+    """
+    try:
+        client = await get_client()
+        
+        # Check keys mismatch
+        if client.has_keys_mismatch():
+            print("⚠️ WARNING: Placing LIMIT SHORT order với keys mismatch (test mode)")
+        
+        # Check balance first
+        market = MarketData(client.get_order_api(), client.get_account_api())
+        balance_result = await market.get_balance()
+        if not balance_result['success']:
+            raise HTTPException(status_code=400, detail="Failed to get balance")
+        
+        available_balance = balance_result['available']
+        if available_balance < order.size_usd:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient balance. Available: ${available_balance:.2f}, Required: ${order.size_usd}"
+            )
+        
+        # Get market ID
+        market_id = get_market_id(order.symbol.upper())
+        
+        # Place LIMIT order
+        executor = OrderExecutor(client.get_signer_client(), client.get_order_api())
+        result = await executor.place_limit_order(
+            side='short',
+            limit_price=order.limit_price,
+            position_size_usd=order.size_usd,
+            market_id=market_id,
+            symbol=order.symbol.upper(),
+            leverage=order.leverage
+        )
+        
+        if not result['success']:
+            raise HTTPException(status_code=400, detail=result.get('error'))
+        
+        # Place TP/SL nếu có config
+        tp_sl_result = None
+        if order.sl_percent and order.rr_ratio:
+            sl_price = Calculator.calculate_sl_from_percent(order.limit_price, 'short', order.sl_percent)
+            tp_sl_calc = Calculator.calculate_tp_sl_from_rr_ratio(
+                order.limit_price, 'short', sl_price, order.rr_ratio
+            )
+            
+            risk_manager = RiskManager(client.get_signer_client(), client.get_order_api())
+            tp_sl_result = await risk_manager.place_tp_sl_orders(
+                entry_price=order.limit_price,
+                tp_price=tp_sl_calc['tp_price'],
+                sl_price=sl_price,
+                position_size=result['position_size'],
+                market_id=market_id,
+                is_long=False
+            )
+        
+        return {
+            "success": True,
+            "entry": {
+                "tx_hash": result['tx_hash'],
+                "entry_price": order.limit_price,
+                "position_size": result['position_size'],
+                "side": "short"
+            },
+            "tp_sl": tp_sl_result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/orders/short")
 async def place_short_order(order: OrderRequest):
     """
@@ -300,8 +478,20 @@ async def place_short_order(order: OrderRequest):
         if client.has_keys_mismatch():
             print("⚠️ WARNING: Placing SHORT order với keys mismatch (test mode)")
         
-        # Get price
+        # Check balance first
         market = MarketData(client.get_order_api(), client.get_account_api())
+        balance_result = await market.get_balance()
+        if not balance_result['success']:
+            raise HTTPException(status_code=400, detail="Failed to get balance")
+        
+        available_balance = balance_result['available']
+        if available_balance < order.size_usd:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Insufficient balance. Available: ${available_balance:.2f}, Required: ${order.size_usd}"
+            )
+        
+        # Get price
         market_id = get_market_id(order.symbol.upper())
         
         price_result = await market.get_price(market_id, order.symbol.upper())
@@ -378,24 +568,37 @@ async def calculate_order(order: BracketOrderRequest):
     try:
         client = await get_client()
         
-        # Get price
-        market = MarketData(client.get_order_api(), client.get_account_api())
-        market_id = get_market_id(order.symbol.upper())
+        # Get entry price: use custom price if provided, otherwise fetch from market
+        if order.entry_price and order.entry_price > 0:
+            entry_price = order.entry_price
+        else:
+            # Get price from market
+            market = MarketData(client.get_order_api(), client.get_account_api())
+            market_id = get_market_id(order.symbol.upper())
+            
+            price_result = await market.get_price(market_id, order.symbol.upper())
+            if not price_result['success']:
+                raise HTTPException(status_code=400, detail="Failed to get price")
+            
+            entry_price = price_result['ask'] if order.side == 'long' else price_result['bid']
         
-        price_result = await market.get_price(market_id, order.symbol.upper())
-        if not price_result['success']:
-            raise HTTPException(status_code=400, detail="Failed to get price")
-        
-        entry_price = price_result['ask'] if order.side == 'long' else price_result['bid']
-        
-        # Calculate position size
+        # Calculate position size (WITHOUT leverage for price calculation)
         position_size = Calculator.calculate_position_size(order.size_usd, entry_price)
         
-        # Calculate TP/SL
+        # Calculate position value WITH leverage
+        position_value_usd = order.size_usd * order.leverage
+        
+        # Calculate TP/SL prices
         sl_price = Calculator.calculate_sl_from_percent(entry_price, order.side, order.sl_percent)
         tp_sl_calc = Calculator.calculate_tp_sl_from_rr_ratio(
             entry_price, order.side, sl_price, order.rr_ratio
         )
+        
+        # Calculate ACTUAL risk/reward in USD based on position size
+        # risk_amount and reward_amount from tp_sl_calc are price distances
+        # We need to multiply by position size to get actual USD amounts
+        actual_risk_usd = tp_sl_calc['risk_amount'] * position_size
+        actual_reward_usd = tp_sl_calc['reward_amount'] * position_size
         
         # Validate SL
         validation = Calculator.validate_sl_price(sl_price, entry_price, order.side, max_percent=5)
@@ -406,12 +609,13 @@ async def calculate_order(order: BracketOrderRequest):
             "entry_price": entry_price,
             "position_size": position_size,
             "position_size_usd": order.size_usd,
+            "position_value_with_leverage": position_value_usd,
             "leverage": order.leverage,
             "tp_price": tp_sl_calc['tp_price'],
             "sl_price": validation['adjusted_price'] if not validation['valid'] else sl_price,
-            "risk_amount": tp_sl_calc['risk_amount'],
-            "reward_amount": tp_sl_calc['reward_amount'],
-            "rr_ratio": f"1:{tp_sl_calc['reward_amount']/tp_sl_calc['risk_amount']:.2f}",
+            "risk_amount": actual_risk_usd,
+            "reward_amount": actual_reward_usd,
+            "rr_ratio": f"1:{actual_reward_usd/actual_risk_usd:.2f}",
             "sl_valid": validation['valid'],
             "sl_adjusted": not validation['valid']
         }

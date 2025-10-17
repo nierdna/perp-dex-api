@@ -313,7 +313,7 @@
                 <h2>🧮 Calculate TP/SL</h2>
                 <div class="form-group">
                     <label>Symbol</label>
-                    <select id="calcSymbol">
+                    <select id="calcSymbol" onchange="updateCalcPrice()">
                         <optgroup label="🔶 Major">
                             <option value="BTC" selected>BTC - $111k</option>
                             <option value="SOL">SOL - $192</option>
@@ -355,6 +355,11 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label>Entry Price ($)</label>
+                    <input type="number" id="calcEntryPrice" step="0.01" placeholder="Auto-fetching...">
+                    <small style="color: #6b7280;">Current market price (editable)</small>
+                </div>
+                <div class="form-group">
                     <label>Size USD</label>
                     <input type="number" id="calcSize" value="100" step="10">
                 </div>
@@ -378,8 +383,20 @@
             <div class="card">
                 <h2>⚡ Place Order</h2>
                 <div class="form-group">
+                    <label>Order Type</label>
+                    <select id="orderType" onchange="toggleLimitPrice()">
+                        <option value="market">Market Order</option>
+                        <option value="limit">Limit Order</option>
+                    </select>
+                </div>
+                <div class="form-group" id="limitPriceGroup" style="display: none;">
+                    <label>Limit Price ($)</label>
+                    <input type="number" id="limitPrice" step="0.01" placeholder="Enter limit price">
+                    <small style="color: #6b7280;">For LONG: Price to buy at | For SHORT: Price to sell at</small>
+                </div>
+                <div class="form-group">
                     <label>Symbol</label>
-                    <select id="orderSymbol">
+                    <select id="orderSymbol" onchange="onOrderSymbolChange()">
                         <optgroup label="🔶 Major (Recommended)">
                             <option value="BTC" selected>BTC - $111k</option>
                             <option value="SOL">SOL - $192</option>
@@ -442,6 +459,67 @@
 
     <script>
         const API_URL = 'http://localhost:8000/api';
+        
+        // Toggle limit price input
+        async function toggleLimitPrice() {
+            const orderType = document.getElementById('orderType').value;
+            const limitPriceGroup = document.getElementById('limitPriceGroup');
+            
+            if (orderType === 'limit') {
+                limitPriceGroup.style.display = 'block';
+                // Auto-fill với giá hiện tại
+                await updateLimitPrice();
+            } else {
+                limitPriceGroup.style.display = 'none';
+            }
+        }
+        
+        // Update limit price với giá hiện tại
+        async function updateLimitPrice() {
+            const symbol = document.getElementById('orderSymbol').value;
+            const limitPriceInput = document.getElementById('limitPrice');
+            
+            try {
+                const response = await fetch(`${API_URL}/market/price/${symbol}`);
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                // Set default = mid price
+                const midPrice = (data.bid + data.ask) / 2;
+                limitPriceInput.value = midPrice.toFixed(2);
+                limitPriceInput.placeholder = `Current: $${midPrice.toFixed(2)}`;
+            } catch (error) {
+                console.error('Failed to fetch price:', error);
+            }
+        }
+        
+        // Handler khi user đổi symbol
+        async function onOrderSymbolChange() {
+            const orderType = document.getElementById('orderType').value;
+            // Chỉ update limit price nếu đang ở limit order mode
+            if (orderType === 'limit') {
+                await updateLimitPrice();
+            }
+        }
+        
+        // Update calc entry price với giá hiện tại
+        async function updateCalcPrice() {
+            const symbol = document.getElementById('calcSymbol').value;
+            const calcEntryPriceInput = document.getElementById('calcEntryPrice');
+            
+            try {
+                const response = await fetch(`${API_URL}/market/price/${symbol}`);
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                // Set default = mid price
+                const midPrice = (data.bid + data.ask) / 2;
+                calcEntryPriceInput.value = midPrice.toFixed(2);
+                calcEntryPriceInput.placeholder = `Current: $${midPrice.toFixed(2)}`;
+            } catch (error) {
+                console.error('Failed to fetch price:', error);
+            }
+        }
 
         // Check API status
         async function checkStatus() {
@@ -522,10 +600,17 @@
         async function calculateOrder() {
             const symbol = document.getElementById('calcSymbol').value;
             const side = document.querySelector('input[name="calcSide"]:checked').value;
+            const entryPrice = parseFloat(document.getElementById('calcEntryPrice').value);
             const size = parseFloat(document.getElementById('calcSize').value);
             const leverage = parseFloat(document.getElementById('calcLeverage').value);
             const slPercent = parseFloat(document.getElementById('calcSL').value);
             const rrRatio = document.getElementById('calcRR').value.split(',').map(x => parseFloat(x.trim()));
+            
+            // Validate entry price
+            if (!entryPrice || entryPrice <= 0) {
+                alert('⚠️ Vui lòng chờ giá được load hoặc nhập Entry Price hợp lệ!');
+                return;
+            }
 
             try {
                 const response = await fetch(`${API_URL}/orders/calculate`, {
@@ -533,7 +618,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         symbol, side, size_usd: size, leverage,
-                        sl_percent: slPercent, rr_ratio: rrRatio
+                        sl_percent: slPercent, rr_ratio: rrRatio,
+                        entry_price: entryPrice  // NEW: Pass custom entry price
                     })
                 });
 
@@ -571,7 +657,10 @@
 
         // Place Order
         async function placeOrder(side) {
-            if (!confirm(`⚠️ Xác nhận đặt lệnh ${side.toUpperCase()} với tiền thật?`)) {
+            const orderType = document.getElementById('orderType').value;
+            const orderTypeText = orderType === 'limit' ? 'LIMIT' : 'MARKET';
+            
+            if (!confirm(`⚠️ Xác nhận đặt lệnh ${orderTypeText} ${side.toUpperCase()} với tiền thật?`)) {
                 return;
             }
 
@@ -580,15 +669,35 @@
             const leverage = parseFloat(document.getElementById('orderLeverage').value);
             const slPercent = parseFloat(document.getElementById('orderSL').value);
             const rrRatio = document.getElementById('orderRR').value.split(',').map(x => parseFloat(x.trim()));
+            
+            // Get limit price if limit order
+            let limitPrice = null;
+            if (orderType === 'limit') {
+                limitPrice = parseFloat(document.getElementById('limitPrice').value);
+                if (!limitPrice || limitPrice <= 0) {
+                    alert('⚠️ Vui lòng nhập Limit Price hợp lệ!');
+                    return;
+                }
+            }
 
             try {
-                const response = await fetch(`${API_URL}/orders/${side}`, {
+                // Determine endpoint
+                const endpoint = orderType === 'limit' ? `limit-${side}` : side;
+                
+                const requestBody = {
+                    symbol, size_usd: size, leverage,
+                    sl_percent: slPercent, rr_ratio: rrRatio
+                };
+                
+                // Add limit_price if limit order
+                if (orderType === 'limit') {
+                    requestBody.limit_price = limitPrice;
+                }
+                
+                const response = await fetch(`${API_URL}/orders/${endpoint}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        symbol, size_usd: size, leverage,
-                        sl_percent: slPercent, rr_ratio: rrRatio
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 if (!response.ok) {
@@ -660,6 +769,7 @@
             getPrice();
             getBalance();
             getPositions();
+            updateCalcPrice();  // Auto-load calc entry price
         }, 1000);
     </script>
 </body>

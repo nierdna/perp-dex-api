@@ -150,6 +150,98 @@ class OrderExecutor:
             print(f"❌ Lỗi khi đặt lệnh {side}: {e}")
             return {'success': False, 'error': str(e)}
     
+    async def place_limit_order(
+        self,
+        side: str,
+        limit_price: float,
+        position_size_usd: float,
+        market_id: int,
+        symbol: str = None,
+        leverage: float = 1.0
+    ) -> dict:
+        """
+        Đặt lệnh LIMIT LONG hoặc SHORT
+        
+        Input:
+            - side: 'long' hoặc 'short'
+            - limit_price: Giá limit
+            - position_size_usd: Kích thước vị thế (USD)
+            - market_id: ID của market
+            - symbol: Tên symbol để hiển thị (optional)
+            - leverage: Đòn bẩy (optional, default: 1)
+        
+        Output:
+            dict: {
+                'success': bool,
+                'tx_hash': str,
+                'position_size': float,
+                'entry_price': float
+            }
+        """
+        try:
+            # Get market metadata
+            metadata_result = await self.order_api.get_market_metadata(market_id)
+            if not metadata_result['success']:
+                return {'success': False, 'error': 'Failed to get market metadata'}
+            
+            size_decimals = metadata_result['size_decimals']
+            price_decimals = metadata_result['price_decimals']
+            min_base_amount = metadata_result['min_base_amount']
+            
+            # Calculate position size
+            position_size = position_size_usd / limit_price
+            position_size = max(position_size, min_base_amount)
+            
+            # Scale to integers
+            base_amount_int = Calculator.scale_to_int(position_size, size_decimals)
+            price_int = Calculator.scale_to_int(limit_price, price_decimals)
+            
+            # Determine order direction
+            is_ask = 1 if side.lower() == 'short' else 0
+            
+            # Generate unique order index
+            client_order_index = int(time.time() * 1000)
+            
+            # Place LIMIT order
+            order, response, error = await self.signer_client.create_order(
+                market_id,
+                client_order_index,
+                base_amount_int,
+                price_int,
+                is_ask,
+                self.signer_client.ORDER_TYPE_LIMIT,  # LIMIT order
+                self.signer_client.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME,
+                False,  # reduce_only = False for entry
+                self.signer_client.NIL_TRIGGER_PRICE,
+                self.signer_client.DEFAULT_28_DAY_ORDER_EXPIRY,
+            )
+            
+            if error is not None or response is None:
+                return {
+                    'success': False,
+                    'error': f"Order failed: {error}"
+                }
+            
+            print(f"✅ LIMIT {side.upper()} order placed: {response.tx_hash}")
+            print(f"📊 Order Details:")
+            print(f"   💰 Position Size: {position_size} {symbol or 'tokens'}")
+            print(f"   💵 Limit Price: ${limit_price}")
+            print(f"   💸 Total Cost: ${position_size_usd}")
+            print(f"   📊 Leverage: {leverage}x")
+            
+            return {
+                'success': True,
+                'tx_hash': response.tx_hash,
+                'position_size': position_size,
+                'entry_price': limit_price
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f"Exception in place_limit_order: {str(e)}"
+            }
+    
     async def _get_market_metadata(self, market_id: int) -> dict:
         """
         Helper: Lấy market metadata
