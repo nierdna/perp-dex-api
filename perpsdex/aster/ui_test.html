@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aster Trading Bot - Test UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .status.online {
+            background: #10b981;
+            color: white;
+        }
+
+        .status.offline {
+            background: #ef4444;
+            color: white;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #ff5252;
+        }
+
+        button.success {
+            background: #10b981;
+        }
+
+        button.success:hover {
+            background: #059669;
+        }
+
+        button.danger {
+            background: #ef4444;
+        }
+
+        button.danger:hover {
+            background: #dc2626;
+        }
+
+        .info-box {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .info-value {
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .result.success {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+            color: #065f46;
+        }
+
+        .result.error {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+            color: #991b1b;
+        }
+
+        .result pre {
+            margin-top: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: normal;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ff6b6b;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>⭐ Aster Trading Bot - Test UI</h1>
+            <div class="status" id="apiStatus">Checking...</div>
+            <p style="margin-top: 10px; color: #6b7280; font-size: 14px;">
+                ⭐ Aster DEX - Next-Gen Perpetual Trading | 🔥 Support ETH, BTC, SOL & more
+                <a href="https://docs.asterdex.com" target="_blank" style="color: #ff6b6b; margin-left: 10px;">View docs →</a>
+            </p>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid">
+            <!-- Market Data -->
+            <div class="card">
+                <h2>📊 Market Data</h2>
+                <div class="form-group">
+                    <label>Symbol</label>
+                    <select id="marketSymbol">
+                        <optgroup label="🔶 Major">
+                            <option value="BTC-USDT" selected>BTC - $110k</option>
+                            <option value="ETH-USDT">ETH - $4,020</option>
+                            <option value="SOL-USDT">SOL - $192</option>
+                            <option value="BNB-USDT">BNB - $1,179</option>
+                        </optgroup>
+                        <optgroup label="💎 DeFi">
+                            <option value="AAVE">AAVE - $239</option>
+                            <option value="UNI">UNI - $6.59</option>
+                            <option value="LINK">LINK - $18</option>
+                            <option value="GMX">GMX - $10.83</option>
+                        </optgroup>
+                        <optgroup label="⚡ Layer 1/2">
+                            <option value="AVAX">AVAX - $21</option>
+                            <option value="ARB">ARB - $0.33</option>
+                            <option value="OP">OP - $0.46</option>
+                            <option value="DOT">DOT - $3.12</option>
+                            <option value="APT">APT - $3.48</option>
+                            <option value="SUI">SUI - $2.67</option>
+                        </optgroup>
+                        <optgroup label="🎭 Meme">
+                            <option value="DOGE">DOGE - $0.20</option>
+                            <option value="WIF">WIF - $0.55</option>
+                            <option value="TRUMP">TRUMP - $6.06</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <button onclick="getPrice()">Get Price</button>
+                <div class="info-box" id="priceInfo" style="display:none;">
+                    <div class="info-row">
+                        <span class="info-label">Bid:</span>
+                        <span class="info-value" id="bid">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Ask:</span>
+                        <span class="info-value" id="ask">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Mid:</span>
+                        <span class="info-value" id="mid">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance -->
+            <div class="card">
+                <h2>💰 Account Balance</h2>
+                <button onclick="getBalance()">Refresh Balance</button>
+                <div class="info-box" id="balanceInfo" style="display:none;">
+                    <div class="info-row">
+                        <span class="info-label">Available:</span>
+                        <span class="info-value" id="available">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Collateral:</span>
+                        <span class="info-value" id="collateral">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Total:</span>
+                        <span class="info-value" id="total">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Positions -->
+            <div class="card">
+                <h2>📈 Positions</h2>
+                <button onclick="getPositions()">Refresh Positions</button>
+                <div class="info-box" id="positionsInfo" style="display:none;">
+                    <div id="positionsList"></div>
+                </div>
+            </div>
+
+            <!-- Calculate Order -->
+            <div class="card">
+                <h2>🧮 Calculate TP/SL</h2>
+                <div class="form-group">
+                    <label>Symbol</label>
+                    <select id="calcSymbol" onchange="updateCalcPrice()">
+                        <optgroup label="🔶 Major">
+                            <option value="BTC-USDT" selected>BTC - $110k</option>
+                            <option value="ETH-USDT">ETH - $4,020</option>
+                            <option value="SOL-USDT">SOL - $192</option>
+                            <option value="BNB-USDT">BNB - $1,179</option>
+                        </optgroup>
+                        <optgroup label="💎 DeFi">
+                            <option value="AAVE">AAVE - $239</option>
+                            <option value="UNI">UNI - $6.59</option>
+                            <option value="LINK">LINK - $18</option>
+                            <option value="GMX">GMX - $10.83</option>
+                            <option value="LTC">LTC - $94</option>
+                        </optgroup>
+                        <optgroup label="⚡ Layer 1/2">
+                            <option value="AVAX">AVAX - $21</option>
+                            <option value="ARB">ARB - $0.33</option>
+                            <option value="OP">OP - $0.46</option>
+                            <option value="DOT">DOT - $3.12</option>
+                            <option value="APT">APT - $3.48</option>
+                            <option value="SUI">SUI - $2.67</option>
+                            <option value="NEAR">NEAR - $2.33</option>
+                        </optgroup>
+                        <optgroup label="🎭 Meme">
+                            <option value="DOGE">DOGE - $0.20</option>
+                            <option value="WIF">WIF - $0.55</option>
+                            <option value="TRUMP">TRUMP - $6.06</option>
+                            <option value="1000PEPE">1000PEPE - $0.01</option>
+                            <option value="1000SHIB">1000SHIB - $0.01</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Side</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="calcSide" value="long" checked> LONG</label>
+                        <label><input type="radio" name="calcSide" value="short"> SHORT</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Entry Price ($)</label>
+                    <input type="number" id="calcEntryPrice" step="0.01" placeholder="Auto-fetching...">
+                    <small style="color: #6b7280;">Current market price (editable)</small>
+                </div>
+                <div class="form-group">
+                    <label>Size USD</label>
+                    <input type="number" id="calcSize" value="100" step="10">
+                </div>
+                <div class="form-group">
+                    <label>Leverage</label>
+                    <input type="number" id="calcLeverage" value="5" step="1" min="1" max="10">
+                </div>
+                <div class="form-group">
+                    <label>SL Distance %</label>
+                    <input type="number" id="calcSL" value="3" step="0.5">
+                </div>
+                <div class="form-group">
+                    <label>R:R Ratio [Risk, Reward]</label>
+                    <input type="text" id="calcRR" value="1, 2" placeholder="1, 2">
+                </div>
+                <button onclick="calculateOrder()">Calculate</button>
+                <div class="result" id="calcResult"></div>
+            </div>
+
+            <!-- Place Order -->
+            <div class="card">
+                <h2>⚡ Place Order</h2>
+                <div class="form-group">
+                    <label>Order Type</label>
+                    <select id="orderType" onchange="toggleLimitPrice()">
+                        <option value="market">Market Order</option>
+                        <option value="limit">Limit Order</option>
+                    </select>
+                </div>
+                <div class="form-group" id="limitPriceGroup" style="display: none;">
+                    <label>Limit Price ($)</label>
+                    <input type="number" id="limitPrice" step="0.01" placeholder="Enter limit price">
+                    <small style="color: #6b7280;">For LONG: Price to buy at | For SHORT: Price to sell at</small>
+                </div>
+                <div class="form-group">
+                    <label>Symbol</label>
+                    <select id="orderSymbol" onchange="onOrderSymbolChange()">
+                        <optgroup label="🔶 Major">
+                            <option value="BTC-USDT" selected>BTC - $110k</option>
+                            <option value="ETH-USDT">ETH - $4,020 ⭐ NEW!</option>
+                            <option value="SOL-USDT">SOL - $192</option>
+                            <option value="BNB-USDT">BNB - $1,179</option>
+                        </optgroup>
+                        <optgroup label="💎 DeFi">
+                            <option value="AAVE">AAVE - $239</option>
+                            <option value="UNI">UNI - $6.59</option>
+                            <option value="LINK">LINK - $18</option>
+                            <option value="GMX">GMX - $10.83</option>
+                            <option value="LTC">LTC - $94</option>
+                            <option value="BCH">BCH - $521</option>
+                        </optgroup>
+                        <optgroup label="⚡ Layer 1/2">
+                            <option value="AVAX">AVAX - $21</option>
+                            <option value="ARB">ARB - $0.33</option>
+                            <option value="OP">OP - $0.46</option>
+                            <option value="DOT">DOT - $3.12</option>
+                            <option value="APT">APT - $3.48</option>
+                            <option value="SUI">SUI - $2.67</option>
+                            <option value="NEAR">NEAR - $2.33</option>
+                            <option value="SEI">SEI - $0.21</option>
+                        </optgroup>
+                        <optgroup label="🎭 Meme Coins">
+                            <option value="DOGE">DOGE - $0.20</option>
+                            <option value="WIF">WIF - $0.55</option>
+                            <option value="TRUMP">TRUMP - $6.06</option>
+                            <option value="1000PEPE">1000PEPE - $0.01</option>
+                            <option value="1000SHIB">1000SHIB - $0.01</option>
+                            <option value="1000BONK">1000BONK - $0.02</option>
+                            <option value="POPCAT">POPCAT - $0.16</option>
+                        </optgroup>
+                        <optgroup label="❌ Not Supported">
+                            <option value="ETH" disabled>ETH - NOT ON LIGHTER</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Size USD</label>
+                    <input type="number" id="orderSize" value="10" step="5">
+                </div>
+                <div class="form-group">
+                    <label>Leverage</label>
+                    <input type="number" id="orderLeverage" value="5" step="1" min="1" max="10">
+                </div>
+                <div class="form-group">
+                    <label>SL Distance %</label>
+                    <input type="number" id="orderSL" value="3" step="0.5">
+                </div>
+                <div class="form-group">
+                    <label>R:R Ratio [Risk, Reward]</label>
+                    <input type="text" id="orderRR" value="1, 2">
+                </div>
+                <button class="success" onclick="placeOrder('long')">🟢 LONG</button>
+                <button class="danger" onclick="placeOrder('short')" style="margin-top: 10px;">🔴 SHORT</button>
+                <div class="result" id="orderResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8001/api';
+        
+        // Toggle limit price input
+        async function toggleLimitPrice() {
+            const orderType = document.getElementById('orderType').value;
+            const limitPriceGroup = document.getElementById('limitPriceGroup');
+            
+            if (orderType === 'limit') {
+                limitPriceGroup.style.display = 'block';
+                // Auto-fill với giá hiện tại
+                await updateLimitPrice();
+            } else {
+                limitPriceGroup.style.display = 'none';
+            }
+        }
+        
+        // Update limit price với giá hiện tại
+        async function updateLimitPrice() {
+            const symbol = document.getElementById('orderSymbol').value;
+            const limitPriceInput = document.getElementById('limitPrice');
+            
+            try {
+                const response = await fetch(`${API_URL}/market/price/${symbol}`);
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                // Set default = mid price
+                const midPrice = (data.bid + data.ask) / 2;
+                limitPriceInput.value = midPrice.toFixed(2);
+                limitPriceInput.placeholder = `Current: $${midPrice.toFixed(2)}`;
+            } catch (error) {
+                console.error('Failed to fetch price:', error);
+            }
+        }
+        
+        // Handler khi user đổi symbol
+        async function onOrderSymbolChange() {
+            const orderType = document.getElementById('orderType').value;
+            // Chỉ update limit price nếu đang ở limit order mode
+            if (orderType === 'limit') {
+                await updateLimitPrice();
+            }
+        }
+        
+        // Update calc entry price với giá hiện tại
+        async function updateCalcPrice() {
+            const symbol = document.getElementById('calcSymbol').value;
+            const calcEntryPriceInput = document.getElementById('calcEntryPrice');
+            
+            try {
+                const response = await fetch(`${API_URL}/market/price/${symbol}`);
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                // Set default = mid price
+                const midPrice = (data.bid + data.ask) / 2;
+                calcEntryPriceInput.value = midPrice.toFixed(2);
+                calcEntryPriceInput.placeholder = `Current: $${midPrice.toFixed(2)}`;
+            } catch (error) {
+                console.error('Failed to fetch price:', error);
+            }
+        }
+
+        // Check API status
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_URL}/status`);
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('apiStatus');
+                if (data.api_status === 'online' && data.connection === 'connected') {
+                    statusEl.className = 'status online';
+                    statusEl.textContent = data.can_trade ? '✅ Online & Ready' : '⚠️ Online (Keys Mismatch)';
+                } else {
+                    statusEl.className = 'status offline';
+                    statusEl.textContent = '❌ Offline';
+                }
+            } catch (error) {
+                const statusEl = document.getElementById('apiStatus');
+                statusEl.className = 'status offline';
+                statusEl.textContent = '❌ API Not Running';
+            }
+        }
+
+        // Get Price
+        async function getPrice() {
+            const symbol = document.getElementById('marketSymbol').value;
+            try {
+                const response = await fetch(`${API_URL}/market/price/${symbol}`);
+                const data = await response.json();
+                
+                document.getElementById('bid').textContent = '$' + data.bid.toFixed(2);
+                document.getElementById('ask').textContent = '$' + data.ask.toFixed(2);
+                document.getElementById('mid').textContent = '$' + data.mid.toFixed(2);
+                document.getElementById('priceInfo').style.display = 'block';
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Get Balance
+        async function getBalance() {
+            try {
+                const response = await fetch(`${API_URL}/market/balance`);
+                const data = await response.json();
+                
+                document.getElementById('available').textContent = '$' + data.available.toFixed(2);
+                document.getElementById('collateral').textContent = '$' + data.collateral.toFixed(2);
+                document.getElementById('total').textContent = '$' + data.total.toFixed(2);
+                document.getElementById('balanceInfo').style.display = 'block';
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Get Positions
+        async function getPositions() {
+            try {
+                const response = await fetch(`${API_URL}/positions`);
+                const data = await response.json();
+                
+                const listEl = document.getElementById('positionsList');
+                if (data.count === 0) {
+                    listEl.innerHTML = '<p style="color: #6b7280;">No open positions</p>';
+                } else {
+                    listEl.innerHTML = data.positions.map(pos => 
+                        `<div class="info-row">
+                            <span class="info-label">Market ${pos.market_id}:</span>
+                            <span class="info-value">Size ${pos.size} @ $${pos.avg_entry_price}</span>
+                        </div>`
+                    ).join('');
+                }
+                document.getElementById('positionsInfo').style.display = 'block';
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Calculate Order
+        async function calculateOrder() {
+            const symbol = document.getElementById('calcSymbol').value;
+            const side = document.querySelector('input[name="calcSide"]:checked').value;
+            const entryPrice = parseFloat(document.getElementById('calcEntryPrice').value);
+            const size = parseFloat(document.getElementById('calcSize').value);
+            const leverage = parseFloat(document.getElementById('calcLeverage').value);
+            const slPercent = parseFloat(document.getElementById('calcSL').value);
+            const rrRatio = document.getElementById('calcRR').value.split(',').map(x => parseFloat(x.trim()));
+            
+            // Validate entry price
+            if (!entryPrice || entryPrice <= 0) {
+                alert('⚠️ Vui lòng chờ giá được load hoặc nhập Entry Price hợp lệ!');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/orders/calculate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        symbol, side, size_usd: size, leverage,
+                        sl_percent: slPercent, rr_ratio: rrRatio,
+                        entry_price: entryPrice  // NEW: Pass custom entry price
+                    })
+                });
+
+                const data = await response.json();
+                const resultEl = document.getElementById('calcResult');
+                
+                resultEl.className = 'result success';
+                resultEl.style.display = 'block';
+                
+                // Format đẹp hơn
+                let html = `<strong>✅ Kết Quả Tính Toán:</strong><br><br>`;
+                html += `📊 <strong>${data.symbol} ${data.side.toUpperCase()}</strong><br>`;
+                html += `💰 Entry: <strong>$${data.entry_price.toFixed(2)}</strong><br>`;
+                html += `📏 Size: ${data.position_size.toFixed(4)} ${data.symbol} ($${data.position_size_usd})<br>`;
+                html += `📊 Leverage: ${data.leverage}x<br><br>`;
+                
+                html += `🎯 <strong>TP/SL:</strong><br>`;
+                html += `   📈 Take Profit: <strong style="color: #10b981;">$${data.tp_price.toFixed(2)}</strong> (+ $${data.reward_amount.toFixed(2)})<br>`;
+                html += `   🛡️ Stop Loss: <strong style="color: #ef4444;">$${data.sl_price.toFixed(2)}</strong> (- $${data.risk_amount.toFixed(2)})<br>`;
+                html += `   ⚖️  R:R Ratio: <strong>${data.rr_ratio}</strong><br><br>`;
+                
+                if (data.sl_adjusted) {
+                    html += `⚠️ SL đã được điều chỉnh (safety limit)<br><br>`;
+                }
+                
+                html += `<pre style="font-size: 10px; max-height: 150px; overflow-y: auto;">${JSON.stringify(data, null, 2)}</pre>`;
+                
+                resultEl.innerHTML = html;
+                resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+            } catch (error) {
+                showError('calcResult', error.message);
+            }
+        }
+
+        // Place Order
+        async function placeOrder(side) {
+            const orderType = document.getElementById('orderType').value;
+            const orderTypeText = orderType === 'limit' ? 'LIMIT' : 'MARKET';
+            
+            if (!confirm(`⚠️ Xác nhận đặt lệnh ${orderTypeText} ${side.toUpperCase()} với tiền thật?`)) {
+                return;
+            }
+
+            const symbol = document.getElementById('orderSymbol').value;
+            const size = parseFloat(document.getElementById('orderSize').value);
+            const leverage = parseFloat(document.getElementById('orderLeverage').value);
+            const slPercent = parseFloat(document.getElementById('orderSL').value);
+            const rrRatio = document.getElementById('orderRR').value.split(',').map(x => parseFloat(x.trim()));
+            
+            // Get limit price if limit order
+            let limitPrice = null;
+            if (orderType === 'limit') {
+                limitPrice = parseFloat(document.getElementById('limitPrice').value);
+                if (!limitPrice || limitPrice <= 0) {
+                    alert('⚠️ Vui lòng nhập Limit Price hợp lệ!');
+                    return;
+                }
+            }
+
+            try {
+                // Determine endpoint
+                const endpoint = orderType === 'limit' ? `limit-${side}` : side;
+                
+                const requestBody = {
+                    symbol, size_usd: size, leverage,
+                    sl_percent: slPercent, rr_ratio: rrRatio
+                };
+                
+                // Add limit_price if limit order
+                if (orderType === 'limit') {
+                    requestBody.limit_price = limitPrice;
+                }
+                
+                const response = await fetch(`${API_URL}/orders/${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Order failed');
+                }
+
+                const data = await response.json();
+                const resultEl = document.getElementById('orderResult');
+                
+                resultEl.className = 'result success';
+                resultEl.style.display = 'block';
+                
+                // Format kết quả đẹp hơn
+                let html = `<strong>🎉 ORDER THÀNH CÔNG!</strong><br><br>`;
+                
+                if (data.entry) {
+                    html += `<strong>📝 Entry Order:</strong><br>`;
+                    html += `   TX: ${data.entry.tx_hash.substring(0, 20)}...<br>`;
+                    html += `   Price: $${data.entry.entry_price.toFixed(2)}<br>`;
+                    html += `   Size: ${data.entry.position_size} ${symbol}<br>`;
+                    html += `   Side: ${data.entry.side.toUpperCase()}<br><br>`;
+                }
+                
+                if (data.tp_sl && data.tp_sl.tp_success) {
+                    html += `<strong>📈 Take Profit:</strong><br>`;
+                    html += `   TX: ${data.tp_sl.tp_tx_hash.substring(0, 20)}...<br><br>`;
+                }
+                
+                if (data.tp_sl && data.tp_sl.sl_success) {
+                    html += `<strong>🛡️ Stop Loss:</strong><br>`;
+                    html += `   TX: ${data.tp_sl.sl_tx_hash.substring(0, 20)}...<br><br>`;
+                }
+                
+                html += `<pre style="font-size: 10px; max-height: 200px; overflow-y: auto;">${JSON.stringify(data, null, 2)}</pre>`;
+                
+                resultEl.innerHTML = html;
+                
+                // Scroll to result
+                resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+                // Show alert
+                alert(`✅ Order placed successfully!\nEntry TX: ${data.entry.tx_hash.substring(0, 16)}...`);
+                
+                // Auto refresh positions
+                setTimeout(() => {
+                    getPositions();
+                    getBalance();
+                }, 2000);
+                
+            } catch (error) {
+                showError('orderResult', error.message);
+            }
+        }
+
+        function showError(elementId, message) {
+            const resultEl = document.getElementById(elementId);
+            resultEl.className = 'result error';
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = `<strong>❌ Error:</strong><br>${message}`;
+        }
+
+        // Auto refresh
+        checkStatus();
+        setInterval(checkStatus, 5000);
+        
+        // Auto load data on start
+        setTimeout(() => {
+            getPrice();
+            getBalance();
+            getPositions();
+            updateCalcPrice();  // Auto-load calc entry price
+        }, 1000);
+    </script>
+</body>
+</html>
+
