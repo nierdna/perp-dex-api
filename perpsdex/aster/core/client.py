@@ -72,11 +72,14 @@ class AsterClient:
         Output:
             Hex signature string
         """
-        # Sort parameters by key
+        # Sort parameters by key and convert all values to string
         sorted_params = sorted(params.items())
         
-        # Create query string
-        query_string = '&'.join([f"{k}={v}" for k, v in sorted_params])
+        # Create query string (ensure all values are strings)
+        query_string = '&'.join([f"{k}={str(v)}" for k, v in sorted_params])
+        
+        # Debug: print query string
+        print(f"🔐 Signing query string: {query_string}")
         
         # Generate HMAC SHA256 signature
         signature = hmac.new(
@@ -84,6 +87,8 @@ class AsterClient:
             query_string.encode('utf-8'),
             hashlib.sha256
         ).hexdigest()
+        
+        print(f"🔐 Generated signature: {signature}")
         
         return signature
     
@@ -111,23 +116,42 @@ class AsterClient:
         params = params or {}
         url = f"{self.api_url}{endpoint}"
         
-        # Add timestamp for signed requests
-        if signed:
-            params['timestamp'] = int(time.time() * 1000)
-            params['signature'] = self._generate_signature(params)
+        print(f"🔵 Request: {method} {endpoint}")
+        print(f"🔵 Params before signing: {params}")
         
-        # Add API key to headers
+        # Add timestamp and signature for signed requests
+        if signed:
+            # ✅ Convert all params to strings first
+            params = {k: str(v) for k, v in params.items()}
+            params['timestamp'] = str(int(time.time() * 1000))
+            params['recvWindow'] = '5000'  # 5 seconds window
+            # ✅ Generate signature BEFORE adding it to params
+            signature = self._generate_signature(params)
+            # ✅ Add signature AFTER calculation
+            params['signature'] = signature
+        
+        # Add API key to headers (Binance-style)
         headers = {
-            'X-API-KEY': self.api_key,
+            'X-MBX-APIKEY': self.api_key,
             'Content-Type': 'application/json'
         }
         
+        # ✅ Build URL manually with SORTED params (matching signature calculation)
+        if params:
+            # MUST sort to match signature generation!
+            sorted_params = sorted(params.items())
+            query_string = '&'.join([f"{k}={v}" for k, v in sorted_params])
+            url_with_params = f"{url}?{query_string}"
+        else:
+            url_with_params = url
+        
+        print(f"🌐 Final URL: {url_with_params}")
+        
         try:
+            # ✅ Send request with pre-built URL (no params arg)
             async with self.session.request(
                 method,
-                url,
-                params=params if method == 'GET' else None,
-                json=params if method in ['POST', 'PUT', 'DELETE'] else None,
+                url_with_params,
                 headers=headers
             ) as response:
                 data = await response.json()

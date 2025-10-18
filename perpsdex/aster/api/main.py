@@ -266,6 +266,7 @@ async def calculate_order(order: BracketOrderRequest):
             
             # Use ask for BUY, bid for SELL
             entry_price = price_result['ask'] if order.side == 'BUY' else price_result['bid']
+            print(f"🔵 Market price debug: ask={price_result.get('ask')}, bid={price_result.get('bid')}, entry_price={entry_price}")
         
         # Calculate position size (WITHOUT leverage for price calculation)
         position_size = Calculator.calculate_position_size(order.size_usd, entry_price)
@@ -360,11 +361,13 @@ async def place_long_order(order: OrderRequest):
                 rr_ratio=tuple(order.rr_ratio)
             )
             
-            # Place TP/SL
+            # Calculate position size and place TP/SL
+            position_size = Calculator.calculate_position_size(order.size_usd, entry_price)
+            print(f"🔵 TP/SL Debug: size_usd={order.size_usd}, entry_price={entry_price}, position_size={position_size}")
             tp_sl_result = await risk_manager.place_tp_sl(
                 symbol=order.symbol,
                 side='BUY',
-                size=result['filled_size'],
+                size=position_size,  # Use calculated size
                 entry_price=entry_price,
                 tp_price=calc['tp_price'],
                 sl_price=calc['sl_price']
@@ -373,8 +376,8 @@ async def place_long_order(order: OrderRequest):
         return {
             "success": True,
             "order_id": result['order_id'],
-            "entry_price": result['filled_price'],
-            "position_size": result['filled_size'],
+            "entry_price": entry_price,  # Use calculated entry_price, not filled_price
+            "position_size": position_size,  # Use calculated position_size, not filled_size
             "side": "long",
             "tp_sl": tp_sl_result
         }

@@ -59,7 +59,7 @@ class RiskManager:
             
             # Place Take Profit order
             tp_result = await self.order_executor.place_stop_order(
-                symbol=symbol,
+                symbol=symbol.replace('-', ''),  # Convert BTC-USDT to BTCUSDT
                 side=close_side,
                 size=size,
                 stop_price=tp_price,
@@ -75,7 +75,7 @@ class RiskManager:
             
             # Place Stop Loss order
             sl_result = await self.order_executor.place_stop_order(
-                symbol=symbol,
+                symbol=symbol.replace('-', ''),  # Convert BTC-USDT to BTCUSDT
                 side=close_side,
                 size=size,
                 stop_price=sl_price,
@@ -205,9 +205,13 @@ class RiskManager:
             reward_amount = risk_amount * (reward_ratio / risk_ratio)
             tp_price = entry_price - reward_amount
         
+        # Round to tickSize (0.1) - must be divisible by 0.1
+        tp_price_rounded = round(tp_price / 0.1) * 0.1
+        sl_price_rounded = round(sl_price / 0.1) * 0.1
+        
         return {
-            'tp_price': tp_price,
-            'sl_price': sl_price,
+            'tp_price': tp_price_rounded,  # Round to tickSize (0.1)
+            'sl_price': sl_price_rounded,  # Round to tickSize (0.1)
             'risk_amount': risk_amount,
             'reward_amount': reward_amount
         }

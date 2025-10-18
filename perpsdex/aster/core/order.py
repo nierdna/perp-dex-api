@@ -49,13 +49,41 @@ class OrderExecutor:
             }
         """
         try:
-            # TODO: Find actual Aster endpoint and parameters
+            # Convert symbol format: BTC-USDT → BTCUSDT
+            symbol_no_dash = symbol.replace('-', '')
+            
+            # Get current price to calculate quantity
+            from .market import MarketData
+            market = MarketData(self.client)
+            price_result = await market.get_price(symbol)
+            
+            if not price_result['success']:
+                return {'success': False, 'error': 'Failed to get market price'}
+            
+            # Calculate quantity in base currency
+            price = price_result['ask'] if side.upper() == 'BUY' else price_result['bid']
+            quantity = size / price  # USD to BTC
+            
+            # ✅ Round to 3 decimals for BTCUSDT (check exchangeInfo for other pairs)
+            # TODO: Get precision from exchange info dynamically
+            quantity_rounded = round(quantity, 3)
+            
+            # ✅ Check minimum quantity (0.001 BTC for BTCUSDT)
+            if quantity_rounded < 0.001:
+                return {
+                    'success': False,
+                    'error': f'Order size too small. Minimum: 0.001 BTC (~${round(0.001 * price, 2)} USD). Your order: {quantity_rounded} BTC (${size} USD)'
+                }
+            
+            # TODO: Set leverage (may need different endpoint or account-level setting)
+            # For now, Aster may use account-default leverage or per-position leverage
+            
+            # Place market order
             params = {
-                'symbol': symbol,
+                'symbol': symbol_no_dash,
                 'side': side.upper(),
                 'type': 'MARKET',
-                'quantity': size,
-                'leverage': leverage
+                'quantity': str(quantity_rounded)  # Convert to string
             }
             
             result = await self.client._request(
@@ -70,12 +98,13 @@ class OrderExecutor:
             
             data = result['data']
             
-            # TODO: Adapt based on actual response format
+            # Return order details
             return {
                 'success': True,
-                'order_id': data.get('orderId'),
-                'filled_price': float(data.get('avgPrice', 0)),
-                'filled_size': float(data.get('executedQty', 0))
+                'order_id': str(data.get('orderId')),
+                'filled_size': float(data.get('executedQty', quantity_rounded)),  # ✅ Use filled_size
+                'filled_price': float(data.get('avgPrice', price)),
+                'side': side.upper()
             }
             
         except Exception as e:
@@ -287,5 +316,97 @@ class OrderExecutor:
             return {
                 'success': False,
                 'error': f"Failed to get open orders: {str(e)}"
+            }
+    
+    async def place_stop_order(
+        self,
+        symbol: str,
+        side: str,
+        size: float,
+        stop_price: float,
+        order_type: str = 'STOP_LOSS',
+        reduce_only: bool = True
+    ) -> Dict:
+        """
+        Place stop order (TP/SL) on Aster DEX
+        
+        Input:
+            symbol: Trading pair (e.g., 'BTC-USDT')
+            side: 'BUY' or 'SELL'
+            size: Position size
+            stop_price: Trigger price
+            order_type: 'STOP_LOSS' or 'TAKE_PROFIT'
+            reduce_only: True for TP/SL
+            
+        Output:
+            {
+                'success': bool,
+                'order_id': str,
+                'filled_size': float,
+                'filled_price': float,
+                'side': str
+            }
+        """
+        try:
+            # Symbol should already be in BTCUSDT format from risk.py
+            symbol_no_dash = symbol
+            print(f"🔵 place_stop_order: symbol={symbol}, symbol_no_dash={symbol_no_dash}")
+            
+            # Aster uses STOP_MARKET and TAKE_PROFIT_MARKET
+            if order_type == 'STOP_LOSS':
+                aster_type = 'STOP_MARKET'  # Stop Loss: STOP_MARKET
+            else:  # TAKE_PROFIT
+                aster_type = 'TAKE_PROFIT_MARKET'  # Take Profit: TAKE_PROFIT_MARKET
+            
+            # Round to tickSize (0.1) - must be divisible by 0.1
+            # Use integer arithmetic to avoid floating point precision issues
+            price_rounded = round(stop_price * 10) / 10
+            
+            # Format to 1 decimal place, but ensure it's positive
+            if price_rounded <= 0:
+                return {
+                    'success': False,
+                    'error': f'Invalid price: {price_rounded}. Must be positive.'
+                }
+            
+            price_str = f"{price_rounded:.1f}"
+            
+            # Use closePosition instead of quantity + reduceOnly
+            # This will close 100% of the position when triggered
+            params = {
+                'symbol': symbol_no_dash,
+                'side': side.upper(),
+                'type': aster_type,
+                'stopPrice': price_str,  # Trigger price
+                'closePosition': 'true',  # Close entire position
+                'timeInForce': 'GTC'  # Good Till Cancelled
+            }
+            
+            print(f"🔵 TP/SL params with closePosition: {params}")
+            
+            result = await self.client._request(
+                'POST',
+                '/fapi/v1/order',
+                params=params,
+                signed=True
+            )
+            
+            if not result['success']:
+                return result
+            
+            data = result['data']
+            
+            return {
+                'success': True,
+                'order_id': str(data.get('orderId')),
+                'filled_size': size,  # Return original size for reference
+                'filled_price': float(data.get('avgPrice', stop_price)),
+                'side': side.upper()
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f"Failed to place stop order: {str(e)}"
             }
 

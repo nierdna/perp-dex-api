@@ -564,12 +564,22 @@
                 const response = await fetch(`${API_URL}/market/balance`);
                 const data = await response.json();
                 
-                document.getElementById('available').textContent = '$' + data.available.toFixed(2);
-                document.getElementById('collateral').textContent = '$' + data.collateral.toFixed(2);
-                document.getElementById('total').textContent = '$' + data.total.toFixed(2);
+                // ✅ Check if data has error
+                if (data.detail) {
+                    document.getElementById('available').textContent = '⚠️ API error';
+                    document.getElementById('collateral').textContent = '⚠️ API error';
+                    document.getElementById('total').textContent = '⚠️ API error';
+                } else {
+                    document.getElementById('available').textContent = '$' + (data.available || 0).toFixed(2);
+                    document.getElementById('collateral').textContent = '$' + (data.collateral || 0).toFixed(2);
+                    document.getElementById('total').textContent = '$' + (data.total || 0).toFixed(2);
+                }
                 document.getElementById('balanceInfo').style.display = 'block';
             } catch (error) {
-                alert('Error: ' + error.message);
+                document.getElementById('available').textContent = '⚠️ Error';
+                document.getElementById('collateral').textContent = '⚠️ Error';
+                document.getElementById('total').textContent = '⚠️ Error';
+                console.error('Balance error:', error);
             }
         }
 
@@ -580,19 +590,24 @@
                 const data = await response.json();
                 
                 const listEl = document.getElementById('positionsList');
-                if (data.count === 0) {
+                
+                // ✅ Check if data has error or positions array
+                if (data.detail || !data.positions) {
+                    listEl.innerHTML = '<p style="color: #ff6b6b;">⚠️ API not configured or error</p>';
+                } else if (data.count === 0) {
                     listEl.innerHTML = '<p style="color: #6b7280;">No open positions</p>';
                 } else {
                     listEl.innerHTML = data.positions.map(pos => 
                         `<div class="info-row">
-                            <span class="info-label">Market ${pos.market_id}:</span>
-                            <span class="info-value">Size ${pos.size} @ $${pos.avg_entry_price}</span>
+                            <span class="info-label">${pos.symbol} ${pos.side}:</span>
+                            <span class="info-value">Size ${pos.size.toFixed(4)} @ $${pos.entry_price.toFixed(2)} | PnL: $${pos.pnl.toFixed(2)}</span>
                         </div>`
                     ).join('');
                 }
                 document.getElementById('positionsInfo').style.display = 'block';
             } catch (error) {
-                alert('Error: ' + error.message);
+                document.getElementById('positionsList').innerHTML = '<p style="color: #ff6b6b;">⚠️ Error loading positions</p>';
+                console.error('Positions error:', error);
             }
         }
 
@@ -714,22 +729,26 @@
                 // Format kết quả đẹp hơn
                 let html = `<strong>🎉 ORDER THÀNH CÔNG!</strong><br><br>`;
                 
-                if (data.entry) {
+                // Handle Aster DEX response format
+                if (data.order_id) {
                     html += `<strong>📝 Entry Order:</strong><br>`;
-                    html += `   TX: ${data.entry.tx_hash.substring(0, 20)}...<br>`;
-                    html += `   Price: $${data.entry.entry_price.toFixed(2)}<br>`;
-                    html += `   Size: ${data.entry.position_size} ${symbol}<br>`;
-                    html += `   Side: ${data.entry.side.toUpperCase()}<br><br>`;
+                    html += `   Order ID: ${data.order_id}<br>`;
+                    html += `   Price: $${data.entry_price.toFixed(2)}<br>`;
+                    html += `   Size: ${data.position_size} BTC<br>`;
+                    html += `   Side: ${data.side.toUpperCase()}<br><br>`;
                 }
                 
-                if (data.tp_sl && data.tp_sl.tp_success) {
+                if (data.tp_sl && data.tp_sl.success) {
                     html += `<strong>📈 Take Profit:</strong><br>`;
-                    html += `   TX: ${data.tp_sl.tp_tx_hash.substring(0, 20)}...<br><br>`;
-                }
-                
-                if (data.tp_sl && data.tp_sl.sl_success) {
+                    html += `   Order ID: ${data.tp_sl.tp_order_id}<br>`;
+                    html += `   Price: $${data.tp_sl.tp_price.toFixed(2)}<br><br>`;
+                    
                     html += `<strong>🛡️ Stop Loss:</strong><br>`;
-                    html += `   TX: ${data.tp_sl.sl_tx_hash.substring(0, 20)}...<br><br>`;
+                    html += `   Order ID: ${data.tp_sl.sl_order_id}<br>`;
+                    html += `   Price: $${data.tp_sl.sl_price.toFixed(2)}<br><br>`;
+                } else if (data.tp_sl && !data.tp_sl.success) {
+                    html += `<strong>⚠️ TP/SL Failed:</strong><br>`;
+                    html += `   Error: ${data.tp_sl.error}<br><br>`;
                 }
                 
                 html += `<pre style="font-size: 10px; max-height: 200px; overflow-y: auto;">${JSON.stringify(data, null, 2)}</pre>`;
@@ -740,7 +759,11 @@
                 resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 
                 // Show alert
-                alert(`✅ Order placed successfully!\nEntry TX: ${data.entry.tx_hash.substring(0, 16)}...`);
+                if (data.order_id) {
+                    alert(`✅ Order placed successfully!\nOrder ID: ${data.order_id}`);
+                } else {
+                    alert(`✅ Order placed successfully!`);
+                }
                 
                 // Auto refresh positions
                 setTimeout(() => {

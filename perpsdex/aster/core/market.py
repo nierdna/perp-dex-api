@@ -39,10 +39,13 @@ class MarketData:
             }
         """
         try:
-            # ✅ Use correct Aster API endpoint structure
+            # ✅ Aster uses /fapi/v1/ticker/24hr with symbol param (no dash)
+            # Convert BTC-USDT to BTCUSDT
+            symbol_no_dash = symbol.replace('-', '')
+            
             result = await self.client._request(
                 'GET',
-                f'/fapi/v1/ticker/{symbol}',
+                f'/fapi/v1/ticker/24hr?symbol={symbol_no_dash}',
                 signed=False
             )
             
@@ -51,12 +54,16 @@ class MarketData:
             
             data = result['data']
             
-            # TODO: Adapt based on actual response format
+            # Aster returns: lastPrice, bidPrice, askPrice (or just lastPrice)
+            last_price = float(data.get('lastPrice', 0))
+            bid = float(data.get('bidPrice', last_price))
+            ask = float(data.get('askPrice', last_price))
+            
             return {
                 'success': True,
-                'bid': float(data.get('bid', 0)),
-                'ask': float(data.get('ask', 0)),
-                'mid': (float(data.get('bid', 0)) + float(data.get('ask', 0))) / 2
+                'bid': bid if bid > 0 else last_price * 0.9995,  # Mock bid/ask if not available
+                'ask': ask if ask > 0 else last_price * 1.0005,
+                'mid': last_price
             }
             
         except Exception as e:
@@ -124,11 +131,10 @@ class MarketData:
             }
         """
         try:
-            # TODO: Find actual Aster endpoint
-            # ✅ Use correct Aster API endpoint structure
+            # ✅ Binance-style uses /fapi/v1/positionRisk
             result = await self.client._request(
                 'GET',
-                '/fapi/v1/positions',
+                '/fapi/v1/positionRisk',
                 signed=True
             )
             
@@ -137,19 +143,26 @@ class MarketData:
             
             data = result['data']
             
-            # TODO: Adapt based on actual response format
+            # ✅ Aster returns array directly (Binance-style)
             positions = []
-            for pos in data.get('positions', []):
-                positions.append({
-                    'symbol': pos.get('symbol'),
-                    'size': float(pos.get('size', 0)),
-                    'entry_price': float(pos.get('entryPrice', 0)),
-                    'leverage': float(pos.get('leverage', 1)),
-                    'pnl': float(pos.get('unrealizedPnl', 0))
-                })
+            pos_list = data if isinstance(data, list) else data.get('positions', [])
+            
+            for pos in pos_list:
+                # Filter out empty positions (positionAmt == 0)
+                pos_amt = float(pos.get('positionAmt', 0))
+                if pos_amt != 0:
+                    positions.append({
+                        'symbol': pos.get('symbol'),
+                        'size': abs(pos_amt),
+                        'entry_price': float(pos.get('entryPrice', 0)),
+                        'leverage': float(pos.get('leverage', 1)),
+                        'pnl': float(pos.get('unRealizedProfit', 0)),
+                        'side': 'LONG' if pos_amt > 0 else 'SHORT'
+                    })
             
             return {
                 'success': True,
+                'count': len(positions),
                 'positions': positions
             }
             

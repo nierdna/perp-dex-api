@@ -122,8 +122,11 @@ class Calculator:
         
         reward_amount = abs(tp_price - entry_price)
         
+        # Round to tickSize (0.1) - must be divisible by 0.1 for Aster DEX
+        tp_price_rounded = round(tp_price / 0.1) * 0.1
+        
         return {
-            'tp_price': tp_price,
+            'tp_price': tp_price_rounded,  # Round to tickSize (0.1)
             'risk_amount': risk_amount,
             'reward_amount': reward_amount
         }
@@ -152,9 +155,12 @@ class Calculator:
         is_long = side.lower() == 'long'
         
         if is_long:
-            return entry_price * (1 - sl_percent / 100)
+            sl_price = entry_price * (1 - sl_percent / 100)
         else:
-            return entry_price * (1 + sl_percent / 100)
+            sl_price = entry_price * (1 + sl_percent / 100)
+        
+        # Round to tickSize (0.1) - must be divisible by 0.1 for Aster DEX
+        return round(sl_price / 0.1) * 0.1
     
     @staticmethod
     def validate_sl_price(
