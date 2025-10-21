@@ -165,16 +165,24 @@ class RiskManager:
             # TP order: opposite direction to close position
             tp_is_ask = 1 if is_long else 0  # LONG -> sell to close, SHORT -> buy to close
             
+            # 🎯 CONDITIONAL ORDER: TAKE_PROFIT_LIMIT
+            # trigger_price = tp_price → Kích hoạt khi market price >= tp_price
+            # limit_price = tp_price → Sau khi active, đặt SELL limit @ tp_price
+            print(f"📈 Đặt TP order:")
+            print(f"   Type: TAKE_PROFIT_LIMIT (conditional)")
+            print(f"   Trigger: ${tp_price:,.2f} (kích hoạt khi market >= trigger)")
+            print(f"   Limit: ${tp_price:,.2f} (đặt SELL @ limit sau khi active)")
+            
             tp_order, tp_resp, tp_err = await self.signer_client.create_order(
                 market_id,
                 tp_client_order_index,
                 base_amount_int,
-                tp_price_int,
+                tp_price_int,  # limit_price
                 tp_is_ask,
-                self.signer_client.ORDER_TYPE_TAKE_PROFIT_LIMIT,  # ✅ FIXED: Use TP order type
+                self.signer_client.ORDER_TYPE_TAKE_PROFIT_LIMIT,  # Conditional order
                 self.signer_client.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME,
-                True,  # reduce_only = True for TP/SL
-                tp_price_int,  # ✅ FIXED: trigger_price = tp_price
+                True,  # reduce_only = True
+                tp_price_int,  # trigger_price = tp_price (kích hoạt khi market >= trigger)
                 self.signer_client.DEFAULT_28_DAY_ORDER_EXPIRY,
             )
             
@@ -209,16 +217,24 @@ class RiskManager:
             # SL order: same direction as TP (to close position)
             sl_is_ask = 1 if is_long else 0
             
+            # 🎯 CONDITIONAL ORDER: STOP_LOSS_LIMIT
+            # trigger_price = sl_price → Kích hoạt khi market price <= sl_price (LONG) hoặc >= sl_price (SHORT)
+            # limit_price = sl_price → Sau khi active, đặt SELL/BUY limit @ sl_price
+            print(f"🛡️ Đặt SL order:")
+            print(f"   Type: STOP_LOSS_LIMIT (conditional)")
+            print(f"   Trigger: ${sl_price:,.2f} (kích hoạt khi market {'<=' if is_long else '>='} trigger)")
+            print(f"   Limit: ${sl_price:,.2f} (đặt {'SELL' if is_long else 'BUY'} @ limit sau khi active)")
+            
             sl_order, sl_resp, sl_err = await self.signer_client.create_order(
                 market_id,
                 sl_client_order_index,
                 base_amount_int,
-                sl_price_int,
+                sl_price_int,  # limit_price
                 sl_is_ask,
-                self.signer_client.ORDER_TYPE_STOP_LOSS_LIMIT,  # ✅ FIXED: Use SL order type
+                self.signer_client.ORDER_TYPE_STOP_LOSS_LIMIT,  # Conditional order
                 self.signer_client.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME,
-                True,  # reduce_only = True for TP/SL
-                sl_price_int,  # ✅ FIXED: trigger_price = sl_price
+                True,  # reduce_only = True
+                sl_price_int,  # trigger_price = sl_price (kích hoạt khi market hit trigger)
                 self.signer_client.DEFAULT_28_DAY_ORDER_EXPIRY,
             )
             

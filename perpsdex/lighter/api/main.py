@@ -260,24 +260,36 @@ async def place_long_order(order: OrderRequest):
         if not result['success']:
             raise HTTPException(status_code=400, detail=result.get('error'))
         
-        # Place TP/SL nếu có config (TEMPORARILY DISABLED FOR TESTING)
+        # Place TP/SL nếu có config
         tp_sl_result = None
-        if False:  # DISABLED: Test entry order only
+        calculated_tp_price = None
+        calculated_sl_price = None
+        
+        if order.sl_percent and order.rr_ratio:
             sl_price = Calculator.calculate_sl_from_percent(entry_price, 'long', order.sl_percent)
             tp_sl_calc = Calculator.calculate_tp_sl_from_rr_ratio(
                 entry_price, 'long', sl_price, order.rr_ratio
             )
+            
+            calculated_tp_price = tp_sl_calc['tp_price']
+            calculated_sl_price = sl_price
             
             risk_manager = RiskManager(client.get_signer_client(), client.get_order_api())
             tp_sl_result = await risk_manager.place_tp_sl_orders(
                 entry_price=entry_price,
                 position_size=result['position_size'],
                 side='long',
-                tp_price=tp_sl_calc['tp_price'],
-                sl_price=sl_price,
+                tp_price=calculated_tp_price,
+                sl_price=calculated_sl_price,
                 market_id=market_id,
                 symbol=order.symbol.upper()
             )
+            
+            # Thêm thông tin giá vào result
+            if tp_sl_result:
+                tp_sl_result['tp_price'] = calculated_tp_price
+                tp_sl_result['sl_price'] = calculated_sl_price
+                tp_sl_result['entry_price'] = entry_price
         
         return {
             "success": True,
@@ -516,22 +528,34 @@ async def place_short_order(order: OrderRequest):
         
         # Place TP/SL nếu có config
         tp_sl_result = None
+        calculated_tp_price = None
+        calculated_sl_price = None
+        
         if order.sl_percent and order.rr_ratio:
             sl_price = Calculator.calculate_sl_from_percent(entry_price, 'short', order.sl_percent)
             tp_sl_calc = Calculator.calculate_tp_sl_from_rr_ratio(
                 entry_price, 'short', sl_price, order.rr_ratio
             )
             
+            calculated_tp_price = tp_sl_calc['tp_price']
+            calculated_sl_price = sl_price
+            
             risk_manager = RiskManager(client.get_signer_client(), client.get_order_api())
             tp_sl_result = await risk_manager.place_tp_sl_orders(
                 entry_price=entry_price,
                 position_size=result['position_size'],
                 side='short',
-                tp_price=tp_sl_calc['tp_price'],
-                sl_price=sl_price,
+                tp_price=calculated_tp_price,
+                sl_price=calculated_sl_price,
                 market_id=market_id,
                 symbol=order.symbol.upper(),
             )
+            
+            # Thêm thông tin giá vào result
+            if tp_sl_result:
+                tp_sl_result['tp_price'] = calculated_tp_price
+                tp_sl_result['sl_price'] = calculated_sl_price
+                tp_sl_result['entry_price'] = entry_price
         
         return {
             "success": True,

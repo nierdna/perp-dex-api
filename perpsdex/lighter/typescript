@@ -1216,4 +1216,730 @@ M	perpsdex/lighter/utils/config.py
 M	requirements.txt
 D	test_aster_order.py
 Switched to branch 'fix'
-[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004h
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004hgit checkout fix[?2004l
+Already on 'fix'
+Your branch is up to date with 'origin/fix'.
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004hgit checkout fix[12Dbranch fix  [14D./start_lighter.sh[?2004l
+🔧 Starting Lighter API Server...
+================================
+📂 Project directory: /Users/levanmong/Desktop/LYNX_AI SOLUSTION/point-dex
+🐍 Activating virtual environment...
+🚀 Starting Uvicorn server on http://0.0.0.0:8000...
+================================
+
+[32mINFO[0m:     Will watch for changes in these directories: ['/Users/levanmong/Desktop/LYNX_AI SOLUSTION/point-dex/perpsdex/lighter']
+[32mINFO[0m:     Uvicorn running on [1mhttp://0.0.0.0:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     Started reloader process [[36m[1m1054[0m] using [36m[1mStatReload[0m
+[32mINFO[0m:     Started server process [[36m1056[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:52154 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52154 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52154 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52154 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52154 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52154 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52759 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53046 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53409 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53409 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53409 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'api/main.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m1056[0m]
+[32mINFO[0m:     Started server process [[36m1308[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:54044 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54044 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54044 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54139 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54139 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54139 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54139 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'core/risk.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m1308[0m]
+[32mINFO[0m:     Started server process [[36m1340[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:54239 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54239 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54239 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54239 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54239 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'core/risk.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m1340[0m]
+[32mINFO[0m:     Started server process [[36m1361[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:54427 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'core/risk.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m1361[0m]
+[32mINFO[0m:     Started server process [[36m1412[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+
+💰 Đang lấy account balance...
+[32mINFO[0m:     127.0.0.1:54490 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+💰 Account Balance:
+   💵 Available: $14.59
+   🏦 Collateral: $15.62
+   📊 Total Assets: $15.67
+
+📈 Đang lấy giá BTC...
+💰 Giá BTC:
+   🟢 Bid: $108,063.70
+   🔴 Ask: $108,064.60
+   📊 Mid: $108,064.15
+
+🎯 Đang đặt lệnh LONG $5.0 BTC...
+📊 Order Details:
+   💰 Position Size: 4.627e-05 BTC
+   💵 Entry Price: $108,064.60
+   💸 Total Cost: $5.00
+   📊 Leverage: 5.0x
+⚠️  Size adjusted: $5.00 → $21.61 (min requirement)
+🔧 Decimals: size=5, price=1, min_base=0.0002
+🔧 Scaled: base_amount_int=20, price_int=1080646
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043546548,"BaseAmount":20,"Price":1080646,"IsAsk":0,"Type":0,"TimeInForce":1,"ReduceOnly":0,"TriggerPrice":0,"OrderExpiry":1763462746548,"ExpiredAt":1761044145548,"Nonce":279,"Sig":"9eV8y+85s7AupjLwuigLpi5ePP94RY2/c16hwA0XFCMM2Kj/lz7OH7m7rw0Wyp7aFxZxCY2JjV3m7qzLpwEZ7UwpAMWnm3DCHc/3x+6LEEE="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='06a1b7f981185ca963e51736d0bb6a3ea51c9d9cb1675e7be3c33238c8ca9ffcb731b4a51a00a393' predicted_execution_time_ms=1761043546954 additional_properties={}
+✅ Đặt lệnh thành công!
+📝 Tx Hash: 06a1b7f981185ca963e51736d0bb6a3ea51c9d9cb1675e7be3c33238c8ca9ffcb731b4a51a00a393
+
+🎯 Đang đặt TP/SL orders cho BTC...
+   📈 Take Profit: $114,548.48
+   🛡️ Stop Loss: $104,822.66
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043546789,"BaseAmount":20,"Price":1145485,"IsAsk":1,"Type":0,"TimeInForce":1,"ReduceOnly":1,"TriggerPrice":0,"OrderExpiry":1763462746788,"ExpiredAt":1761044145788,"Nonce":280,"Sig":"Pr+gSfulqLrYbKwjJZMaudlVOIL+yIIA6ZO7KzzE26pYFzbpSam1XiHy8Ihk2onTI6VL7ZCfskYw4rO/toBzhbzvaLvZVnga6K0FJ8oilR8="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='3c1bf765cf9df0a2f8148288a2c0ee5c3036e8590e7a1cbcda8e1e790626d1cc00f1476f75d409ea' predicted_execution_time_ms=1761043547191 additional_properties={}
+✅ Take Profit order placed: 3c1bf765cf9df0a2f8148288a2c0ee5c3036e8590e7a1cbcda8e1e790626d1cc00f1476f75d409ea
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043546911,"BaseAmount":20,"Price":1048227,"IsAsk":1,"Type":0,"TimeInForce":1,"ReduceOnly":1,"TriggerPrice":0,"OrderExpiry":1763462746909,"ExpiredAt":1761044145909,"Nonce":281,"Sig":"Ix0tdcpxTdTOqJoaB/qVM5syTXfuBarrnNtfIR0OJDTa0Di1kNgJaE1gNXqcHMOksx9QodYjvNzSyCNT7sAd18N+gxMVuX4CtYors4ZGPnI="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='68d2eac7c513cbba83de8564f33aee83ae7a22e69907d7af072e505a54dacf5440f2d9014d8a59d2' predicted_execution_time_ms=1761043547312 additional_properties={}
+✅ Stop Loss order placed: 68d2eac7c513cbba83de8564f33aee83ae7a22e69907d7af072e505a54dacf5440f2d9014d8a59d2
+[32mINFO[0m:     127.0.0.1:54476 - "[1mPOST /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54523 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54523 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=108064.6
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:54556 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54523 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=108064.6
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:54593 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54523 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:54622 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54523 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:54645 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54523 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:54671 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54523 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:54697 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54523 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:54719 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54523 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:54749 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54523 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:54787 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54523 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:54810 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54523 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54860 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54860 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54860 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54860 - "[1mOPTIONS /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+💰 Account Balance:
+   💵 Available: $15.67
+   🏦 Collateral: $15.67
+   📊 Total Assets: $15.67
+
+📈 Đang lấy giá BTC...
+💰 Giá BTC:
+   🟢 Bid: $108,117.80
+   🔴 Ask: $108,118.70
+   📊 Mid: $108,118.25
+
+🎯 Đang đặt lệnh LONG $10.0 BTC...
+📊 Order Details:
+   💰 Position Size: 9.249e-05 BTC
+   💵 Entry Price: $108,118.70
+   💸 Total Cost: $10.00
+   📊 Leverage: 5.0x
+⚠️  Size adjusted: $10.00 → $21.62 (min requirement)
+🔧 Decimals: size=5, price=1, min_base=0.0002
+🔧 Scaled: base_amount_int=20, price_int=1081187
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043624063,"BaseAmount":20,"Price":1081187,"IsAsk":0,"Type":0,"TimeInForce":1,"ReduceOnly":0,"TriggerPrice":0,"OrderExpiry":1763462824064,"ExpiredAt":1761044223064,"Nonce":282,"Sig":"8oyWnheihFdlO9BhmXzkporDxf6lSAGtj2bFQ8qfs0CLbTJZSq06Iq+a+tBNmcu5i0cTefwUnY9e/bkxFP0zbvC+9x7Wf/B7WEK5DzVLqCQ="}
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+❌ Đặt lệnh thất bại: HTTP response body: code=21104 message='invalid nonce' additional_properties={}
+[32mINFO[0m:     127.0.0.1:54860 - "[1mPOST /api/orders/long HTTP/1.1[0m" [31m400 Bad Request[0m
+[32mINFO[0m:     127.0.0.1:54860 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'core/risk.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m1412[0m]
+[32mINFO[0m:     Started server process [[36m1565[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:54958 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54958 - "[1mOPTIONS /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+[32mINFO[0m:     127.0.0.1:55033 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+💰 Account Balance:
+   💵 Available: $15.67
+   🏦 Collateral: $15.67
+   📊 Total Assets: $15.67
+
+📈 Đang lấy giá BTC...
+💰 Giá BTC:
+   🟢 Bid: $108,102.00
+   🔴 Ask: $108,105.50
+   📊 Mid: $108,103.75
+
+🎯 Đang đặt lệnh LONG $10.0 BTC...
+📊 Order Details:
+   💰 Position Size: 9.25e-05 BTC
+   💵 Entry Price: $108,105.50
+   💸 Total Cost: $10.00
+   📊 Leverage: 5.0x
+⚠️  Size adjusted: $10.00 → $21.62 (min requirement)
+🔧 Decimals: size=5, price=1, min_base=0.0002
+🔧 Scaled: base_amount_int=20, price_int=1081055
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043636538,"BaseAmount":20,"Price":1081055,"IsAsk":0,"Type":0,"TimeInForce":1,"ReduceOnly":0,"TriggerPrice":0,"OrderExpiry":1763462836539,"ExpiredAt":1761044235539,"Nonce":283,"Sig":"bU7WfjKcfwRCH5EMvFpruehskPLwfapWfs575rvgP5fXQv9nJTJMb9uGBzu47z6KKqR2P81JCIV3LNZXAGpvzN+kBTzFBaCxYwWjDOlQQR4="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='5014622a4dac8af40c7609c2b2868884a07ef7445f1c03108bd9514b7ffe4af03abcc2e8608faa22' predicted_execution_time_ms=1761043636946 additional_properties={}
+✅ Đặt lệnh thành công!
+📝 Tx Hash: 5014622a4dac8af40c7609c2b2868884a07ef7445f1c03108bd9514b7ffe4af03abcc2e8608faa22
+
+🎯 Đang đặt TP/SL orders cho BTC...
+   📈 Take Profit: $114,591.83
+   🛡️ Stop Loss: $104,862.33
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043636785,"BaseAmount":20,"Price":1145918,"IsAsk":1,"Type":0,"TimeInForce":1,"ReduceOnly":1,"TriggerPrice":0,"OrderExpiry":1763462836785,"ExpiredAt":1761044235785,"Nonce":284,"Sig":"PKOHcJyp/h8CG/XfWvY1126ATPp972RSwNjiUFnc73qUijByFBn0dbO4sl9ACUsqO+67xucGBCbb/W+RIp9i/rdrcxeTzHl0zEe8YDhbqw8="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='f534265f2b7077b92a010c9b2687de8a10510111d77734c53cae87daf5843a3885ee23e8d529599a' predicted_execution_time_ms=1761043637194 additional_properties={}
+✅ Take Profit order placed: f534265f2b7077b92a010c9b2687de8a10510111d77734c53cae87daf5843a3885ee23e8d529599a
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043636916,"BaseAmount":20,"Price":1048623,"IsAsk":1,"Type":0,"TimeInForce":1,"ReduceOnly":1,"TriggerPrice":0,"OrderExpiry":1763462836915,"ExpiredAt":1761044235915,"Nonce":285,"Sig":"331vcEZzJz7JMqbIFFp0yVAIM5mbTeZ/6gjsPEPBx0aDpoQ0a9xWGJPMulgYQemDEmbvUn2BGVDQ7W67lmDC8jveS3zQ/4i0iTOuWOII5ng="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='18bf32e84d46f077af3e3d3225159bae2dd572a10ad6f923725ef7b321a66803a2307a760534c8f3' predicted_execution_time_ms=1761043637323 additional_properties={}
+✅ Stop Loss order placed: 18bf32e84d46f077af3e3d3225159bae2dd572a10ad6f923725ef7b321a66803a2307a760534c8f3
+[32mINFO[0m:     127.0.0.1:54958 - "[1mPOST /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+
+💰 Đang lấy account balance...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:54958 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+💰 Account Balance:
+   💵 Available: $15.67
+   🏦 Collateral: $15.67
+   📊 Total Assets: $15.67
+[32mINFO[0m:     127.0.0.1:55033 - "[1mGET /api/market/balance HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55033 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55541 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55541 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'api/main.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m1565[0m]
+[32mINFO[0m:     Started server process [[36m1632[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:55615 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55615 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55615 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55615 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55760 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55760 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55760 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55760 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'api/main.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m1632[0m]
+[32mINFO[0m:     Started server process [[36m1663[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:55869 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+💰 Account Balance:
+   💵 Available: $15.67
+   🏦 Collateral: $15.67
+   📊 Total Assets: $15.67
+
+📈 Đang lấy giá BTC...
+💰 Giá BTC:
+   🟢 Bid: $108,438.00
+   🔴 Ask: $108,442.20
+   📊 Mid: $108,440.10
+
+🎯 Đang đặt lệnh LONG $10.0 BTC...
+📊 Order Details:
+   💰 Position Size: 9.222e-05 BTC
+   💵 Entry Price: $108,442.20
+   💸 Total Cost: $10.00
+   📊 Leverage: 5.0x
+⚠️  Size adjusted: $10.00 → $21.69 (min requirement)
+🔧 Decimals: size=5, price=1, min_base=0.0002
+🔧 Scaled: base_amount_int=20, price_int=1084422
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043766069,"BaseAmount":20,"Price":1084422,"IsAsk":0,"Type":0,"TimeInForce":1,"ReduceOnly":0,"TriggerPrice":0,"OrderExpiry":1763462966069,"ExpiredAt":1761044365069,"Nonce":286,"Sig":"nyPQSOVHtCpX8TD1PUUXbG0SRFRZqSZbUeNDZ8t4q330bpwLK/l3L4KPWwYlP5MsULeDK+xgNwtSBUgl3B+cOjmnE7PL1fz/Z5ttJQysZFk="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='012ceb64fc9f378f93fcb5206e9a9e718fb50431a10ef8495e5f21dc33cadc8e4c48cc64f2ef1e6f' predicted_execution_time_ms=1761043766473 additional_properties={}
+✅ Đặt lệnh thành công!
+📝 Tx Hash: 012ceb64fc9f378f93fcb5206e9a9e718fb50431a10ef8495e5f21dc33cadc8e4c48cc64f2ef1e6f
+
+🎯 Đang đặt TP/SL orders cho BTC...
+   📈 Take Profit: $114,948.73
+   🛡️ Stop Loss: $105,188.93
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043766307,"BaseAmount":20,"Price":1149487,"IsAsk":1,"Type":0,"TimeInForce":1,"ReduceOnly":1,"TriggerPrice":0,"OrderExpiry":1763462966306,"ExpiredAt":1761044365306,"Nonce":287,"Sig":"r9FFWoZXtc0u44wP4JI5x4xsjxqDekP6hY1BE1y5W/xHAF+m5vr/TX4UPvcDAriDJtCXhhAOAI0m226eF9mOhJFt85AxZoyE5FbTL1Fc8UA="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='2b98282c4bfe1390dc4c0670fd75ce6b466c0c117bad719b9a34d79ff58d1a791e9d988b03c83f57' predicted_execution_time_ms=1761043766709 additional_properties={}
+✅ Take Profit order placed: 2b98282c4bfe1390dc4c0670fd75ce6b466c0c117bad719b9a34d79ff58d1a791e9d988b03c83f57
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043766429,"BaseAmount":20,"Price":1051889,"IsAsk":1,"Type":0,"TimeInForce":1,"ReduceOnly":1,"TriggerPrice":0,"OrderExpiry":1763462966427,"ExpiredAt":1761044365427,"Nonce":288,"Sig":"DfXhRWHEt/bNuHAZCgj/JFk8eYiDew3l40OS9Y8DBsR9WG6j298ofrEtqSQPqnL9vvHBF2e/zeO5c9ADJ4GDakM3/oyDW7Ta2HWdIde55h8="}
+[32mINFO[0m:     127.0.0.1:55869 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='ad497a27ce3c6608e67db8a4a584716bdc9160e551825364b5fa72778755723900dbc9f35bec31f8' predicted_execution_time_ms=1761043766828 additional_properties={}
+✅ Stop Loss order placed: ad497a27ce3c6608e67db8a4a584716bdc9160e551825364b5fa72778755723900dbc9f35bec31f8
+[32mINFO[0m:     127.0.0.1:55915 - "[1mPOST /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55869 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55869 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'api/main.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m1663[0m]
+[32mINFO[0m:     Started server process [[36m1711[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:56169 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56463 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56754 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56804 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56804 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56834 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56834 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56834 - "[1mOPTIONS /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+💰 Account Balance:
+   💵 Available: $15.67
+   🏦 Collateral: $15.67
+   📊 Total Assets: $15.67
+
+📈 Đang lấy giá BTC...
+💰 Giá BTC:
+   🟢 Bid: $108,757.40
+   🔴 Ask: $108,763.90
+   📊 Mid: $108,760.65
+
+🎯 Đang đặt lệnh LONG $10.0 BTC...
+📊 Order Details:
+   💰 Position Size: 9.194e-05 BTC
+   💵 Entry Price: $108,763.90
+   💸 Total Cost: $10.00
+   📊 Leverage: 5.0x
+⚠️  Size adjusted: $10.00 → $21.75 (min requirement)
+🔧 Decimals: size=5, price=1, min_base=0.0002
+🔧 Scaled: base_amount_int=20, price_int=1087639
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043940753,"BaseAmount":20,"Price":1087639,"IsAsk":0,"Type":0,"TimeInForce":1,"ReduceOnly":0,"TriggerPrice":0,"OrderExpiry":1763463140754,"ExpiredAt":1761044539754,"Nonce":289,"Sig":"iLiAdA3ICKjerVVKasSE/m1qUKR6OVLxOLMBbLvUPI+0tKbFmMpfec/lWukoUZ14HJh1XZSeg+Jeow4GJ/yWCSxZvTQnf33y39saUmSgLnM="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='8dada805dae58ca7258f70170e80fd82c26988fb68d14ebcaf107c3fb7e9eba3249c2c1d494e89cb' predicted_execution_time_ms=1761043941157 additional_properties={}
+✅ Đặt lệnh thành công!
+📝 Tx Hash: 8dada805dae58ca7258f70170e80fd82c26988fb68d14ebcaf107c3fb7e9eba3249c2c1d494e89cb
+
+🎯 Đang đặt TP/SL orders cho BTC...
+   📈 Take Profit: $115,289.73
+   🛡️ Stop Loss: $105,500.98
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043941000,"BaseAmount":20,"Price":1152897,"IsAsk":1,"Type":0,"TimeInForce":1,"ReduceOnly":1,"TriggerPrice":0,"OrderExpiry":1763463140999,"ExpiredAt":1761044539999,"Nonce":290,"Sig":"RipoSbYSOS3tQ+BPhIqAP/1r13DJ9i9zGjbsojVbEj2feZRylEbUGfdn8UidTndybv3MJo03li+Js93L68t04+U3mfj5SQHUZaQ0s3Kh82A="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='8c08718408b9e3c06f8727f9a34ced92cd55cfa868359d2de188a93ba3185cc8c20f25b09d10a36d' predicted_execution_time_ms=1761043941409 additional_properties={}
+✅ Take Profit order placed: 8c08718408b9e3c06f8727f9a34ced92cd55cfa868359d2de188a93ba3185cc8c20f25b09d10a36d
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761043941129,"BaseAmount":20,"Price":1055010,"IsAsk":1,"Type":0,"TimeInForce":1,"ReduceOnly":1,"TriggerPrice":0,"OrderExpiry":1763463141128,"ExpiredAt":1761044540128,"Nonce":291,"Sig":"nB8XXQIFHt1abNiNsV7bZAEI9mn5yBfg+wQMLwWNwL8jIevUKcJsALfc6BZ/rZ4UR5I+wz48mmx9/pSr9v77Rs1GsGsj8MWAGuxS36X0wVg="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='d75c517aee50f460cad64fbb6fcb9312c9d819a20ee2a43826f2f4c298d97bf4b219ec323d2dbefd' predicted_execution_time_ms=1761043941537 additional_properties={}
+✅ Stop Loss order placed: d75c517aee50f460cad64fbb6fcb9312c9d819a20ee2a43826f2f4c298d97bf4b219ec323d2dbefd
+[32mINFO[0m:     127.0.0.1:56834 - "[1mPOST /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56834 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+
+💰 Đang lấy account balance...
+💰 Account Balance:
+   💵 Available: $15.67
+   🏦 Collateral: $15.67
+   📊 Total Assets: $15.67
+[32mINFO[0m:     127.0.0.1:56879 - "[1mGET /api/market/balance HTTP/1.1[0m" [32m200 OK[0m
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:56834 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56834 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56834 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57014 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57067 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57067 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57067 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57067 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57067 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57067 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57067 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'api/main.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m1711[0m]
+[32mINFO[0m:     Started server process [[36m1848[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:57592 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57278 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57727 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58202 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58202 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58202 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58202 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58202 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58356 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58356 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'core/risk.py'. Reloading...
+[32mINFO[0m:     127.0.0.1:58356 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m1848[0m]
+[32mINFO[0m:     Started server process [[36m2049[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:58446 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58446 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'core/risk.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m2049[0m]
+[32mINFO[0m:     Started server process [[36m2062[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:58502 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'core/risk.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m2062[0m]
+[32mINFO[0m:     Started server process [[36m2071[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:58553 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+💰 Account Balance:
+   💵 Available: $15.67
+   🏦 Collateral: $15.67
+   📊 Total Assets: $15.67
+
+📈 Đang lấy giá BTC...
+💰 Giá BTC:
+   🟢 Bid: $108,543.40
+   🔴 Ask: $108,544.70
+   📊 Mid: $108,544.05
+
+🎯 Đang đặt lệnh LONG $5.0 BTC...
+📊 Order Details:
+   💰 Position Size: 4.606e-05 BTC
+   💵 Entry Price: $108,544.70
+   💸 Total Cost: $5.00
+   📊 Leverage: 5.0x
+⚠️  Size adjusted: $5.00 → $21.71 (min requirement)
+🔧 Decimals: size=5, price=1, min_base=0.0002
+🔧 Scaled: base_amount_int=20, price_int=1085447
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761044187803,"BaseAmount":20,"Price":1085447,"IsAsk":0,"Type":0,"TimeInForce":1,"ReduceOnly":0,"TriggerPrice":0,"OrderExpiry":1763463387803,"ExpiredAt":1761044786803,"Nonce":292,"Sig":"eGPWgUEw4dczim1EdnC6/97YPb5/w9f0IYXvGqA4Mq8xU99eghbIay2ERyYSdoOMghP8SNR0XtcBc/MGMOm2IugzlbYizlzSVMOHXWBUQlg="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='f2a40c2251040d6aff771488bbc1d8d5b4b8f356c5088d6936fd31db288146eebfd45ac8fface3ce' predicted_execution_time_ms=1761044188201 additional_properties={}
+✅ Đặt lệnh thành công!
+📝 Tx Hash: f2a40c2251040d6aff771488bbc1d8d5b4b8f356c5088d6936fd31db288146eebfd45ac8fface3ce
+
+🎯 Đang đặt TP/SL orders cho BTC...
+   📈 Take Profit: $115,057.38
+   🛡️ Stop Loss: $105,288.36
+📈 Đặt TP order:
+   Type: TAKE_PROFIT_LIMIT (conditional)
+   Trigger: $115,057.38 (kích hoạt khi market >= trigger)
+   Limit: $115,057.38 (đặt SELL @ limit sau khi active)
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761044188024,"BaseAmount":20,"Price":1150574,"IsAsk":1,"Type":5,"TimeInForce":1,"ReduceOnly":1,"TriggerPrice":1150574,"OrderExpiry":1763463388023,"ExpiredAt":1761044787023,"Nonce":293,"Sig":"t4GNGZxMOJwqor0CHgGKOu0ZEuCLeJsUBZLHnyLEnXZ1J450bwA8Zyfv2Ps2qB2RW0F6CQD4KdJ1vn2NB752BlGCrIM0hCmBKqdjo1U5yDI="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='963269714b97f25e096f24804bc512d597ba3c7593b650bab9fe3924cc9775b710f4f8250eb5d6f3' predicted_execution_time_ms=1761044188424 additional_properties={}
+✅ Take Profit order placed: 963269714b97f25e096f24804bc512d597ba3c7593b650bab9fe3924cc9775b710f4f8250eb5d6f3
+🛡️ Đặt SL order:
+   Type: STOP_LOSS_LIMIT (conditional)
+   Trigger: $105,288.36 (kích hoạt khi market <= trigger)
+   Limit: $105,288.36 (đặt SELL @ limit sau khi active)
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761044188142,"BaseAmount":20,"Price":1052884,"IsAsk":1,"Type":3,"TimeInForce":1,"ReduceOnly":1,"TriggerPrice":1052884,"OrderExpiry":1763463388141,"ExpiredAt":1761044787141,"Nonce":294,"Sig":"rquo5O991k6efxmk1fYYWpDBofcFRmVD/tbT6HSrlB/fszgUiQ+ET5PINdviVoK9+/stQt6LWyov/q6am4s1DQkgimQ3qVVeiCJRH5k4vBc="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='215dbbe66c463fd74feb274ecc21c154b7c49344aec459f45ec37eae6481826044e707afc6b81c8b' predicted_execution_time_ms=1761044188537 additional_properties={}
+✅ Stop Loss order placed: 215dbbe66c463fd74feb274ecc21c154b7c49344aec459f45ec37eae6481826044e707afc6b81c8b
+[32mINFO[0m:     127.0.0.1:58559 - "[1mPOST /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58553 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58553 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58680 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58680 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=108543.5
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:58709 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58680 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=108543.5
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:58741 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
