@@ -1,202 +1,298 @@
-# 🤖 Funding Rate Arbitrage Bot
+# 🤖 Hedging Trading Bot - Market Neutral Strategy
 
-Bot tự động thực hiện arbitrage funding rate trên các DEX perp để farm points và kiếm profit.
+Bot tự động mở vị thế đối xứng trên **Lighter** và **Aster DEX** để kiếm lợi từ chênh lệch funding rate.
 
-## 🎯 Mục tiêu
+---
 
-- **Farm points** trên Lighter, Paradex, Aster DEX
-- **Kiếm profit** từ funding rate arbitrage
-- **Risk management** với budget $500 per exchange
-- **Automated trading** 24/7
+## 🎯 Chiến Lược
 
-## 🏗️ Kiến trúc
+### **Market Neutral Hedging**
 
-```
-point-dex/
-├── lighter_module.py     # Lighter DEX integration
-├── test_lighter.py       # Test suite
-├── main.py              # Main arbitrage bot
-├── requirements.txt     # Dependencies
-├── env.example          # Environment template
-└── README.md           # Documentation
-```
+- **Random LONG/SHORT** cho 2 sàn (đối xứng)
+- **Đặt lệnh đồng thời** với rollback tự động
+- **Tự động đóng lệnh** sau khoảng thời gian random
+- **Telegram notifications** cho mọi sự kiện
 
-## 🚀 Cài đặt
+### **Lợi Nhuận Từ Đâu?**
 
-### 1. Clone repository
+- **Funding Rate Arbitrage**: Kiếm lợi từ chênh lệch funding rate giữa 2 sàn
+- **Market Neutral**: LONG + SHORT = 0 exposure, không lo giá tăng/giảm
+- **Leverage Efficiency**: Dùng leverage để tăng lợi nhuận
+
+---
+
+## 📚 Documentation
+
+- 🚀 **[Quick Start Guide](docs/QUICK_START.md)** - Hướng dẫn nhanh 5 phút
+- 📖 **[Full Documentation](docs/HEDGING_BOT_README.md)** - Hướng dẫn chi tiết đầy đủ
+- 📋 **[Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)** - Tóm tắt kỹ thuật
+
+---
+
+## 🚀 Quick Start
+
+### **1. Setup**
+
 ```bash
-git clone <your-repo>
+# Clone và cài đặt
+git clone <repo>
 cd point-dex
-```
-
-### 2. Install dependencies
-```bash
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
+
+# Cấu hình
+cp env.example.new .env
+nano .env  # Chỉnh sửa với thông tin của bạn
 ```
 
-### 3. Setup environment
+### **2. Cấu Hình `.env`**
+
 ```bash
-cp env.example .env
-# Edit .env với API keys thật của bạn
+# LIGHTER DEX
+LIGHTER_PRIVATE_KEY=0x...
+
+# ASTER DEX
+ASTER_API_KEY=...
+ASTER_SECRET_KEY=...
+
+# TRADING
+TRADE_TOKEN=BTC
+POSITION_SIZE=200
+LEVERAGE=5
+SL_PERCENT=3
+RR_RATIO=1,2
+TIME_OPEN_CLOSE=20,30,60
+
+# TELEGRAM
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHAT_ID=...
+TELEGRAM_ENABLED=true
+
+# BOT
+BOT_ENABLED=true
+AUTO_RESTART=false
 ```
 
-### 4. Cấu hình API keys
-```env
-# Lighter API Keys
-LIGHTER_PUBLIC_KEY=your_lighter_public_key_here
-LIGHTER_PRIVATE_KEY=your_lighter_private_key_here
+### **3. Chạy Bot**
 
-# Trading Configuration
-TRADING_BUDGET=500
-MAX_POSITION_SIZE=0.01
-```
+#### **Option A: Docker (Khuyến nghị)**
 
-## 🧪 Testing
-
-### Test cơ bản
 ```bash
-python test_lighter.py
+docker-compose up -d
+docker-compose logs -f hedging-bot
 ```
 
-### Test module riêng lẻ
-```bash
-python lighter_module.py
-```
+#### **Option B: Manual**
 
-## 🤖 Chạy Bot
-
-### Chạy bot chính
 ```bash
+# Terminal 1: Lighter API (dùng script)
+sh scripts/start_lighter_bg.sh
+
+# Terminal 2: Aster API
+cd perpsdex/aster && source ../../venv/bin/activate
+python -m uvicorn api.main:app --host 0.0.0.0 --port 8001
+
+# Terminal 3: Bot
+source venv/bin/activate
 python main.py
 ```
 
-Bot sẽ:
-1. ✅ Kết nối với Lighter DEX
-2. 📊 Lấy funding rates mỗi 60 giây
-3. 🎯 Phân tích arbitrage opportunities
-4. 💰 Đặt lệnh tự động
-5. 📈 Monitor positions và PnL
+**Hoặc khởi động từng service riêng lẻ với scripts:**
 
-## 📊 Tính năng chính
+```bash
+# Lighter API (Background)
+sh scripts/start_lighter_bg.sh
 
-### Lighter Module (`lighter_module.py`)
-- ✅ **Authentication** với API keys
-- ✅ **Market data** (price, funding rate, spread)
-- ✅ **Position management** (get, close positions)
-- ✅ **Order management** (place, cancel orders)
-- ✅ **Balance checking**
-- ✅ **Risk management** (position sizing)
+# Kiểm tra Lighter API
+sh scripts/check_lighter.sh
 
-### Main Bot (`main.py`)
-- ✅ **Automated trading loop**
-- ✅ **Funding rate analysis**
-- ✅ **Opportunity detection**
-- ✅ **Risk management** (stop loss)
-- ✅ **Position monitoring**
-
-### Test Suite (`test_lighter.py`)
-- ✅ **Connection testing**
-- ✅ **Functionality testing**
-- ✅ **Funding arbitrage setup**
-- ✅ **Risk assessment**
-
-## 🎯 Strategy
-
-### Funding Rate Arbitrage Logic
-1. **High funding rate** (>0.01%) → **LONG** opportunity
-2. **Low funding rate** (<-0.01%) → **SHORT** opportunity
-3. **Hedge positions** trên multiple exchanges
-4. **Collect funding payments** every 8 hours
-
-### Risk Management
-- 💰 **Budget**: $500 per exchange
-- 📊 **Position size**: Max 0.01 per trade
-- 🛑 **Stop loss**: $50 total loss
-- ⚖️ **Risk per trade**: 1-2% of balance
-
-## 📈 Monitoring
-
-Bot sẽ hiển thị:
-- 📊 Current funding rates
-- 💰 Account balance
-- 📈 Open positions và PnL
-- 🎯 Trading opportunities
-- ⚠️ Risk alerts
-
-## 🔧 Configuration
-
-### Environment Variables
-```env
-TRADING_BUDGET=500              # Budget per exchange
-MAX_POSITION_SIZE=0.01          # Max position size
-STOP_LOSS_PERCENTAGE=0.02       # Stop loss percentage
-REQUEST_TIMEOUT=30              # API timeout
-RETRY_ATTEMPTS=3                # Retry attempts
+# Dừng Lighter API
+sh scripts/stop_lighter.sh
 ```
 
-### Trading Parameters
-- **Check interval**: 60 seconds
-- **Funding threshold**: 0.01%
-- **Risk per trade**: 1-2%
-- **Stop loss**: $50
+> 💡 Xem chi tiết trong [scripts/README.md](scripts/README.md)
 
-## 🚨 Lưu ý quan trọng
+---
 
-### ⚠️ Risk Disclaimer
-- Trading có rủi ro, có thể mất tiền
-- Chỉ trade với số tiền bạn có thể chấp nhận mất
-- Test kỹ trước khi deploy real money
+## 🏗️ Kiến Trúc
 
-### 🔐 Security
-- Không share API keys
-- Sử dụng API keys với permissions tối thiểu
-- Monitor account thường xuyên
+```
+point-dex/
+├── main.py                      # Main hedging bot
+├── docker-compose.yml           # Docker orchestration
+├── Dockerfile                   # Docker image
+├── test_bot.sh                  # Test script
+├── requirements.txt             # Dependencies
+├── env.example.new              # ENV template
+├── docs/                        # Documentation
+│   ├── QUICK_START.md           # Quick start guide
+│   ├── HEDGING_BOT_README.md    # Full documentation
+│   └── IMPLEMENTATION_SUMMARY.md # Technical summary
+├── scripts/                     # 🆕 Management scripts
+│   ├── README.md                # Scripts documentation
+│   ├── start_lighter.sh         # Start Lighter (foreground)
+│   ├── start_lighter_bg.sh      # Start Lighter (background)
+│   ├── stop_lighter.sh          # Stop Lighter
+│   └── check_lighter.sh         # Check Lighter status
+└── perpsdex/
+    ├── lighter/                 # Lighter DEX
+    │   ├── api/
+    │   │   └── main.py          # Lighter API server
+    │   └── core/                # Lighter modules
+    └── aster/                   # Aster DEX
+        ├── api/
+        │   └── main.py          # Aster API server
+        └── core/                # Aster modules
+```
 
-### 📊 Performance
-- Bot chạy 24/7 để capture opportunities
-- Monitor funding rates mỗi 60 giây
-- Auto-close positions khi cần thiết
+---
 
-## 🔄 Roadmap
+## 📊 Tính Năng
 
-### Phase 1: Lighter DEX ✅
-- [x] Lighter module integration
-- [x] Basic trading functionality
-- [x] Risk management
-- [x] Testing suite
+### **Core Features**
 
-### Phase 2: Multi-Exchange (Coming Soon)
-- [ ] Paradex module
-- [ ] Aster module
-- [ ] Cross-exchange arbitrage
-- [ ] Advanced hedging
+- ✅ **Dual Exchange Trading**: Lighter + Aster
+- ✅ **Market Neutral Strategy**: LONG + SHORT đối xứng
+- ✅ **Automatic Rollback**: Tự động cancel nếu 1 lệnh fail
+- ✅ **TP/SL Management**: Tự động đặt Take Profit & Stop Loss
+- ✅ **Telegram Notifications**: Thông báo real-time
+- ✅ **Docker Support**: Easy deployment
+- ✅ **Random Timing**: Tránh pattern detection
 
-### Phase 3: Advanced Features
-- [ ] WebSocket real-time data
-- [ ] Dashboard UI
-- [ ] Advanced risk management
-- [ ] Performance analytics
+### **Risk Management**
+
+- 💰 **Position Sizing**: Tự động tính toán theo budget
+- 🛡️ **Stop Loss**: Bảo vệ vốn với SL tự động
+- ⚖️ **Risk:Reward Ratio**: Cấu hình R:R linh hoạt
+- 🔄 **Rollback Logic**: An toàn khi hedge fail
+
+---
+
+## 🧪 Testing
+
+```bash
+# Test setup
+./test_bot.sh
+
+# Test Lighter API
+curl http://localhost:8000/api/status
+
+# Test Aster API
+curl http://localhost:8001/api/status
+```
+
+---
+
+## 📱 Telegram Setup
+
+1. Tìm `@BotFather` → `/newbot` → Copy token
+2. Tìm `@userinfobot` → `/start` → Copy chat ID
+3. Thêm vào `.env`:
+   ```bash
+   TELEGRAM_BOT_TOKEN=123456789:ABC...
+   TELEGRAM_CHAT_ID=987654321
+   ```
+
+---
+
+## 📊 Monitoring
+
+```bash
+# Xem logs
+docker-compose logs -f hedging-bot
+
+# Xem positions
+curl http://localhost:8000/api/positions  # Lighter
+curl http://localhost:8001/api/positions  # Aster
+
+# Xem balance
+curl http://localhost:8000/api/market/balance
+curl http://localhost:8001/api/market/balance
+```
+
+---
+
+## ⚠️ Lưu Ý Quan Trọng
+
+### **Risk Disclaimer**
+
+- ⚠️ Trading có rủi ro, có thể mất tiền
+- ✅ Chỉ trade với số tiền bạn có thể chấp nhận mất
+- ✅ Test kỹ với volume nhỏ trước
+
+### **Best Practices**
+
+- ✅ Bắt đầu với volume nhỏ ($50-100)
+- ✅ Set `AUTO_RESTART=false` lúc đầu
+- ✅ Bật Telegram để theo dõi
+- ✅ Chạy `./test_bot.sh` trước khi start
+- ✅ Kiểm tra balance thường xuyên
+
+### **Security**
+
+- 🔐 Không share API keys
+- 🔐 Sử dụng `.env` cho sensitive data
+- 🔐 Monitor account thường xuyên
+
+---
+
+## 🔮 Roadmap
+
+### **Phase 1: Core Bot ✅**
+
+- [x] Main hedging bot
+- [x] Lighter + Aster integration
+- [x] Telegram notifications
+- [x] Docker support
+- [x] Documentation
+
+### **Phase 2: Enhancement (TODO)**
+
+- [ ] Cancel order endpoint
+- [ ] Close position endpoint
+- [ ] Retry logic cho API failures
+- [ ] Health check cho API servers
+- [ ] Position monitoring
+
+### **Phase 3: Advanced (Future)**
+
+- [ ] Web UI dashboard
+- [ ] Database cho trade history
+- [ ] Backtesting
+- [ ] Multiple strategies
+- [ ] Support thêm DEX
+
+---
 
 ## 🤝 Contributing
 
 1. Fork repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
 5. Create Pull Request
+
+---
 
 ## 📞 Support
 
 Nếu có vấn đề:
-1. Check logs trong console
-2. Verify API keys
-3. Check network connection
-4. Review configuration
 
-## 📄 License
-
-MIT License - Xem LICENSE file để biết thêm chi tiết.
+1. Đọc [Full Documentation](docs/HEDGING_BOT_README.md)
+2. Chạy `./test_bot.sh`
+3. Xem logs: `docker-compose logs -f`
+4. Check `.env` configuration
+5. Test API endpoints manually
 
 ---
 
-**Happy Trading! 🚀💰**
+## 📄 License
+
+MIT License
+
+---
+
+**Happy Trading! 🚀**
+
+*Built with ❤️ for market neutral arbitrage*

@@ -92,7 +92,7 @@ BTC_POSITION_USD=100.0
 BTC_LEVERAGE=5.0
 
 # Auto Key Rotation (optional)
-LIGHTER_L1_PRIVATE_KEY=your_eth_private_key
+LIGHTER_L1_WALLET=your_eth_private_key
 LIGHTER_AUTO_FIX_API_KEY=true
 ```
 
@@ -550,7 +550,7 @@ position_usd = risk_usd / 0.04 = $1,250
 **Solution:**
 ```bash
 # Thêm vào .env
-LIGHTER_L1_PRIVATE_KEY=your_eth_private_key_here
+LIGHTER_L1_WALLET=your_eth_private_key_here
 LIGHTER_AUTO_FIX_API_KEY=true
 
 # Chạy lại bot, sẽ tự động rotate key

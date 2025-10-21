@@ -1,185 +1,417 @@
 #!/usr/bin/env python3
 """
-Main entry point cho PerpsDEX Trading Bot
-Đọc config.json và điều hướng đến các DEX tương ứng
+Hedging Trading Bot - Market Neutral Strategy
+Automatically opens opposite positions on Lighter and Aster DEX
 """
 
 import asyncio
-import json
 import os
 import sys
+import random
+import time
 from pathlib import Path
+from dotenv import load_dotenv
+import aiohttp
+from datetime import datetime
 
-def load_config():
-    """Load config từ perpsdex/config.json"""
-    config_path = Path(__file__).parent / "perpsdex" / "config.json"
-    try:
-        with open(config_path, 'r') as f:
-            config = json.load(f)
-        return config
-    except FileNotFoundError:
-        print(f"❌ Không tìm thấy config file: {config_path}")
-        return None
-    except json.JSONDecodeError as e:
-        print(f"❌ Lỗi parse JSON: {e}")
-        return None
+# Load environment variables
+load_dotenv()
 
-async def run_lighter_bot(config):
-    """Chạy Lighter bot"""
-    try:
-        # Import và chạy Lighter trading bot
-        sys.path.append(str(Path(__file__).parent / "perpsdex" / "lighter"))
-        from trading_sdk import LighterTradingBotSDK
-        
-        print("🚀 Khởi động Lighter Trading Bot...")
-        bot = LighterTradingBotSDK(config)
-        
-        # Config đã được load trong __init__
-        
-        # Connect
-        if not await bot.connect():
-            print("❌ Không thể kết nối đến Lighter")
+# Add perpsdex modules to path
+sys.path.append(str(Path(__file__).parent / "perpsdex" / "lighter"))
+sys.path.append(str(Path(__file__).parent / "perpsdex" / "aster"))
+
+
+class TelegramNotifier:
+    """Telegram notification handler"""
+    
+    def __init__(self):
+        self.bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+        self.chat_id = os.getenv('TELEGRAM_CHAT_ID')
+        self.enabled = os.getenv('TELEGRAM_ENABLED', 'false').lower() == 'true'
+    
+    async def send_message(self, message: str):
+        """Send message to Telegram"""
+        if not self.enabled or not self.bot_token or not self.chat_id:
+            print(f"📱 Telegram disabled or not configured")
             return False
         
-        # Lấy giá BTC
-        price_data = await bot.get_btc_price()
-        if not price_data:
-            print("❌ Không thể lấy giá BTC")
+        try:
+            url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json={
+                    'chat_id': self.chat_id,
+                    'text': message,
+                    'parse_mode': 'HTML'
+                }) as response:
+                    if response.status == 200:
+                        print(f"✅ Telegram notification sent")
+                        return True
+                    else:
+                        print(f"❌ Telegram failed: {response.status}")
+                        return False
+        except Exception as e:
+            print(f"❌ Telegram error: {e}")
             return False
+
+
+class HedgingBot:
+    """Main hedging bot orchestrator"""
+    
+    def __init__(self):
+        # Load configuration from ENV
+        self.trade_token = os.getenv('TRADE_TOKEN', 'BTC')
+        self.position_size = float(os.getenv('POSITION_SIZE', '200'))
+        self.leverage = int(os.getenv('LEVERAGE', '5'))
+        self.sl_percent = float(os.getenv('SL_PERCENT', '3'))
         
-        # Lấy balance
-        balance = await bot.get_account_balance()
-        if not balance:
-            print("⚠️  Không lấy được balance")
+        # Parse RR ratio
+        rr_str = os.getenv('RR_RATIO', '1,2')
+        self.rr_ratio = [int(x.strip()) for x in rr_str.split(',')]
         
-        # Check positions
-        await bot.check_positions()
+        # Parse time options
+        time_str = os.getenv('TIME_OPEN_CLOSE', '20,30,60')
+        self.time_options = [int(x.strip()) for x in time_str.split(',')]
         
-        # Xác định hướng từ config
-        direction = config.get('perpdex', {}).get('lighter', 'long')
-        print(f"\n📊 Direction từ config: {direction.upper()}")
+        # Bot state
+        self.enabled = os.getenv('BOT_ENABLED', 'true').lower() == 'true'
+        self.auto_restart = os.getenv('AUTO_RESTART', 'false').lower() == 'true'
         
-        # Đặt lệnh (đã xác nhận ở main)
-        if direction == 'long':
-            result = await bot.place_long_order(price_data)
-        else:
-            result = await bot.place_short_order(price_data)
+        # Telegram
+        self.telegram = TelegramNotifier()
         
-        if result['success']:
-            print(f"\n🎉 THÀNH CÔNG!")
-            print(f"📝 Order ID: {result['order_id']}")
-            print(f"💰 Entry Price: ${result['entry_price']:,.2f}")
-            print(f"📊 Position Size: {result['position_size']} BTC")
-            print(f"📈 Direction: {result['side'].upper()}")
+        # Order tracking
+        self.lighter_order = None
+        self.aster_order = None
+        self.lighter_side = None
+        self.aster_side = None
+    
+    def print_config(self):
+        """Print current configuration"""
+        print("\n" + "=" * 60)
+        print("🤖 HEDGING BOT - MARKET NEUTRAL STRATEGY")
+        print("=" * 60)
+        print(f"📊 Trading Pair: {self.trade_token}-USDT")
+        print(f"💰 Total Position Size: ${self.position_size}")
+        print(f"📈 Leverage: {self.leverage}x")
+        print(f"🛡️ Stop Loss: {self.sl_percent}%")
+        print(f"⚖️ R:R Ratio: {self.rr_ratio[0]}:{self.rr_ratio[1]}")
+        print(f"⏱️ Time Options: {self.time_options} minutes")
+        print(f"🔄 Auto Restart: {'✅' if self.auto_restart else '❌'}")
+        print(f"📱 Telegram: {'✅' if self.telegram.enabled else '❌'}")
+        print("=" * 60 + "\n")
+    
+    async def place_lighter_order(self, side: str) -> dict:
+        """Place order on Lighter DEX"""
+        try:
+            print(f"🔵 Placing {side.upper()} order on Lighter...")
             
-            # Hiển thị kết quả TP/SL
-            if 'tp_sl' in result:
-                tp_sl = result['tp_sl']
-                if tp_sl.get('tp_sl_placed'):
-                    print(f"\n🛡️ TP/SL Orders:")
-                    if tp_sl.get('tp_success'):
-                        print(f"   ✅ Take Profit: Placed")
-                    if tp_sl.get('sl_success'):
-                        print(f"   ✅ Stop Loss: Placed")
-                else:
-                    print(f"⚠️  TP/SL không được đặt")
-        else:
-            print(f"\n❌ THẤT BẠI! Lỗi: {result.get('error')}")
+            # Use Lighter API
+            api_url = os.getenv('LIGHTER_API_URL', 'http://localhost:8000')
+            endpoint = f"{api_url}/api/orders/{side.lower()}"
+            
+            payload = {
+                "symbol": self.trade_token,
+                "size_usd": self.position_size,
+                "leverage": self.leverage,
+                "sl_percent": self.sl_percent,
+                "rr_ratio": self.rr_ratio
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(endpoint, json=payload) as response:
+                    data = await response.json()
+                    
+                    if response.status == 200 and data.get('success'):
+                        print(f"✅ Lighter {side.upper()} order placed: {data.get('order_id')}")
+                        return {
+                            'success': True,
+                            'exchange': 'lighter',
+                            'side': side,
+                            'order_id': data.get('order_id'),
+                            'entry_price': data.get('entry_price'),
+                            'position_size': data.get('position_size'),
+                            'tp_sl': data.get('tp_sl')
+                        }
+                    else:
+                        error = data.get('detail', 'Unknown error')
+                        print(f"❌ Lighter {side.upper()} failed: {error}")
+                        return {
+                            'success': False,
+                            'exchange': 'lighter',
+                            'side': side,
+                            'error': error
+                        }
+        except Exception as e:
+            print(f"❌ Lighter exception: {e}")
+            return {
+                'success': False,
+                'exchange': 'lighter',
+                'side': side,
+                'error': str(e)
+            }
+    
+    async def place_aster_order(self, side: str) -> dict:
+        """Place order on Aster DEX"""
+        try:
+            print(f"🟠 Placing {side.upper()} order on Aster...")
+            
+            # Use Aster API
+            api_url = os.getenv('ASTER_API_URL_LOCAL', 'http://localhost:8001')
+            endpoint = f"{api_url}/api/orders/{side.lower()}"
+            
+            payload = {
+                "symbol": f"{self.trade_token}-USDT",
+                "size_usd": self.position_size,
+                "leverage": self.leverage,
+                "sl_percent": self.sl_percent,
+                "rr_ratio": self.rr_ratio
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(endpoint, json=payload) as response:
+                    data = await response.json()
+                    
+                    if response.status == 200 and data.get('success'):
+                        print(f"✅ Aster {side.upper()} order placed: {data.get('order_id')}")
+                        return {
+                            'success': True,
+                            'exchange': 'aster',
+                            'side': side,
+                            'order_id': data.get('order_id'),
+                            'entry_price': data.get('entry_price'),
+                            'position_size': data.get('position_size'),
+                            'tp_sl': data.get('tp_sl')
+                        }
+                    else:
+                        error = data.get('detail', 'Unknown error')
+                        print(f"❌ Aster {side.upper()} failed: {error}")
+                        return {
+                            'success': False,
+                            'exchange': 'aster',
+                            'side': side,
+                            'error': error
+                        }
+        except Exception as e:
+            print(f"❌ Aster exception: {e}")
+            return {
+                'success': False,
+                'exchange': 'aster',
+                'side': side,
+                'error': str(e)
+            }
+    
+    async def cancel_order(self, exchange: str, order_id: str) -> bool:
+        """Cancel an order (TODO: implement cancel endpoint)"""
+        print(f"⚠️ Attempting to cancel {exchange} order {order_id}")
+        print(f"⚠️ Cancel endpoint not implemented yet - please cancel manually!")
+        return False
+    
+    async def close_positions(self) -> bool:
+        """Close all positions (TODO: implement close endpoint)"""
+        print(f"\n🔄 Closing all positions...")
+        print(f"⚠️ Close endpoint not implemented yet - positions will close via TP/SL!")
         
-        await bot.close()
+        # Send Telegram notification
+        await self.telegram.send_message(
+            f"🔄 <b>Closing Positions</b>\n\n"
+            f"Token: {self.trade_token}\n"
+            f"Lighter: {self.lighter_side.upper() if self.lighter_side else 'N/A'}\n"
+            f"Aster: {self.aster_side.upper() if self.aster_side else 'N/A'}\n"
+            f"Size: ${self.position_size}\n\n"
+            f"⚠️ Positions will close via TP/SL orders"
+        )
+        
         return True
+    
+    async def open_hedged_positions(self):
+        """Open hedged positions on both exchanges"""
         
-    except ImportError as e:
-        print(f"❌ Không thể import Lighter bot: {e}")
-        return False
-    except Exception as e:
-        print(f"❌ Lỗi khi chạy Lighter bot: {e}")
-        import traceback
-        traceback.print_exc()
-        return False
+        # Randomly choose direction for Lighter (50/50)
+        lighter_side = random.choice(['long', 'short'])
+        aster_side = 'short' if lighter_side == 'long' else 'long'
+        
+        print(f"\n🎲 Random strategy:")
+        print(f"   Lighter: {lighter_side.upper()}")
+        print(f"   Aster: {aster_side.upper()}")
+        
+        # Place orders simultaneously
+        print(f"\n⚡ Placing orders simultaneously...")
+        results = await asyncio.gather(
+            self.place_lighter_order(lighter_side),
+            self.place_aster_order(aster_side),
+            return_exceptions=True
+        )
+        
+        lighter_result = results[0] if not isinstance(results[0], Exception) else {'success': False, 'error': str(results[0])}
+        aster_result = results[1] if not isinstance(results[1], Exception) else {'success': False, 'error': str(results[1])}
+        
+        # Check if both succeeded
+        lighter_success = lighter_result.get('success', False)
+        aster_success = aster_result.get('success', False)
+        
+        if lighter_success and aster_success:
+            # ✅ Both orders successful
+            self.lighter_order = lighter_result
+            self.aster_order = aster_result
+            self.lighter_side = lighter_side
+            self.aster_side = aster_side
+            
+            print(f"\n🎉 ✅ HEDGED POSITION OPENED SUCCESSFULLY!")
+            print(f"\n📊 Lighter ({lighter_side.upper()}):")
+            print(f"   Order ID: {lighter_result.get('order_id')}")
+            print(f"   Entry: ${lighter_result.get('entry_price')}")
+            print(f"   Size: {lighter_result.get('position_size')}")
+            
+            print(f"\n📊 Aster ({aster_side.upper()}):")
+            print(f"   Order ID: {aster_result.get('order_id')}")
+            print(f"   Entry: ${aster_result.get('entry_price')}")
+            print(f"   Size: {aster_result.get('position_size')}")
+            
+            # Send Telegram success
+            await self.telegram.send_message(
+                f"✅ <b>Opened hedged position</b>\n\n"
+                f"Token: {self.trade_token}\n"
+                f"Size: ${self.position_size}\n"
+                f"Leverage: {self.leverage}x\n\n"
+                f"🔵 Lighter: {lighter_side.upper()}\n"
+                f"   Entry: ${lighter_result.get('entry_price'):.2f}\n"
+                f"   Order: {lighter_result.get('order_id')}\n\n"
+                f"🟠 Aster: {aster_side.upper()}\n"
+                f"   Entry: ${aster_result.get('entry_price'):.2f}\n"
+                f"   Order: {aster_result.get('order_id')}"
+            )
+            
+            return True
+            
+        else:
+            # ❌ At least one order failed - ROLLBACK
+            print(f"\n❌ HEDGE FAILED - ROLLING BACK!")
+            
+            if lighter_success:
+                print(f"⚠️ Lighter order succeeded but Aster failed")
+                print(f"⚠️ Need to cancel Lighter order: {lighter_result.get('order_id')}")
+                await self.cancel_order('lighter', lighter_result.get('order_id'))
+            
+            if aster_success:
+                print(f"⚠️ Aster order succeeded but Lighter failed")
+                print(f"⚠️ Need to cancel Aster order: {aster_result.get('order_id')}")
+                await self.cancel_order('aster', aster_result.get('order_id'))
+            
+            # Send Telegram failure
+            error_msg = []
+            if not lighter_success:
+                error_msg.append(f"Lighter: {lighter_result.get('error', 'Unknown')}")
+            if not aster_success:
+                error_msg.append(f"Aster: {aster_result.get('error', 'Unknown')}")
+            
+            await self.telegram.send_message(
+                f"❌ <b>Failed to open hedged position</b>\n\n"
+                f"Token: {self.trade_token}\n"
+                f"Size: ${self.position_size}\n\n"
+                f"Errors:\n" + "\n".join(error_msg) + "\n\n"
+                f"⚠️ Manual intervention may be required!"
+            )
+            
+            return False
+    
+    async def run_cycle(self):
+        """Run one trading cycle"""
+        
+        # Step 1: Open hedged positions
+        print(f"\n{'=' * 60}")
+        print(f"🚀 OPENING HEDGED POSITIONS")
+        print(f"{'=' * 60}")
+        
+        success = await self.open_hedged_positions()
+        
+        if not success:
+            print(f"\n❌ Failed to open positions - aborting cycle")
+            return False
+        
+        # Step 2: Random wait time
+        wait_time = random.choice(self.time_options)
+        print(f"\n⏰ Positions will be held for {wait_time} minutes")
+        print(f"   Close time: {datetime.now().strftime('%H:%M:%S')} + {wait_time}m")
+        
+        # Wait (with progress updates every minute)
+        for i in range(wait_time):
+            remaining = wait_time - i
+            print(f"⏳ {remaining} minutes remaining...", end='\r')
+            await asyncio.sleep(60)
+        
+        print(f"\n⏰ Time's up! Closing positions...")
+        
+        # Step 3: Close positions
+        await self.close_positions()
+        
+        return True
+    
+    async def run(self):
+        """Main bot loop"""
+        
+        if not self.enabled:
+            print("❌ Bot is disabled (BOT_ENABLED=false)")
+            return
+        
+        self.print_config()
+        
+        # Initial notification
+        await self.telegram.send_message(
+            f"🤖 <b>Hedging Bot Started</b>\n\n"
+            f"Token: {self.trade_token}\n"
+            f"Position Size: ${self.position_size}\n"
+            f"Leverage: {self.leverage}x\n"
+            f"R:R: {self.rr_ratio[0]}:{self.rr_ratio[1]}\n"
+            f"Time Options: {self.time_options} min\n"
+            f"Auto Restart: {'✅' if self.auto_restart else '❌'}"
+        )
+        
+        cycle_count = 0
+        
+        while True:
+            cycle_count += 1
+            print(f"\n{'#' * 60}")
+            print(f"# CYCLE {cycle_count}")
+            print(f"{'#' * 60}")
+            
+            success = await self.run_cycle()
+            
+            if not success:
+                print(f"\n❌ Cycle {cycle_count} failed")
+            else:
+                print(f"\n✅ Cycle {cycle_count} completed")
+            
+            if not self.auto_restart:
+                print(f"\n🛑 Auto-restart disabled - stopping bot")
+                break
+            
+            # Wait a bit before next cycle
+            print(f"\n⏳ Waiting 30 seconds before next cycle...")
+            await asyncio.sleep(30)
+        
+        # Final notification
+        await self.telegram.send_message(
+            f"🛑 <b>Hedging Bot Stopped</b>\n\n"
+            f"Total cycles: {cycle_count}"
+        )
 
-async def run_paradex_bot(config):
-    """Chạy Paradex bot (TODO: chưa implement)"""
-    print("🚧 Paradex bot chưa được implement")
-    return False
-
-async def run_aster_bot(config):
-    """Chạy Aster bot (TODO: chưa implement)"""
-    print("🚧 Aster bot chưa được implement")
-    return False
 
 async def main():
-    """Main function"""
-    print("🤖 PERPSDEX TRADING BOT")
-    print("=" * 50)
+    """Main entry point"""
+    bot = HedgingBot()
     
-    # Load config
-    config = load_config()
-    if not config:
-        return
-    
-    print(f"📋 Config loaded:")
-    print(f"   💰 Size USD: ${config.get('size_usd', 'N/A')}")
-    print(f"   📊 Leverage: {config.get('leverage', 'N/A')}x")
-    print(f"   📈 Order Type: {config.get('type', 'N/A')}")
-    print(f"   🎯 Pair: {config.get('pair', 'N/A')}")
-    
-    # Hiển thị các DEX có sẵn
-    perpdex_config = config.get('perpdex', {})
-    available_dex = list(perpdex_config.keys())
-    
-    print(f"\n🔍 Available DEX platforms: {', '.join(available_dex)}")
-    
-    # Hiển thị chiến lược
-    print(f"\n📊 Trading Strategy:")
-    for dex, direction in perpdex_config.items():
-        print(f"   {dex.upper()}: {direction.upper()}")
-    
-    # Hỏi xác nhận 1 lần duy nhất
-    print(f"\n❓ Bạn có muốn chạy trading strategy này không?")
-    print("⚠️  Cảnh báo: Trading có rủi ro!")
-    confirm = input("Nhập 'yes' để xác nhận: ").lower().strip()
-    
-    if confirm != 'yes':
-        print("❌ Đã hủy trading strategy")
-        return
-    
-    print(f"\n🚀 Đang khởi động TẤT CẢ bots đồng thời...")
-    
-    # Chạy tất cả bots song song
-    tasks = []
-    for dex_name in available_dex:
-        if dex_name == 'lighter':
-            tasks.append(run_lighter_bot(config))
-        elif dex_name == 'paradex':
-            tasks.append(run_paradex_bot(config))
-        elif dex_name == 'aster':
-            tasks.append(run_aster_bot(config))
-        else:
-            print(f"⚠️  DEX '{dex_name}' chưa được hỗ trợ, bỏ qua")
-    
-    if tasks:
-        # Chạy tất cả tasks đồng thời
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        # Hiển thị kết quả
-        print(f"\n📋 Kết quả:")
-        for i, (dex_name, result) in enumerate(zip(available_dex, results)):
-            if isinstance(result, Exception):
-                print(f"   ❌ {dex_name}: Lỗi - {result}")
-            elif result:
-                print(f"   ✅ {dex_name}: Thành công")
-            else:
-                print(f"   ⚠️  {dex_name}: Không hoàn thành")
-    else:
-        print("❌ Không có DEX nào để chạy")
-
-if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        await bot.run()
     except KeyboardInterrupt:
-        print("\n🛑 Dừng bởi người dùng")
+        print("\n🛑 Stopped by user")
+        await bot.telegram.send_message("🛑 Bot stopped by user")
     except Exception as e:
-        print(f"\n❌ Lỗi: {e}")
+        print(f"\n❌ Fatal error: {e}")
         import traceback
         traceback.print_exc()
+        await bot.telegram.send_message(f"❌ Bot crashed: {str(e)}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

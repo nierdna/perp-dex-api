@@ -46,6 +46,7 @@ class ConfigLoader:
         '1000SHIB-USDT': 17, # SHIB @ $0.01
         'POPCAT-USDT': 23,  # POPCAT @ $0.16
         'FARTCOIN-USDT': 21, # FARTCOIN @ $0.39
+        'PUMP-USDT': 45,    # PUMP @ $0.0038
         
         # Alt tokens
         'XRP-USDT': 7,      # XRP @ $2.41

@@ -104,7 +104,7 @@ class LighterTradingBotSDK:
                 print(f"⚠️  Warning: {client_check}")
                 self.keys_mismatch = True
                 # Thử auto-fix nếu có cung cấp L1 private key
-                eth_priv = os.getenv('LIGHTER_L1_PRIVATE_KEY', '')
+                eth_priv = os.getenv('LIGHTER_L1_WALLET', '')
                 auto_fix = os.getenv('LIGHTER_AUTO_FIX_API_KEY', 'false').lower() in ('1','true','yes')
                 # Validate L1 key: 0x prefixed or raw hex, 32 bytes
                 raw = eth_priv[2:] if eth_priv.startswith('0x') else eth_priv
@@ -132,7 +132,7 @@ class LighterTradingBotSDK:
                                 self.keys_mismatch = False
                 else:
                     if auto_fix:
-                        print("❌ LIGHTER_L1_PRIVATE_KEY invalid format. Expect 32-byte hex (0x... or hex).")
+                        print("❌ LIGHTER_L1_WALLET invalid format. Expect 32-byte hex (0x... or hex).")
 
             print("✅ Kết nối thành công đến Lighter DEX")
             return True

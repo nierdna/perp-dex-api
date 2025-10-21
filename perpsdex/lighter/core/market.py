@@ -154,6 +154,25 @@ class MarketData:
                 'error': str(e)
             }
     
+    async def get_balance(self) -> dict:
+        """
+        Lấy balance (wrapper for get_account_balance)
+        Automatically uses account_index from client
+        
+        Output:
+            dict: {
+                'success': bool,
+                'available': float,
+                'collateral': float,
+                'total': float,
+                'error': str (nếu có)
+            }
+        """
+        # Get account_index from environment or default
+        import os
+        account_index = int(os.getenv('ACCOUNT_INDEX', '0'))
+        return await self.get_account_balance(account_index)
+    
     async def get_account_balance(self, account_index: int) -> dict:
         """
         Lấy balance của account

@@ -1,0 +1,1219 @@
+Script started on Mon Oct 20 17:41:21 2025
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong lighter % [K[?2004hlls[?2004l
+api			SUPPORTED_PAIRS.md
+core			trading_sdk.py
+lighter_markets.json	typescript
+README.md		ui_test.html
+run_api.sh		utils
+scripts
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong lighter % [K[?2004hccd scripts[1m/[0m[0m [?2004l
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004hlls[?2004l
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004h../stop_     .  cclear[?2004l
+[3J[H[2J[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004hlls[?2004l
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004hccd ..[?2004l
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong lighter % [K[?2004hlls[?2004l
+api			SUPPORTED_PAIRS.md
+core			trading_sdk.py
+lighter_markets.json	typescript
+README.md		ui_test.html
+run_api.sh		utils
+scripts
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong lighter % [K[?2004hccd ..[?2004l
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong perpsdex % [K[?2004hccd ..[?2004l
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong point-dex % [K[?2004hlls[?2004l
+__pycache__		note.txt
+docker-compose.yml	perpsdex
+Dockerfile		README.md
+docs			requirements.txt
+env.example.new		scripts
+logs			test_bot.sh
+main.py			venv
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong point-dex % [K[?2004hccd scripts[1m/[0m[0m [?2004l
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004h../stop_lighter.sh[1m [0m[0m [?2004l
+🛑 Stopping Lighter API Server...
+================================
+🔍 Found process running on port 8000
+📋 Process ID: 89267
+89286
+89289
+✅ Server stopped successfully!
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004h./stop_lighter.sh[17Dcd scripts       [10D./stop_lighter.sh              tart_lighter
+[Jstart_lighter_bg.sh*         start_lighter.sh*
+start_lighter_with_logs.sh*  [A[A[0m[27m[24m[48C./start_lighter[K.sh[1m [0m [K[A[66C[K[1B[K[A[66C[?2004l[1B[J🔧 Starting Lighter API Server...
+================================
+📂 Project directory: /Users/levanmong/Desktop/LYNX_AI SOLUSTION/point-dex
+🐍 Activating virtual environment...
+🚀 Starting Uvicorn server on http://0.0.0.0:8000...
+================================
+
+[32mINFO[0m:     Will watch for changes in these directories: ['/Users/levanmong/Desktop/LYNX_AI SOLUSTION/point-dex/perpsdex/lighter']
+[32mINFO[0m:     Uvicorn running on [1mhttp://0.0.0.0:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     Started reloader process [[36m[1m90307[0m] using [36m[1mStatReload[0m
+[32mINFO[0m:     Started server process [[36m90309[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:52589 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52589 - "[1mOPTIONS /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+💰 Account Balance:
+   💵 Available: $15.60
+   🏦 Collateral: $15.60
+   📊 Total Assets: $15.60
+
+📈 Đang lấy giá BTC...
+💰 Giá BTC:
+   🟢 Bid: $110,952.30
+   🔴 Ask: $110,953.30
+   📊 Mid: $110,952.80
+
+🎯 Đang đặt lệnh LONG $10.0 BTC...
+📊 Order Details:
+   💰 Position Size: 9.013e-05 BTC
+   💵 Entry Price: $110,953.30
+   💸 Total Cost: $10.00
+   📊 Leverage: 5.0x
+⚠️  Size adjusted: $10.00 → $22.19 (min requirement)
+🔧 Decimals: size=5, price=1, min_base=0.0002
+🧪 TEST: Đặt giá FAR ($99,857.97) để xem order PENDING có giữ được position không
+🔧 Scaled: base_amount_int=20, price_int=998580
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1760956965268,"BaseAmount":20,"Price":998580,"IsAsk":0,"Type":0,"TimeInForce":1,"ReduceOnly":0,"TriggerPrice":0,"OrderExpiry":1763376165268,"ExpiredAt":1760957564268,"Nonce":271,"Sig":"QiMVCNvb6amOdrZ8Yk82Yj9L06Uycoy/hy5UUjKqVzEoR29D25EaFmny7XyIzVO5j0Y1bL9hKJzaD0hdMwKhBwg8EJ6NuHrjAaCJ4TS4mDo="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='ac70d21449b77a63ec459c9cc94c8ef02f854c28cf86e7490836d78fa7ed84f83573775c5fc8ff7d' predicted_execution_time_ms=1760956965715 additional_properties={}
+✅ Đặt lệnh thành công!
+📝 Tx Hash: ac70d21449b77a63ec459c9cc94c8ef02f854c28cf86e7490836d78fa7ed84f83573775c5fc8ff7d
+[32mINFO[0m:     127.0.0.1:52589 - "[1mPOST /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52589 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+
+💰 Đang lấy account balance...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:52589 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+💰 Account Balance:
+   💵 Available: $15.60
+   🏦 Collateral: $15.60
+   📊 Total Assets: $15.60
+[32mINFO[0m:     127.0.0.1:52602 - "[1mGET /api/market/balance HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52602 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52665 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52665 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52665 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52665 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52665 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52665 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52665 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52665 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52665 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52665 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52665 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52665 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53079 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53162 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53186 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53186 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53186 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53186 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53186 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53186 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53186 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53186 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53186 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53387 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53387 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53508 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53776 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54036 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54288 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54538 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54783 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55028 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55374 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55649 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55904 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56179 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56465 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56756 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57022 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57280 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57562 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57821 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58124 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58408 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58679 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59178 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59461 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59723 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59976 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60244 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60506 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60836 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61093 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61335 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61583 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61834 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62094 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62349 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62593 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62847 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63102 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63411 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63657 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63903 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64156 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64404 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64663 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64908 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65154 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65410 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49272 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49543 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49791 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50037 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50287 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50537 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50810 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51065 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51308 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51560 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51806 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52075 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52325 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52574 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52822 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53070 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53332 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53579 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53823 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54070 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54318 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54621 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54874 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55121 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55370 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55638 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55930 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56191 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56463 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56733 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57010 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57388 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57879 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58129 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58377 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58658 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58912 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59161 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59415 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59664 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60182 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60431 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60676 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60923 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61187 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61430 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61691 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61950 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62195 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62473 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62718 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62970 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63228 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63486 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63742 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63989 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64236 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64490 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64751 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65041 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65292 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49169 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49423 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49679 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49935 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50182 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50428 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50674 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50930 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51256 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51505 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51752 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51993 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52244 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52540 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52787 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53034 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53284 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53532 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53805 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54057 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54303 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54547 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54795 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55052 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55305 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55560 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55807 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56064 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56382 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56658 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56942 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57231 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57497 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57819 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58075 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58322 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58577 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58822 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59096 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59346 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59607 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59855 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60101 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60357 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60617 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60872 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61129 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61375 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61653 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61907 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62159 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62419 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62671 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62949 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63202 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63450 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63703 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63949 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64223 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64474 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64722 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64972 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65218 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65476 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49338 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49591 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49851 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50097 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50361 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50606 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50869 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51126 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51374 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51627 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51874 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52122 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52375 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52629 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52926 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53180 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53430 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53697 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53972 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54265 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54535 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54802 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55086 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55355 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55659 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55909 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56159 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56410 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56663 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56920 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57164 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57421 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57667 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57912 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58182 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58434 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58678 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58925 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59170 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59429 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59678 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59921 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60172 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60418 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60705 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60950 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61198 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61449 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61700 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61969 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62217 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62469 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62728 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62976 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63258 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63513 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63763 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64015 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64261 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64522 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64769 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65030 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65288 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65534 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49421 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49677 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49930 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50188 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50430 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50693 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50941 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51190 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51450 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51695 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51992 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52249 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52499 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52748 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52995 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53285 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53532 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53781 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54035 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54294 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54604 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54874 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55146 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55429 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55703 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55977 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56224 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56470 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56745 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57023 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57334 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57632 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57905 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58188 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58461 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58769 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59024 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59273 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59522 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59775 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60074 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60323 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60570 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60822 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61069 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61345 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61597 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61846 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62100 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62363 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62673 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62928 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63179 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63426 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63668 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63924 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64177 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64430 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64696 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64954 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65234 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65482 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49348 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49595 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49844 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50128 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50383 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50639 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50887 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51134 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51424 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51677 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51926 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52174 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52438 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52730 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53002 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53282 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53582 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53847 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54140 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54385 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54632 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54903 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55151 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55416 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55673 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55922 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56171 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56420 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56685 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56930 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57178 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57430 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57676 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57954 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58201 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58449 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58707 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58955 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59248 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59493 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59738 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59995 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60240 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60518 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60772 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61031 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61295 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61545 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61809 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62063 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62322 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62588 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62619 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62619 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62619 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62619 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62706 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62706 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62706 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62706 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62706 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62941 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62941 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62941 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62941 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62941 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62941 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62941 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62941 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62941 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63143 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63143 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63143 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63143 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63143 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63143 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63143 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63143 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63143 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63143 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63363 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63363 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63363 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63363 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63457 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63457 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63457 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63457 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63457 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63457 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63457 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63457 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63633 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63953 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64262 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64590 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64836 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65084 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65362 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49261 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49590 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49923 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50231 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50544 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50819 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51222 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51493 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51740 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51993 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52282 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52608 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52873 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53123 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53387 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53638 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53943 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54195 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54443 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54701 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54959 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55249 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55509 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55772 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56036 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56322 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56663 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56956 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57237 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57505 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57779 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58114 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58389 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58646 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58915 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59195 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59519 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59795 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60053 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60301 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60556 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60843 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61115 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61392 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61664 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61923 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62258 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62519 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62789 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63040 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63289 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63597 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63862 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64122 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64388 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64659 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65000 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65268 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49152 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49407 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49663 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50021 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50345 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50621 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50944 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51228 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51524 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51782 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52030 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52282 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52533 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:52826 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53088 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53365 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53619 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:53870 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54163 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54413 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54663 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:54915 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55163 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55427 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:55678 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:56275 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:57110 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58218 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:58555 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:59521 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:60703 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61018 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61339 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:61806 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62154 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62294 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62294 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62294 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+
+📈 Đang kiểm tra positions...
+
+📈 Đang lấy giá BTC...
+💰 Giá BTC:
+   🟢 Bid: $107,632.40
+   🔴 Ask: $107,632.50
+   📊 Mid: $107,632.45
+[32mINFO[0m:     127.0.0.1:62327 - "[1mGET /api/market/price/BTC HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang lấy giá BTC...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:62325 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+💰 Account Balance:
+   💵 Available: $15.60
+   🏦 Collateral: $15.60
+   📊 Total Assets: $15.60
+[32mINFO[0m:     127.0.0.1:62294 - "[1mGET /api/market/balance HTTP/1.1[0m" [32m200 OK[0m
+💰 Giá BTC:
+   🟢 Bid: $107,632.30
+   🔴 Ask: $107,632.50
+   📊 Mid: $107,632.40
+[32mINFO[0m:     127.0.0.1:62327 - "[1mGET /api/market/price/BTC HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62327 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62327 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62327 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62327 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62327 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62497 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62497 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62497 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62497 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62497 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62497 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62497 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62497 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62694 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62694 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62694 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:62694 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63133 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63224 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63224 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63224 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63224 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63224 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63328 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63328 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63328 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63328 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63328 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63328 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63328 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63500 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63788 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63788 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63788 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63853 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63853 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63853 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:63932 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64237 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64237 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64237 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64298 - "[1mOPTIONS /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64300 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+💰 Account Balance:
+   💵 Available: $15.60
+   🏦 Collateral: $15.60
+   📊 Total Assets: $15.60
+[32mINFO[0m:     127.0.0.1:64298 - "[1mPOST /api/orders/long HTTP/1.1[0m" [31m400 Bad Request[0m
+[32mINFO[0m:     127.0.0.1:64298 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64298 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64298 - "[1mOPTIONS /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+💰 Account Balance:
+   💵 Available: $15.60
+   🏦 Collateral: $15.60
+   📊 Total Assets: $15.60
+
+📈 Đang lấy giá BTC...
+💰 Giá BTC:
+   🟢 Bid: $107,566.20
+   🔴 Ask: $107,570.40
+   📊 Mid: $107,568.30
+
+🎯 Đang đặt lệnh LONG $5.0 BTC...
+📊 Order Details:
+   💰 Position Size: 4.648e-05 BTC
+   💵 Entry Price: $107,570.40
+   💸 Total Cost: $5.00
+   📊 Leverage: 5.0x
+⚠️  Size adjusted: $5.00 → $21.51 (min requirement)
+🔧 Decimals: size=5, price=1, min_base=0.0002
+🧪 TEST: Đặt giá FAR ($96,813.36) để xem order PENDING có giữ được position không
+🔧 Scaled: base_amount_int=20, price_int=968134
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761042433478,"BaseAmount":20,"Price":968134,"IsAsk":0,"Type":0,"TimeInForce":1,"ReduceOnly":0,"TriggerPrice":0,"OrderExpiry":1763461633484,"ExpiredAt":1761043032484,"Nonce":272,"Sig":"XlDcouhWK1+B34D1xK5R5wGGskPt82QcteWbBOi3XpVXJmVrY5TPIBWVRPzc3tsAj9RqmaYyZCHgQvEhvikiwKi/bronEnRhHuiO5XESNU0="}
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+❌ Đặt lệnh thất bại: HTTP response body: code=21104 message='invalid nonce' additional_properties={}
+[32mINFO[0m:     127.0.0.1:64302 - "[1mPOST /api/orders/long HTTP/1.1[0m" [31m400 Bad Request[0m
+[32mINFO[0m:     127.0.0.1:64302 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64388 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64388 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64388 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64388 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64388 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64388 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64388 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64388 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64388 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+CC^C[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m90309[0m]
+[32mINFO[0m:     Stopping reloader process [[36m[1m90307[0m]
+^C[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004h[?2004l
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004h./start_lighter.sh[?2004l
+🔧 Starting Lighter API Server...
+================================
+📂 Project directory: /Users/levanmong/Desktop/LYNX_AI SOLUSTION/point-dex
+🐍 Activating virtual environment...
+🚀 Starting Uvicorn server on http://0.0.0.0:8000...
+================================
+
+[32mINFO[0m:     Will watch for changes in these directories: ['/Users/levanmong/Desktop/LYNX_AI SOLUSTION/point-dex/perpsdex/lighter']
+[32mINFO[0m:     Uvicorn running on [1mhttp://0.0.0.0:8000[0m (Press CTRL+C to quit)
+[32mINFO[0m:     Started reloader process [[36m[1m171[0m] using [36m[1mStatReload[0m
+[32mINFO[0m:     Started server process [[36m177[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:64705 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64705 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64705 - "[1mOPTIONS /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+[32mINFO[0m:     127.0.0.1:64745 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+💰 Account Balance:
+   💵 Available: $15.60
+   🏦 Collateral: $15.60
+   📊 Total Assets: $15.60
+
+📈 Đang lấy giá BTC...
+💰 Giá BTC:
+   🟢 Bid: $107,619.80
+   🔴 Ask: $107,620.00
+   📊 Mid: $107,619.90
+
+🎯 Đang đặt lệnh LONG $5.0 BTC...
+📊 Order Details:
+   💰 Position Size: 4.646e-05 BTC
+   💵 Entry Price: $107,620.00
+   💸 Total Cost: $5.00
+   📊 Leverage: 5.0x
+⚠️  Size adjusted: $5.00 → $21.52 (min requirement)
+🔧 Decimals: size=5, price=1, min_base=0.0002
+🧪 TEST: Đặt giá FAR ($96,858.00) để xem order PENDING có giữ được position không
+🔧 Scaled: base_amount_int=20, price_int=968580
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761042501137,"BaseAmount":20,"Price":968580,"IsAsk":0,"Type":0,"TimeInForce":1,"ReduceOnly":0,"TriggerPrice":0,"OrderExpiry":1763461701137,"ExpiredAt":1761043100137,"Nonce":274,"Sig":"sDJ/Yu+27t6nzFPPyW4WNiyocgmI7a2XSoVUcnIiUB9Fnv9W4upcTUkgyoDKhR2UjDNpzWITKUrhVg6mULm3n+M44pylWErvYXMYLIDiFR0="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='6b88035c487f36618e8960fcbe20637d331fb2fa4d3bc83bf0493b52dfd007ab79b795dca2b2d5a2' predicted_execution_time_ms=1761042501503 additional_properties={}
+✅ Đặt lệnh thành công!
+📝 Tx Hash: 6b88035c487f36618e8960fcbe20637d331fb2fa4d3bc83bf0493b52dfd007ab79b795dca2b2d5a2
+[32mINFO[0m:     127.0.0.1:64705 - "[1mPOST /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+
+💰 Đang lấy account balance...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:64705 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+💰 Account Balance:
+   💵 Available: $15.60
+   🏦 Collateral: $15.60
+   📊 Total Assets: $15.60
+[32mINFO[0m:     127.0.0.1:64745 - "[1mGET /api/market/balance HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64745 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64745 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:64828 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65294 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65294 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65294 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65294 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65294 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65294 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:65294 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'core/order.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m177[0m]
+[32mINFO[0m:     Started server process [[36m325[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+[33mWARNING[0m:  StatReload detected changes in 'core/order.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m325[0m]
+[32mINFO[0m:     Started server process [[36m350[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:49239 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+💰 Account Balance:
+   💵 Available: $15.60
+   🏦 Collateral: $15.60
+   📊 Total Assets: $15.60
+
+📈 Đang lấy giá BTC...
+💰 Giá BTC:
+   🟢 Bid: $107,665.50
+   🔴 Ask: $107,667.10
+   📊 Mid: $107,666.30
+
+🎯 Đang đặt lệnh LONG $5.0 BTC...
+📊 Order Details:
+   💰 Position Size: 4.644e-05 BTC
+   💵 Entry Price: $107,667.10
+   💸 Total Cost: $5.00
+   📊 Leverage: 5.0x
+⚠️  Size adjusted: $5.00 → $21.53 (min requirement)
+🔧 Decimals: size=5, price=1, min_base=0.0002
+🔧 Scaled: base_amount_int=20, price_int=1076671
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761042649196,"BaseAmount":20,"Price":1076671,"IsAsk":0,"Type":0,"TimeInForce":1,"ReduceOnly":0,"TriggerPrice":0,"OrderExpiry":1763461849196,"ExpiredAt":1761043248196,"Nonce":275,"Sig":"oKaubFT+4VZo9cuHqHKhpyGhzLIHjVmPLEztdJeaMNUQMymMjs3RUtXOqJWbgl7ffJzAKeAvhFUa3nS5d/LOe4rNYYfftAssTgvzUn2NFGE="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='d15661c8813c06485ed4b9875269cb0b417b723079b288f88d67e155f6267f36a88f4c84d48eac83' predicted_execution_time_ms=1761042649568 additional_properties={}
+✅ Đặt lệnh thành công!
+📝 Tx Hash: d15661c8813c06485ed4b9875269cb0b417b723079b288f88d67e155f6267f36a88f4c84d48eac83
+[32mINFO[0m:     127.0.0.1:49255 - "[1mPOST /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49239 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49309 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=107667.1
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:49325 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+[32mINFO[0m:     127.0.0.1:49309 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=107667.1
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:49353 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=107667.1
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:49367 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49309 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=107667.1
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:49385 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=107667.1
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:49399 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49309 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=107667.1
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:49413 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49309 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49309 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49309 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49309 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+💰 Account Balance:
+   💵 Available: $14.52
+   🏦 Collateral: $15.60
+   📊 Total Assets: $15.60
+[32mINFO[0m:     127.0.0.1:49506 - "[1mGET /api/market/balance HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49309 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49309 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:49309 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'core/order.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m350[0m]
+[32mINFO[0m:     Started server process [[36m538[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:49642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50135 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50443 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50499 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50499 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50499 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang lấy giá BTC...
+
+💰 Đang lấy account balance...
+
+📈 Đang kiểm tra positions...
+💰 Giá BTC:
+   🟢 Bid: $107,780.90
+   🔴 Ask: $107,783.60
+   📊 Mid: $107,782.25
+[32mINFO[0m:     127.0.0.1:50499 - "[1mGET /api/market/price/BTC HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang lấy giá BTC...
+💰 Account Balance:
+   💵 Available: $15.62
+   🏦 Collateral: $15.62
+   📊 Total Assets: $15.62
+[32mINFO[0m:     127.0.0.1:50523 - "[1mGET /api/market/balance HTTP/1.1[0m" [32m200 OK[0m
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=0.0
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:50524 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+💰 Giá BTC:
+   🟢 Bid: $107,780.90
+   🔴 Ask: $107,783.40
+   📊 Mid: $107,782.15
+[32mINFO[0m:     127.0.0.1:50499 - "[1mGET /api/market/price/BTC HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50499 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50499 - "[1mOPTIONS /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+💰 Account Balance:
+   💵 Available: $15.62
+   🏦 Collateral: $15.62
+   📊 Total Assets: $15.62
+
+📈 Đang lấy giá NEAR...
+💰 Giá NEAR:
+   🟢 Bid: $2.18
+   🔴 Ask: $2.19
+   📊 Mid: $2.18
+
+🎯 Đang đặt lệnh LONG $10.0 NEAR...
+📊 Order Details:
+   💰 Position Size: 4.57628205 NEAR
+   💵 Entry Price: $2.19
+   💸 Total Cost: $10.00
+   📊 Leverage: 5.0x
+🔧 Decimals: size=1, price=5, min_base=2.0
+🔧 Scaled: base_amount_int=46, price_int=218518
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":10,"ClientOrderIndex":1761042855521,"BaseAmount":46,"Price":218518,"IsAsk":0,"Type":0,"TimeInForce":1,"ReduceOnly":0,"TriggerPrice":0,"OrderExpiry":1763462055522,"ExpiredAt":1761043454522,"Nonce":277,"Sig":"RqYhlpny/LRTPP9M8IJ7jgXP4FVBigueiXBnKPosZ3gFyPiZUJRkRfiYedgFuRq+xo43es5nIQEjA/Q3hccvSqxufmXri8QOtadwnHghnkg="}
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+❌ Đặt lệnh thất bại: HTTP response body: code=21104 message='invalid nonce' additional_properties={}
+[32mINFO[0m:     127.0.0.1:50499 - "[1mPOST /api/orders/long HTTP/1.1[0m" [31m400 Bad Request[0m
+[32mINFO[0m:     127.0.0.1:50499 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50499 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50499 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50561 - "[1mOPTIONS /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50640 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+💰 Đang lấy account balance...
+💰 Account Balance:
+   💵 Available: $15.62
+   🏦 Collateral: $15.62
+   📊 Total Assets: $15.62
+
+📈 Đang lấy giá BTC...
+💰 Giá BTC:
+   🟢 Bid: $107,830.80
+   🔴 Ask: $107,831.80
+   📊 Mid: $107,831.30
+
+🎯 Đang đặt lệnh LONG $10.0 BTC...
+📊 Order Details:
+   💰 Position Size: 9.274e-05 BTC
+   💵 Entry Price: $107,831.80
+   💸 Total Cost: $10.00
+   📊 Leverage: 5.0x
+⚠️  Size adjusted: $10.00 → $21.57 (min requirement)
+🔧 Decimals: size=5, price=1, min_base=0.0002
+🔧 Scaled: base_amount_int=20, price_int=1078318
+DEBUG:root:Create Order Tx Info: {"AccountIndex":198336,"ApiKeyIndex":0,"MarketIndex":1,"ClientOrderIndex":1761042872787,"BaseAmount":20,"Price":1078318,"IsAsk":0,"Type":0,"TimeInForce":1,"ReduceOnly":0,"TriggerPrice":0,"OrderExpiry":1763462072787,"ExpiredAt":1761043471787,"Nonce":278,"Sig":"vSA2OpPTEovl1EhxKCKg54a3OTWEvx9kt8JIKlcQ7atqwQZXm0OCFm5fxIoWtiOBkYyFtQU2MPdgWEzmw+S2gnhtsJ+2iokxMFV0Q7wfymU="}
+DEBUG:root:Create Order Send Tx Response: code=200 message='{"ratelimit": "didn\'t use volume quota"}' tx_hash='957314d1627fa9fac22d82b9a2fcdf0f892cb682a6fea8eb3ce4d2dcaa3cea060544f4f6ddb06559' predicted_execution_time_ms=1761042873164 additional_properties={}
+✅ Đặt lệnh thành công!
+📝 Tx Hash: 957314d1627fa9fac22d82b9a2fcdf0f892cb682a6fea8eb3ce4d2dcaa3cea060544f4f6ddb06559
+[32mINFO[0m:     127.0.0.1:50561 - "[1mPOST /api/orders/long HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50561 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+
+📈 Đang kiểm tra positions...
+
+💰 Đang lấy account balance...
+📊 5 positions đang mở:
+   - market_id=1 size=0 entry=107831.8
+   - market_id=2 size=0 entry=0.0
+   - market_id=3 size=0 entry=0.0
+   - market_id=25 size=0 entry=0.0
+   - market_id=45 size=0 entry=0.0
+[32mINFO[0m:     127.0.0.1:50561 - "[1mGET /api/positions HTTP/1.1[0m" [32m200 OK[0m
+💰 Account Balance:
+   💵 Available: $14.54
+   🏦 Collateral: $15.62
+   📊 Total Assets: $15.62
+[32mINFO[0m:     127.0.0.1:50640 - "[1mGET /api/market/balance HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50640 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50640 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:50642 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51152 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51152 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51152 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51152 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51152 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[33mWARNING[0m:  StatReload detected changes in 'core/position_monitor.py'. Reloading...
+[32mINFO[0m:     Shutting down
+[32mINFO[0m:     Waiting for application shutdown.
+[32mINFO[0m:     Application shutdown complete.
+[32mINFO[0m:     Finished server process [[36m538[0m]
+[32mINFO[0m:     Started server process [[36m749[0m]
+[32mINFO[0m:     Waiting for application startup.
+[32mINFO[0m:     Application startup complete.
+
+🔗 Đang kết nối đến Lighter DEX...
+DEBUG:root:Detected ARM architecture on macOS.
+DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): mainnet.zklighter.elliot.ai:443
+DEBUG:urllib3.connectionpool:https://mainnet.zklighter.elliot.ai:443 "GET /api/v1/nextNonce?account_index=198336&api_key_index=0 HTTP/1.1" 200 24
+✅ Kết nối thành công đến Lighter DEX
+[32mINFO[0m:     127.0.0.1:51269 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51269 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51269 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51269 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51269 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51269 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51269 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51269 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51566 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51566 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51566 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51566 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51566 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51566 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51566 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51806 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51806 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51856 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51856 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51856 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+[32mINFO[0m:     127.0.0.1:51856 - "[1mGET /api/status HTTP/1.1[0m" [32m200 OK[0m
+^C[32mINFO[0m:     Shutting down
+^C[32mINFO[0m:     Finished server process [[36m749[0m]
+[32mINFO[0m:     Stopping reloader process [[36m[1m171[0m]
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004h[?2004l
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004h[?2004l
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004hggit branch[1m [0m[0m fix[?2004l
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004hggit checkout fix[1m [0m[0m [?2004l
+D	COMPARISON.md
+M	README.md
+D	env.example
+M	main.py
+M	perpsdex/lighter/README.md
+M	perpsdex/lighter/api/main.py
+M	perpsdex/lighter/core/market.py
+M	perpsdex/lighter/trading_sdk.py
+M	perpsdex/lighter/ui_test.html
+M	perpsdex/lighter/utils/config.py
+M	requirements.txt
+D	test_aster_order.py
+Switched to branch 'fix'
+[1m[7m%[27m[1m[0m                                                                   [0m[27m[24m[Jlevanmong@MacBook-Pro-cua-Le-Van-Mong scripts % [K[?2004h
