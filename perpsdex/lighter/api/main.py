@@ -370,7 +370,7 @@ async def place_limit_long_order(order: OrderRequest):
             
             risk_manager = RiskManager(client.get_signer_client(), client.get_order_api())
             tp_sl_result = await risk_manager.place_tp_sl_orders(
-                entry_price=order.limit_price,
+                entry_price=entry_price,  # ✅ FIX: dùng entry_price thực tế
                 tp_price=tp_sl_calc['tp_price'],
                 sl_price=sl_price,
                 position_size=result['position_size'],
@@ -448,7 +448,7 @@ async def place_limit_short_order(order: OrderRequest):
             
             risk_manager = RiskManager(client.get_signer_client(), client.get_order_api())
             tp_sl_result = await risk_manager.place_tp_sl_orders(
-                entry_price=order.limit_price,
+                entry_price=entry_price,  # ✅ FIX: dùng entry_price thực tế
                 tp_price=tp_sl_calc['tp_price'],
                 sl_price=sl_price,
                 position_size=result['position_size'],
