@@ -16,8 +16,11 @@ class HedgingBot:
     """Main hedging bot orchestrator"""
     
     def __init__(self):
-        # Config
-        self.trade_token = os.getenv('TRADE_TOKEN', 'BTC')
+        # Config - Support both TRADE_TOKEN (single) and TRADE_TOKENS (multiple)
+        tokens_str = os.getenv('TRADE_TOKENS') or os.getenv('TRADE_TOKEN', 'BTC')
+        self.token_list = [t.strip() for t in tokens_str.split(',')]
+        self.trade_token = None  # Will be selected each cycle
+        
         self.position_size = float(os.getenv('POSITION_SIZE', '50'))
         self.leverage = int(os.getenv('LEVERAGE', '5'))
         self.sl_percent = float(os.getenv('SL_PERCENT', '10'))
@@ -59,7 +62,12 @@ class HedgingBot:
         print("\n" + "=" * 60)
         print("🤖 HEDGING BOT - MARKET NEUTRAL STRATEGY")
         print("=" * 60)
-        print(f"📊 Trading Pair: {self.trade_token}-USDT")
+        
+        if len(self.token_list) > 1:
+            print(f"📊 Token Pool: {', '.join(self.token_list)} (random each cycle)")
+        else:
+            print(f"📊 Trading Pair: {self.token_list[0]}-USDT")
+        
         print(f"💰 Position Size: ${self.position_size} per exchange")
         print(f"📈 Leverage: {self.leverage}x")
         print(f"🛡️ Stop Loss: {self.sl_percent}%")
@@ -71,6 +79,11 @@ class HedgingBot:
     
     async def open_positions(self):
         """Open hedged positions"""
+        # Random token selection (if multiple tokens configured)
+        self.trade_token = random.choice(self.token_list)
+        
+        print(f"\n🎲 Selected token: {self.trade_token}-USDT")
+        
         # Random strategy
         self.lighter_side = random.choice(['long', 'short'])
         self.aster_side = 'short' if self.lighter_side == 'long' else 'long'
@@ -206,7 +219,8 @@ class HedgingBot:
         await self.setup()
         self.print_config()
         
-        await self.telegram.send_message(f"🤖 Hedging Bot Started\n\nToken: {self.trade_token}")
+        token_info = f"Token Pool: {', '.join(self.token_list)}" if len(self.token_list) > 1 else f"Token: {self.token_list[0]}"
+        await self.telegram.send_message(f"🤖 Hedging Bot Started\n\n{token_info}")
         
         cycle = 0
         while True:

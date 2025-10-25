@@ -62,31 +62,36 @@ class OrderExecutor:
             
             # Calculate quantity in base currency
             price = price_result['ask'] if side.upper() == 'BUY' else price_result['bid']
-            quantity = size / price  # USD to BTC
+            quantity = size / price  # USD to base token
             
-            # ✅ Round UP to ensure we meet or exceed target (better for hedging)
+            # ✅ Dynamic precision based on token type
+            # BTC/ETH: 3 decimals, SOL/BNB: 2 decimals, DOGE/SHIB: 0-1 decimals
             import math
-            quantity_rounded = math.ceil(quantity * 1000) / 1000  # Round up to 3 decimals
             
-            # ✅ Check minimum (0.001 BTC)
-            min_quantity = 0.001
-            if quantity_rounded < min_quantity:
-                quantity_rounded = min_quantity
+            # Auto-detect precision based on quantity size
+            if quantity < 0.1:  # Very small (BTC, ETH) - price > $10k
+                precision = 3
+                multiplier = 1000
+            elif quantity < 10:  # Small-medium (SOL, BNB) - price $100-$1000
+                precision = 2
+                multiplier = 100
+            elif quantity < 1000:  # Medium-large (DOGE high price) - price $1-$10
+                precision = 1
+                multiplier = 10
+            else:  # Very large (DOGE, SHIB, meme) - price < $1
+                precision = 0
+                multiplier = 1
+            
+            # Floor to avoid exceeding precision
+            quantity_rounded = math.floor(quantity * multiplier) / multiplier
             
             actual_usd = quantity_rounded * price
-            print(f"📊 Aster Order: {quantity_rounded:.3f} BTC = ${actual_usd:.2f} USD (target: ${size:.2f})")
+            diff_usd = abs(actual_usd - size)
+            diff_percent = diff_usd / size * 100
             
-            # ⚠️ Warn if difference is significant
-            diff_percent = abs(actual_usd - size) / size * 100
-            if diff_percent > 5:
-                print(f"⚠️ WARNING: {diff_percent:.1f}% difference from target!")
-            
-            # ✅ Final check (should not trigger after fix above)
-            if quantity_rounded < min_quantity:
-                return {
-                    'success': False,
-                    'error': f'Order size too small. Minimum: {min_quantity} BTC (~${round(min_quantity * price, 2)} USD). Your order: {quantity_rounded} BTC (${size} USD)'
-                }
+            print(f"📊 Aster Order: {quantity_rounded} {symbol.split('-')[0]} = ${actual_usd:.2f} USD (precision: {precision})")
+            if diff_percent > 1:
+                print(f"   ℹ️ Difference: ${diff_usd:.2f} ({diff_percent:.1f}%) from target ${size:.2f}")
             
             # TODO: Set leverage (may need different endpoint or account-level setting)
             # For now, Aster may use account-default leverage or per-position leverage
