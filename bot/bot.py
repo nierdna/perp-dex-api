@@ -50,6 +50,19 @@ class HedgingBot:
         """Initialize all clients"""
         print("🔧 Initializing exchange clients...")
         
+        # Log server IP
+        try:
+            import aiohttp
+            async with aiohttp.ClientSession() as session:
+                async with session.get('https://api.ipify.org?format=json') as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        server_ip = data.get('ip')
+                        print(f"🌐 Server IP: {server_ip}")
+                        await self.telegram.send_message(f"🌐 Bot started on IP: {server_ip}")
+        except Exception as e:
+            print(f"⚠️ Could not get IP: {e}")
+        
         await self.lighter.setup()
         
         aster_ok = await self.aster.setup()
