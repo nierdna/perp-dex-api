@@ -109,18 +109,36 @@ class OrderExecutor:
             # Prepare order parameters
             client_order_index = int(time.time() * 1000)
             is_ask = 0 if is_long else 1  # 0 = buy/LONG, 1 = sell/SHORT
+            
+            # 🎯 USE AGGRESSIVE LIMIT ORDER for instant fill
+            # Set limit price with 3% slippage (within Lighter's acceptable range)
+            if is_long:
+                # LONG (BUY): Set limit 3% higher than market
+                limit_price = entry_price * 1.03  # 3% higher
+            else:
+                # SHORT (SELL): Set limit 3% lower than market  
+                limit_price = entry_price * 0.97  # 3% lower
+            
             order_type = self.signer_client.ORDER_TYPE_LIMIT
-            time_in_force = self.signer_client.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME
+            time_in_force = self.signer_client.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME  # GTC - most compatible
             reduce_only = False
             trigger_price = self.signer_client.NIL_TRIGGER_PRICE
             order_expiry = self.signer_client.DEFAULT_28_DAY_ORDER_EXPIRY
+            
+            # Scale limit_price to int
+            limit_price_int = Calculator.scale_to_int(limit_price, price_decimals)
+            
+            print(f"🎯 AGGRESSIVE LIMIT ORDER (3% slippage):")
+            print(f"   Market Price: ${entry_price:,.6f}")
+            print(f"   Limit Price: ${limit_price:,.6f} ({'+3%' if is_long else '-3%'})")
+            print(f"   Expected: Instant fill at best available price")
             
             # Create order
             created_order, send_resp, err = await self.signer_client.create_order(
                 market_id,
                 client_order_index,
                 base_amount_int,
-                price_int,
+                limit_price_int,  # Use aggressive limit_price for instant fill
                 is_ask,
                 order_type,
                 time_in_force,
@@ -128,6 +146,12 @@ class OrderExecutor:
                 trigger_price,
                 order_expiry,
             )
+            
+            # Debug output
+            print(f"🔍 DEBUG:")
+            print(f"   created_order: {created_order}")
+            print(f"   send_resp: {send_resp}")
+            print(f"   err: {err}")
             
             if err is None and send_resp:
                 print("✅ Đặt lệnh thành công!")
@@ -142,7 +166,16 @@ class OrderExecutor:
                     'side': side,
                 }
             else:
-                err_msg = err or getattr(send_resp, 'message', 'Unknown error') if send_resp else err or 'Unknown error'
+                # Better error handling
+                if send_resp and hasattr(send_resp, 'message'):
+                    err_msg = send_resp.message
+                elif send_resp and hasattr(send_resp, 'code'):
+                    err_msg = f"Error code: {send_resp.code}"
+                elif err:
+                    err_msg = str(err)
+                else:
+                    err_msg = "Unknown error - order may not have been executed"
+                    
                 print(f"❌ Đặt lệnh thất bại: {err_msg}")
                 return {'success': False, 'error': err_msg}
                 

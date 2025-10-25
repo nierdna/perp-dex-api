@@ -23,9 +23,10 @@ Bot tự động mở vị thế đối xứng trên **Lighter** và **Aster DEX
 
 ## 📚 Documentation
 
-- 🚀 **[Quick Start Guide](docs/QUICK_START.md)** - Hướng dẫn nhanh 5 phút
-- 📖 **[Full Documentation](docs/HEDGING_BOT_README.md)** - Hướng dẫn chi tiết đầy đủ
-- 📋 **[Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)** - Tóm tắt kỹ thuật
+- 🚀 **[Quick Start Guide](docs/welcome.md)** - Giới thiệu về dự án
+- 📊 **[Current Status](docs/CURRENT_STATUS.md)** - Trạng thái hiện tại & known issues
+- 🔧 **[Position Monitor Plan](docs/POSITION_MONITOR_PLAN.md)** - Plan để fix TP/SL bug
+- 📁 **[Scripts Guide](scripts/README.md)** - Hướng dẫn sử dụng scripts
 
 ---
 

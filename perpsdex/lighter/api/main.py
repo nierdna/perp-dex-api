@@ -514,17 +514,22 @@ async def place_short_order(order: OrderRequest):
         
         # Place entry order
         executor = OrderExecutor(client.get_signer_client(), client.get_order_api())
-        result = await executor.place_order(
-            side='short',
-            entry_price=entry_price,
-            position_size_usd=order.size_usd,
-            market_id=market_id,
-            symbol=order.symbol.upper(),
-            leverage=order.leverage
-        )
+        try:
+            result = await executor.place_order(
+                side='short',
+                entry_price=entry_price,
+                position_size_usd=order.size_usd,
+                market_id=market_id,
+                symbol=order.symbol.upper(),
+                leverage=order.leverage
+            )
+        except Exception as order_err:
+            print(f"🔍 Exception in place_order: {type(order_err).__name__}: {order_err}")
+            raise HTTPException(status_code=400, detail=f"Failed to place order: {str(order_err)}")
         
-        if not result['success']:
-            raise HTTPException(status_code=400, detail=result.get('error'))
+        if not result or not result.get('success'):
+            error_msg = result.get('error', 'Unknown error') if result else 'No result returned'
+            raise HTTPException(status_code=400, detail=error_msg)
         
         # Place TP/SL nếu có config
         tp_sl_result = None
