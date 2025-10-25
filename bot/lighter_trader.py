@@ -26,6 +26,8 @@ class LighterTrader:
         self.client = None
         self.market_id = None
         self.order_id = None
+        self.position_size = None  # Track size when opening
+        self.side = None  # Track side when opening
     
     async def setup(self):
         """Initialize Lighter client"""
@@ -96,6 +98,14 @@ class LighterTrader:
             # Save tracking info
             self.market_id = market_id
             self.order_id = result.get('order_id')
+            self.position_size = result.get('position_size')  # Save for close
+            self.side = side  # Save for close
+            
+            print(f"\n📝 Lighter Position Tracking:")
+            print(f"   market_id: {self.market_id}")
+            print(f"   order_id: {self.order_id}")
+            print(f"   position_size: {self.position_size}")
+            print(f"   side: {self.side}")
             
             return result
             
@@ -129,32 +139,60 @@ class LighterTrader:
     async def close_position(self, symbol: str) -> dict:
         """Close tracked position"""
         try:
+            print(f"\n🔍 DEBUG Lighter close_position:")
+            print(f"   tracked market_id: {self.market_id}")
+            print(f"   symbol: {symbol}")
+            
             if not self.market_id:
                 return {'success': False, 'error': 'No position tracked'}
             
-            # Get position
-            account_api = self.client.get_account_api()
+            # Get positions
+            market = MarketData(self.client.get_order_api(), self.client.get_account_api())
             account_index = int(os.getenv('ACCOUNT_INDEX', 0))
-            account_result = await account_api.get_account_balance(account_index)
+            positions_result = await market.get_positions(account_index)
             
-            if not account_result['success']:
-                return {'success': False, 'error': 'Failed to get balance'}
+            if not positions_result.get('success'):
+                print(f"   ❌ Failed to get positions")
+                return {'success': False, 'error': 'Failed to get positions'}
+            
+            print(f"   ✅ Got positions, checking...")
+            all_positions = positions_result.get('positions', [])
+            print(f"   Total positions: {len(all_positions)}")
+            
+            for i, pos in enumerate(all_positions):
+                print(f"   Position {i+1}: market_id={pos.get('market_id')}, size={pos.get('size')}")
             
             position = None
-            for pos in account_result.get('positions', []):
+            for pos in all_positions:
                 if pos['market_id'] == self.market_id:
                     position = pos
                     break
             
-            if not position or position.get('size') == 0:
+            if not position:
+                print(f"   ❌ Position with market_id={self.market_id} not found in list!")
+                print(f"   💡 TIP: Position might have been closed by TP/SL or manually")
                 return {'success': False, 'error': 'Position not found'}
             
-            position_size = position.get('size', 0)
-            is_long = position_size > 0
-            abs_size = abs(position_size)
+            pos_size = position.get('size', 0)
+            
+            # ✅ FIX: Lighter API bug - use tracked size if API returns 0
+            if pos_size == 0:
+                print(f"   ⚠️ WARNING: API reports size=0 but position exists!")
+                print(f"   💡 Using tracked size from open: {self.position_size}")
+                if not self.position_size or not self.side:
+                    return {'success': False, 'error': 'No tracked size - cannot close'}
+                
+                # Use tracked values
+                position_size = self.position_size if self.side == 'long' else -self.position_size
+                is_long = self.side == 'long'
+                abs_size = self.position_size
+            else:
+                print(f"   ✅ Found position: size={pos_size}")
+                position_size = pos_size
+                is_long = position_size > 0
+                abs_size = abs(position_size)
             
             # Get price
-            market = MarketData(self.client.get_order_api(), self.client.get_account_api())
             price_result = await market.get_price(self.market_id, symbol)
             
             if not price_result['success']:
@@ -162,15 +200,21 @@ class LighterTrader:
             
             current_price = price_result['mid']
             
-            # Get metadata
-            metadata = await self.client.get_order_api().get_market_metadata(self.market_id)
-            if not metadata['success']:
-                return {'success': False, 'error': 'Failed to get metadata'}
+            # Get metadata using order_book_details
+            details = await self.client.get_order_api().order_book_details(market_id=self.market_id)
+            if not details or not details.order_book_details:
+                return {'success': False, 'error': 'Failed to get market metadata'}
+            
+            ob = details.order_book_details[0]
+            size_decimals = ob.size_decimals
+            price_decimals = ob.price_decimals
             
             # Calculate close order
-            base_amount_int = Calculator.scale_to_int(abs_size, metadata['size_decimals'])
+            base_amount_int = Calculator.scale_to_int(abs_size, size_decimals)
             close_price = current_price * (0.97 if is_long else 1.03)
-            price_int = Calculator.scale_to_int(close_price, metadata['price_decimals'])
+            price_int = Calculator.scale_to_int(close_price, price_decimals)
+            
+            print(f"   🔄 Closing {abs_size} BTC at ${close_price:,.2f}...")
             
             # Place close order
             order, response, error = await self.client.get_signer_client().create_order(

@@ -20,8 +20,19 @@ async def main():
     try:
         await bot.run()
     except KeyboardInterrupt:
-        print("\n🛑 Stopped by user")
-        await bot.telegram.send_message("🛑 Bot stopped by user")
+        print("\n\n🛑 Stopped by user (Ctrl+C)")
+        print("🔄 Closing any open positions...")
+        try:
+            result = await bot.close_positions()
+            if result:
+                print("✅ Positions closed successfully")
+                await bot.telegram.send_message("🛑 Bot stopped by user\n✅ Positions closed")
+            else:
+                print("⚠️ Some positions may not be closed")
+                await bot.telegram.send_message("🛑 Bot stopped\n⚠️ Check positions manually")
+        except Exception as e:
+            print(f"❌ Error closing positions: {e}")
+            await bot.telegram.send_message(f"🛑 Bot stopped\n⚠️ Manual close needed: {e}")
     except Exception as e:
         print(f"\n❌ Fatal error: {e}")
         import traceback
@@ -30,5 +41,8 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n✅ Bot stopped")
 

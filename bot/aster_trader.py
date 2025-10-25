@@ -138,34 +138,76 @@ class AsterTrader:
     async def close_position(self) -> dict:
         """Close tracked position"""
         try:
+            print(f"\n🔍 DEBUG Aster close_position:")
+            print(f"   tracked symbol: {self.symbol}")
+            
             if not self.symbol or not self.client:
                 return {'success': False, 'error': 'No position tracked'}
             
-            # Get position
+            # Get all positions
             market = MarketData(self.client)
-            position_result = await market.get_position(self.symbol)
+            positions_result = await market.get_positions()
             
-            if not position_result.get('success'):
-                return {'success': False, 'error': 'Failed to get position'}
+            if not positions_result.get('success'):
+                print(f"   ❌ Failed to get positions")
+                return {'success': False, 'error': 'Failed to get positions'}
             
-            position = position_result.get('position')
-            if not position or float(position.get('positionAmt', 0)) == 0:
-                return {'success': False, 'error': 'Position not found'}
+            print(f"   ✅ Got positions, checking...")
+            all_positions = positions_result.get('positions', [])
+            print(f"   Total positions: {len(all_positions)}")
             
-            position_size = float(position.get('positionAmt', 0))
-            is_long = position_size > 0
-            abs_size = abs(position_size)
+            for i, pos in enumerate(all_positions):
+                pos_amt = pos.get('positionAmt')
+                print(f"   Position {i+1}: symbol={pos.get('symbol')}, positionAmt={pos_amt}")
             
-            # Place close order
-            executor = OrderExecutor(self.client)
-            close_side = 'SELL' if is_long else 'BUY'
+            # Find our position (filter non-zero positions from processed list)
+            target_symbol = self.symbol.replace('-', '')  # BTC-USDT → BTCUSDT
+            print(f"   Looking for symbol: {target_symbol}")
             
-            result = await executor.place_market_order(
-                symbol=self.symbol,
-                side=close_side,
-                size=abs_size,
-                reduce_only=True
+            # Use processed positions list (already filtered by get_positions)
+            processed_positions = positions_result.get('positions', [])
+            print(f"   Processed (non-zero) positions: {len(processed_positions)}")
+            
+            for i, pos in enumerate(processed_positions):
+                print(f"   Processed {i+1}: symbol={pos.get('symbol')}, size={pos.get('size')}")
+            
+            position = None
+            for pos in processed_positions:
+                if pos.get('symbol') == target_symbol:
+                    position = pos
+                    break
+            
+            if not position:
+                print(f"   ❌ Position with symbol={target_symbol} not found in processed list!")
+                return {'success': False, 'error': 'Position not found or already closed'}
+            
+            # Use 'size' from processed position (already absolute value)
+            abs_size = float(position.get('size', 0))
+            side = position.get('side', 'LONG')
+            is_long = side == 'LONG'
+            
+            print(f"   ✅ Found position: size={abs_size}, side={side}")
+            
+            # Place close order using direct API (closePosition)
+            print(f"   🔄 Closing {abs_size} {self.symbol}...")
+            
+            # Use Binance-style close position API
+            params = {
+                'symbol': self.symbol.replace('-', ''),  # BTCUSDT
+                'side': 'SELL' if is_long else 'BUY',
+                'type': 'MARKET',
+                'quantity': str(abs_size),
+                'reduceOnly': 'true'  # String, not bool
+            }
+            
+            api_result = await self.client._request(
+                'POST',
+                '/fapi/v1/order',
+                params=params,
+                signed=True
             )
+            
+            result = api_result if api_result.get('success') else {'success': False, 'error': api_result.get('error')}
             
             if result.get('success'):
                 # Calculate P&L

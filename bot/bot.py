@@ -22,6 +22,9 @@ class HedgingBot:
         self.leverage = int(os.getenv('LEVERAGE', '5'))
         self.sl_percent = float(os.getenv('SL_PERCENT', '10'))
         
+        # Shared position size (in BTC) to ensure exact match
+        self.btc_size = None
+        
         rr_str = os.getenv('RR_RATIO', '1,2')
         self.rr_ratio = [int(x.strip()) for x in rr_str.split(',')]
         

@@ -64,17 +64,22 @@ class OrderExecutor:
             price = price_result['ask'] if side.upper() == 'BUY' else price_result['bid']
             quantity = size / price  # USD to BTC
             
-            # ✅ Ensure minimum BEFORE rounding (but don't override if user wants more)
+            # ✅ Round UP to ensure we meet or exceed target (better for hedging)
+            import math
+            quantity_rounded = math.ceil(quantity * 1000) / 1000  # Round up to 3 decimals
+            
+            # ✅ Check minimum (0.001 BTC)
             min_quantity = 0.001
-            if quantity < min_quantity:
-                print(f"⚠️ Calculated size ({quantity:.6f} BTC) < minimum ({min_quantity} BTC), adjusting to meet minimum")
-                quantity = min_quantity
+            if quantity_rounded < min_quantity:
+                quantity_rounded = min_quantity
             
-            print(f"📊 Aster Order: {quantity:.6f} BTC (~${quantity * price:.2f} USD)")
+            actual_usd = quantity_rounded * price
+            print(f"📊 Aster Order: {quantity_rounded:.3f} BTC = ${actual_usd:.2f} USD (target: ${size:.2f})")
             
-            # ✅ Round to 3 decimals for BTCUSDT (check exchangeInfo for other pairs)
-            # TODO: Get precision from exchange info dynamically
-            quantity_rounded = round(quantity, 3)
+            # ⚠️ Warn if difference is significant
+            diff_percent = abs(actual_usd - size) / size * 100
+            if diff_percent > 5:
+                print(f"⚠️ WARNING: {diff_percent:.1f}% difference from target!")
             
             # ✅ Final check (should not trigger after fix above)
             if quantity_rounded < min_quantity:
