@@ -64,15 +64,23 @@ class OrderExecutor:
             price = price_result['ask'] if side.upper() == 'BUY' else price_result['bid']
             quantity = size / price  # USD to BTC
             
+            # ✅ Ensure minimum BEFORE rounding (but don't override if user wants more)
+            min_quantity = 0.001
+            if quantity < min_quantity:
+                print(f"⚠️ Calculated size ({quantity:.6f} BTC) < minimum ({min_quantity} BTC), adjusting to meet minimum")
+                quantity = min_quantity
+            
+            print(f"📊 Aster Order: {quantity:.6f} BTC (~${quantity * price:.2f} USD)")
+            
             # ✅ Round to 3 decimals for BTCUSDT (check exchangeInfo for other pairs)
             # TODO: Get precision from exchange info dynamically
             quantity_rounded = round(quantity, 3)
             
-            # ✅ Check minimum quantity (0.001 BTC for BTCUSDT)
-            if quantity_rounded < 0.001:
+            # ✅ Final check (should not trigger after fix above)
+            if quantity_rounded < min_quantity:
                 return {
                     'success': False,
-                    'error': f'Order size too small. Minimum: 0.001 BTC (~${round(0.001 * price, 2)} USD). Your order: {quantity_rounded} BTC (${size} USD)'
+                    'error': f'Order size too small. Minimum: {min_quantity} BTC (~${round(min_quantity * price, 2)} USD). Your order: {quantity_rounded} BTC (${size} USD)'
                 }
             
             # TODO: Set leverage (may need different endpoint or account-level setting)
