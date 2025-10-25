@@ -593,6 +593,159 @@ async def place_limit_short_order(order: OrderRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# =============== CANCEL & CLOSE ENDPOINTS ===============
+
+@app.post("/api/orders/cancel")
+async def cancel_order_endpoint(request: dict):
+    """
+    Cancel an order on Aster
+    
+    Body:
+    {
+        "symbol": "BTC-USDT",
+        "order_id": "123456"
+    }
+    """
+    try:
+        client = await get_client()
+        
+        symbol = request.get('symbol')
+        order_id = request.get('order_id')
+        
+        if not symbol or not order_id:
+            raise HTTPException(status_code=400, detail="symbol and order_id are required")
+        
+        print(f"🗑️ Cancelling Aster order {order_id} for {symbol}")
+        
+        # Cancel order via Aster API
+        result = await client.cancel_order(symbol=symbol, order_id=order_id)
+        
+        if result.get('success'):
+            print(f"✅ Aster order cancelled: {order_id}")
+            return {
+                "success": True,
+                "symbol": symbol,
+                "order_id": order_id
+            }
+        else:
+            error_msg = result.get('error', 'Unknown error')
+            print(f"❌ Cancel failed: {error_msg}")
+            raise HTTPException(status_code=400, detail=f"Failed to cancel order: {error_msg}")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/positions/close")
+async def close_position_endpoint(request: dict):
+    """
+    Close an open position on Aster
+    
+    Body:
+    {
+        "symbol": "BTC-USDT"
+    }
+    
+    Optional:
+    {
+        "symbol": "BTC-USDT",
+        "percentage": 100  # Close 100% of position (default), or partial like 50%
+    }
+    """
+    try:
+        client = await get_client()
+        
+        symbol = request.get('symbol')
+        if not symbol:
+            raise HTTPException(status_code=400, detail="symbol is required")
+        
+        close_percentage = request.get('percentage', 100)
+        if close_percentage <= 0 or close_percentage > 100:
+            raise HTTPException(status_code=400, detail="percentage must be between 0 and 100")
+        
+        print(f"🔄 Closing Aster position for {symbol}")
+        
+        # Get current position
+        market_data = MarketData(client)
+        position_result = await market_data.get_position(symbol)
+        
+        if not position_result.get('success'):
+            raise HTTPException(status_code=400, detail="Failed to get position")
+        
+        position = position_result.get('position')
+        if not position:
+            raise HTTPException(status_code=404, detail=f"No open position found for {symbol}")
+        
+        position_size = position.get('positionAmt', 0)
+        if position_size == 0:
+            raise HTTPException(status_code=400, detail=f"Position size is 0 for {symbol}")
+        
+        # Determine side
+        is_long = float(position_size) > 0
+        abs_size = abs(float(position_size))
+        
+        # Calculate close size
+        close_size = abs_size * (close_percentage / 100.0)
+        
+        print(f"📊 Position info:")
+        print(f"   Size: {position_size} ({symbol})")
+        print(f"   Side: {'LONG' if is_long else 'SHORT'}")
+        print(f"   Closing: {close_percentage}% = {close_size}")
+        
+        # Place close order (reverse side with reduce_only)
+        order_executor = OrderExecutor(client)
+        
+        # Close order is opposite side with reduce_only
+        close_side = 'SELL' if is_long else 'BUY'
+        
+        result = await order_executor.place_market_order(
+            symbol=symbol,
+            side=close_side,
+            size=close_size,
+            reduce_only=True  # Only close position, don't open new
+        )
+        
+        if result.get('success'):
+            print(f"✅ Aster close order placed: {result.get('order_id')}")
+            
+            # Calculate P&L if we have entry price
+            entry_price = float(position.get('entryPrice', 0))
+            current_price = float(position.get('markPrice', 0))
+            pnl_percent = None
+            
+            if entry_price > 0 and current_price > 0:
+                if is_long:
+                    pnl_percent = ((current_price - entry_price) / entry_price) * 100
+                else:
+                    pnl_percent = ((entry_price - current_price) / entry_price) * 100
+            
+            return {
+                "success": True,
+                "order_id": result.get('order_id'),
+                "symbol": symbol,
+                "side": "long" if is_long else "short",
+                "position_size": position_size,
+                "close_size": close_size,
+                "close_percentage": close_percentage,
+                "entry_price": entry_price,
+                "close_price": current_price,
+                "pnl_percent": pnl_percent
+            }
+        else:
+            error_msg = result.get('error', 'Unknown error')
+            print(f"❌ Close order failed: {error_msg}")
+            raise HTTPException(status_code=400, detail=f"Failed to close position: {error_msg}")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # =============== SERVER STARTUP ===============
 
 if __name__ == "__main__":

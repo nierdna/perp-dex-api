@@ -156,10 +156,11 @@ class OrderExecutor:
             if err is None and send_resp:
                 print("✅ Đặt lệnh thành công!")
                 print(f"📝 Tx Hash: {send_resp.tx_hash}")
+                print(f"📝 Order Index: {client_order_index}")
                 
                 return {
                     'success': True,
-                    'order_id': getattr(created_order, 'client_order_index', None),
+                    'order_id': client_order_index,  # Return the client_order_index we created
                     'tx_hash': send_resp.tx_hash,
                     'entry_price': entry_price,
                     'position_size': base_amount,

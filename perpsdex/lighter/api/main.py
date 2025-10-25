@@ -579,6 +579,308 @@ async def place_short_order(order: OrderRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/orders/cancel")
+async def cancel_order_endpoint(request: dict):
+    """
+    Cancel an order
+    
+    Body:
+    {
+        "market_id": 1,
+        "order_index": 123456789
+    }
+    
+    OR:
+    {
+        "symbol": "BTC",
+        "order_index": 123456789
+    }
+    """
+    try:
+        client = await get_client()
+        
+        # Get market_id
+        if 'market_id' in request:
+            market_id = request['market_id']
+        elif 'symbol' in request:
+            market_id = get_market_id(request['symbol'].upper())
+        else:
+            raise HTTPException(status_code=400, detail="Must provide either market_id or symbol")
+        
+        # Get order_index
+        order_index = request.get('order_index')
+        if not order_index:
+            raise HTTPException(status_code=400, detail="order_index is required")
+        
+        print(f"🗑️ Cancelling order {order_index} on market {market_id}")
+        
+        # Cancel order via SignerClient
+        order, response, error = await client.get_signer_client().cancel_order(
+            market_index=market_id,
+            order_index=order_index
+        )
+        
+        if error is None and response:
+            print(f"✅ Order cancelled: {response.tx_hash}")
+            return {
+                "success": True,
+                "tx_hash": response.tx_hash,
+                "market_id": market_id,
+                "order_index": order_index
+            }
+        else:
+            error_msg = str(error) if error else "Unknown error"
+            print(f"❌ Cancel failed: {error_msg}")
+            raise HTTPException(status_code=400, detail=f"Failed to cancel order: {error_msg}")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/orders/cancel-all")
+async def cancel_all_orders_endpoint(request: dict):
+    """
+    Cancel all orders for a market
+    
+    Body:
+    {
+        "market_id": 1,
+        "time_in_force": "immediate"  # "immediate", "scheduled", or "abort"
+    }
+    
+    OR:
+    {
+        "symbol": "BTC",
+        "time_in_force": "immediate"
+    }
+    """
+    try:
+        client = await get_client()
+        
+        # Get market_id (optional - cancel all if not provided)
+        market_id = None
+        if 'market_id' in request:
+            market_id = request['market_id']
+        elif 'symbol' in request:
+            market_id = get_market_id(request['symbol'].upper())
+        
+        # Get time_in_force
+        tif_str = request.get('time_in_force', 'immediate').lower()
+        
+        # Map time_in_force string to constant
+        tif_map = {
+            'immediate': client.get_signer_client().CANCEL_ALL_TIF_IMMEDIATE,
+            'scheduled': client.get_signer_client().CANCEL_ALL_TIF_SCHEDULED,
+            'abort': client.get_signer_client().CANCEL_ALL_TIF_ABORT
+        }
+        
+        time_in_force = tif_map.get(tif_str)
+        if time_in_force is None:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid time_in_force: {tif_str}. Must be 'immediate', 'scheduled', or 'abort'"
+            )
+        
+        print(f"🗑️ Cancelling all orders (TIF: {tif_str})")
+        
+        # Cancel all orders
+        import time as time_module
+        order, response, error = await client.get_signer_client().cancel_all_orders(
+            time_in_force=time_in_force,
+            time=int(time_module.time() * 1000)  # Current timestamp in ms
+        )
+        
+        if error is None and response:
+            print(f"✅ All orders cancelled: {response.tx_hash}")
+            return {
+                "success": True,
+                "tx_hash": response.tx_hash,
+                "time_in_force": tif_str
+            }
+        else:
+            error_msg = str(error) if error else "Unknown error"
+            print(f"❌ Cancel all failed: {error_msg}")
+            raise HTTPException(status_code=400, detail=f"Failed to cancel all orders: {error_msg}")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/positions/close")
+async def close_position_endpoint(request: dict):
+    """
+    Close an open position
+    
+    Body:
+    {
+        "market_id": 1
+    }
+    
+    OR:
+    {
+        "symbol": "BTC"
+    }
+    
+    Optional:
+    {
+        "symbol": "BTC",
+        "percentage": 100  # Close 100% of position (default), or partial close like 50%
+    }
+    """
+    try:
+        client = await get_client()
+        
+        # Get market_id
+        if 'market_id' in request:
+            market_id = request['market_id']
+            symbol = request.get('symbol', f'Market{market_id}')
+        elif 'symbol' in request:
+            symbol = request['symbol'].upper()
+            market_id = get_market_id(symbol)
+        else:
+            raise HTTPException(status_code=400, detail="Must provide either market_id or symbol")
+        
+        # Get close percentage (default 100%)
+        close_percentage = request.get('percentage', 100)
+        if close_percentage <= 0 or close_percentage > 100:
+            raise HTTPException(status_code=400, detail="percentage must be between 0 and 100")
+        
+        print(f"🔄 Closing position for {symbol} (market {market_id})")
+        
+        # Get current position
+        account_api = client.get_account_api()
+        account_index = int(os.getenv('ACCOUNT_INDEX', 0))
+        
+        account_result = await account_api.get_account_balance(account_index)
+        if not account_result['success']:
+            raise HTTPException(status_code=400, detail="Failed to get account balance")
+        
+        # Find position for this market
+        position = None
+        for pos in account_result.get('positions', []):
+            if pos['market_id'] == market_id:
+                position = pos
+                break
+        
+        if not position:
+            raise HTTPException(status_code=404, detail=f"No open position found for {symbol}")
+        
+        position_size = position.get('size', 0)
+        if position_size == 0:
+            raise HTTPException(status_code=400, detail=f"Position size is 0 for {symbol}")
+        
+        # Determine side
+        is_long = position_size > 0
+        abs_size = abs(position_size)
+        
+        # Calculate close size based on percentage
+        close_size = abs_size * (close_percentage / 100.0)
+        
+        print(f"📊 Position info:")
+        print(f"   Size: {position_size} ({symbol})")
+        print(f"   Side: {'LONG' if is_long else 'SHORT'}")
+        print(f"   Closing: {close_percentage}% = {close_size}")
+        
+        # Get current market price
+        market = MarketData(client.get_order_api(), client.get_account_api())
+        price_result = await market.get_price(market_id, symbol)
+        if not price_result['success']:
+            raise HTTPException(status_code=400, detail="Failed to get current price")
+        
+        current_price = price_result['mid']
+        
+        # Get market metadata for scaling
+        metadata_result = await client.get_order_api().get_market_metadata(market_id)
+        if not metadata_result['success']:
+            raise HTTPException(status_code=400, detail="Failed to get market metadata")
+        
+        size_decimals = metadata_result['size_decimals']
+        price_decimals = metadata_result['price_decimals']
+        
+        # Calculate close order parameters
+        from perpsdex.lighter.utils.calculator import Calculator
+        
+        base_amount_int = Calculator.scale_to_int(close_size, size_decimals)
+        
+        # Set aggressive limit price for immediate fill (3% slippage)
+        if is_long:
+            # Close LONG = SELL
+            # Willing to sell 3% below market
+            close_price = current_price * 0.97
+            is_ask = 1
+        else:
+            # Close SHORT = BUY
+            # Willing to buy 3% above market
+            close_price = current_price * 1.03
+            is_ask = 0
+        
+        price_int = Calculator.scale_to_int(close_price, price_decimals)
+        
+        # Generate unique order index
+        import time as time_module
+        client_order_index = int(time_module.time() * 1000)
+        
+        print(f"🔄 Placing close order:")
+        print(f"   Type: {'SELL' if is_ask else 'BUY'} (reduce_only)")
+        print(f"   Size: {close_size}")
+        print(f"   Price: ${close_price:.6f} (3% slippage)")
+        
+        # Place close order
+        order, response, error = await client.get_signer_client().create_order(
+            market_id,
+            client_order_index,
+            base_amount_int,
+            price_int,
+            is_ask,
+            client.get_signer_client().ORDER_TYPE_LIMIT,
+            client.get_signer_client().ORDER_TIME_IN_FORCE_GOOD_TILL_TIME,
+            True,  # reduce_only = True (only close position)
+            client.get_signer_client().NIL_TRIGGER_PRICE,
+            client.get_signer_client().DEFAULT_28_DAY_ORDER_EXPIRY,
+        )
+        
+        if error is None and response:
+            print(f"✅ Close order placed: {response.tx_hash}")
+            
+            # Calculate P&L if we have entry price
+            avg_entry_price = position.get('avg_entry_price', 0)
+            pnl_percent = None
+            if avg_entry_price > 0:
+                if is_long:
+                    pnl_percent = ((current_price - avg_entry_price) / avg_entry_price) * 100
+                else:
+                    pnl_percent = ((avg_entry_price - current_price) / avg_entry_price) * 100
+            
+            return {
+                "success": True,
+                "tx_hash": response.tx_hash,
+                "market_id": market_id,
+                "symbol": symbol,
+                "side": "long" if is_long else "short",
+                "position_size": position_size,
+                "close_size": close_size,
+                "close_percentage": close_percentage,
+                "entry_price": avg_entry_price,
+                "close_price": current_price,
+                "pnl_percent": pnl_percent
+            }
+        else:
+            error_msg = str(error) if error else "Unknown error"
+            print(f"❌ Close order failed: {error_msg}")
+            raise HTTPException(status_code=400, detail=f"Failed to close position: {error_msg}")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/orders/calculate")
 async def calculate_order(order: BracketOrderRequest):
     """

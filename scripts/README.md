@@ -8,14 +8,17 @@ Scripts quản lý Lighter API Server một cách đơn giản và hiệu quả.
 
 ```
 scripts/
-├── start_lighter.sh            # Khởi động server (foreground)
-├── start_lighter_bg.sh         # Khởi động server (background) ⭐ KHUYẾN NGHỊ
-├── start_lighter_with_logs.sh  # 🆕 Khởi động server với logs vào file
-├── stop_lighter.sh             # Dừng server
-├── check_lighter.sh            # Kiểm tra trạng thái
-├── view_logs.sh                # 🆕 Xem logs dễ dàng
+├── run_bot.sh                  # 🆕 ⭐ Chạy hedging bot (auto-start APIs)
+├── start_lighter.sh            # Khởi động Lighter API (foreground)
+├── start_lighter_bg.sh         # Khởi động Lighter API (background)
+├── start_lighter_with_logs.sh  # Khởi động Lighter API với logs vào file
+├── stop_lighter.sh             # Dừng Lighter API
+├── check_lighter.sh            # Kiểm tra trạng thái Lighter API
+├── view_logs.sh                # Xem logs dễ dàng
 ├── README.md                   # Tài liệu này
-└── QUICK_REFERENCE.md          # Tham khảo nhanh
+├── QUICK_REFERENCE.md          # Tham khảo nhanh
+├── LOGS_GUIDE.md               # Hướng dẫn logs
+└── INDEX.md                    # Index
 ```
 
 ---
@@ -30,6 +33,40 @@ scripts/
 ---
 
 ## 📖 Chi Tiết Các Lệnh
+
+### 🤖 Chạy Hedging Bot (ALL-IN-ONE) ⭐ MỚI
+
+**Script tự động khởi động Lighter API và chạy bot:**
+
+```bash
+sh scripts/run_bot.sh
+```
+
+**Script sẽ:**
+1. ✅ Check .env file tồn tại
+2. ✅ Check virtual environment
+3. ✅ Auto-start Lighter API (nếu chưa chạy)
+4. ✅ Verify Lighter API ready
+5. ✅ Show bot configuration
+6. ✅ Run hedging bot
+
+**Ưu điểm:**
+- ✅ **Tất cả trong 1 lệnh** - Không cần start API manually
+- ✅ **Auto-check** prerequisites
+- ✅ **Safe** - Verify trước khi chạy
+- ✅ **Informative** - Show config trước khi start
+
+**Nhược điểm:**
+- ❌ Cần Lighter API đã được config đúng
+
+**Khi nào dùng:**
+- ⭐ **RECOMMEND** cho mọi lần chạy bot
+- Testing & Production
+
+**Dừng bot:**
+- `Ctrl+C`
+
+---
 
 ### 1️⃣ Khởi Động Server (Foreground)
 
