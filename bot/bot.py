@@ -276,48 +276,113 @@ class HedgingBot:
         return "\n".join(lines)
     
     async def close_positions(self):
-        """Close all positions"""
+        """
+        Close all positions SEQUENTIALLY
+        
+        Flow:
+        1. Close Lighter first (as it's sometimes unstable)
+        2. If Lighter succeeds → close Aster
+        3. If any fails → Send URGENT alert (money at risk!)
+        """
         print(f"\n🔄 Closing positions...")
         
-        results = await asyncio.gather(
-            self.lighter.close_position(self.trade_token),
-            self.aster.close_position() if self.aster.client else asyncio.sleep(0),
-            return_exceptions=True
-        )
+        lighter_result = None
+        aster_result = None
+        lighter_ok = False
+        aster_ok = True  # Default true if Aster not used
         
-        lighter_result = results[0] if not isinstance(results[0], Exception) else {'success': False, 'error': str(results[0])}
-        aster_result = results[1] if not isinstance(results[1], Exception) and self.aster.client else {'success': True}
+        # Step 1: Close Lighter FIRST
+        try:
+            print(f"\n🔵 Step 1/2: Closing Lighter position...")
+            lighter_result = await self.lighter.close_position(self.trade_token)
+            lighter_ok = lighter_result.get('success', False)
+            
+            if lighter_ok:
+                pnl = lighter_result.get('pnl_percent')
+                print(f"✅ Lighter closed successfully" + (f" (P&L: {pnl:+.2f}%)" if pnl else ""))
+            else:
+                error = lighter_result.get('error', 'Unknown error')
+                print(f"❌ Lighter close FAILED: {error}")
+                
+                # 🚨 CRITICAL: Send urgent alert
+                await self.telegram.send_message(
+                    f"🚨 <b>URGENT: LIGHTER CLOSE FAILED</b>\n\n"
+                    f"⚠️ Position still OPEN on Lighter!\n"
+                    f"❌ Error: {error}\n\n"
+                    f"⚡ Action required: Close manually to avoid losses!"
+                )
+                
+        except Exception as e:
+            lighter_ok = False
+            lighter_result = {'success': False, 'error': str(e)}
+            print(f"❌ Lighter exception: {e}")
+            
+            await self.telegram.send_message(
+                f"🚨 <b>URGENT: LIGHTER CLOSE EXCEPTION</b>\n\n"
+                f"⚠️ Position still OPEN on Lighter!\n"
+                f"❌ Exception: {str(e)}\n\n"
+                f"⚡ Close manually NOW!"
+            )
         
-        lighter_ok = lighter_result.get('success', False)
-        aster_ok = aster_result.get('success', False) if self.aster.client else True
+        # Step 2: Close Aster ONLY if Lighter succeeded
+        if self.aster.client:
+            if lighter_ok:
+                try:
+                    print(f"\n🟢 Step 2/2: Closing Aster position...")
+                    aster_result = await self.aster.close_position()
+                    aster_ok = aster_result.get('success', False)
+                    
+                    if aster_ok:
+                        pnl = aster_result.get('pnl_percent')
+                        print(f"✅ Aster closed successfully" + (f" (P&L: {pnl:+.2f}%)" if pnl else ""))
+                    else:
+                        error = aster_result.get('error', 'Unknown error')
+                        print(f"❌ Aster close FAILED: {error}")
+                        
+                        # 🚨 CRITICAL: Send urgent alert
+                        await self.telegram.send_message(
+                            f"🚨 <b>URGENT: ASTER CLOSE FAILED</b>\n\n"
+                            f"⚠️ Position still OPEN on Aster!\n"
+                            f"✅ Lighter: Closed\n"
+                            f"❌ Aster Error: {error}\n\n"
+                            f"⚡ Action required: Close manually to avoid losses!"
+                        )
+                        
+                except Exception as e:
+                    aster_ok = False
+                    aster_result = {'success': False, 'error': str(e)}
+                    print(f"❌ Aster exception: {e}")
+                    
+                    await self.telegram.send_message(
+                        f"🚨 <b>URGENT: ASTER CLOSE EXCEPTION</b>\n\n"
+                        f"⚠️ Position still OPEN on Aster!\n"
+                        f"✅ Lighter: Closed\n"
+                        f"❌ Aster Exception: {str(e)}\n\n"
+                        f"⚡ Close manually NOW!"
+                    )
+            else:
+                # Lighter failed, skip Aster
+                print(f"⚠️ Skipping Aster close (Lighter failed)")
+                aster_ok = False
+                aster_result = {'success': False, 'error': 'Skipped due to Lighter failure'}
         
-        msg = []
-        if lighter_ok:
+        # Summary message (only if both succeeded or Aster not used)
+        if lighter_ok and aster_ok:
+            msg = []
             pnl = lighter_result.get('pnl_percent')
             msg.append(f"✅ Lighter: {pnl:+.2f}%" if pnl else "✅ Lighter closed")
-            print(f"✅ Lighter closed successfully" + (f" (P&L: {pnl:+.2f}%)" if pnl else ""))
-        else:
-            error = lighter_result.get('error', 'Unknown error')
-            msg.append(f"❌ Lighter: {error}")
-            print(f"❌ Lighter close failed: {error}")
-        
-        if self.aster.client:
-            if aster_ok:
+            
+            if self.aster.client and aster_result:
                 pnl = aster_result.get('pnl_percent')
                 msg.append(f"✅ Aster: {pnl:+.2f}%" if pnl else "✅ Aster closed")
-                print(f"✅ Aster closed successfully" + (f" (P&L: {pnl:+.2f}%)" if pnl else ""))
-            else:
-                error = aster_result.get('error', 'Unknown error')
-                msg.append(f"❌ Aster: {error}")
-                print(f"❌ Aster close failed: {error}")
-        
-        await self.telegram.send_message(f"🔄 Closed positions\n\n" + "\n".join(msg))
+            
+            await self.telegram.send_message(f"🔄 Closed positions\n\n" + "\n".join(msg))
         
         # Return results for balance reporting
         return {
             'success': lighter_ok and aster_ok,
-            'lighter_pnl': lighter_result.get('pnl_percent') if lighter_ok else None,
-            'aster_pnl': aster_result.get('pnl_percent') if aster_ok else None
+            'lighter_pnl': lighter_result.get('pnl_percent') if lighter_ok and lighter_result else None,
+            'aster_pnl': aster_result.get('pnl_percent') if aster_ok and aster_result else None
         }
     
     async def run_cycle(self, cycle_number: int = 1):
