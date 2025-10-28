@@ -135,6 +135,22 @@ class AsterTrader:
             print(f"❌ Exception: {e}")
             return False
     
+    async def get_balance(self) -> dict:
+        """Get USDT balance from Aster"""
+        try:
+            if not self.client:
+                return {'success': False, 'error': 'Client not initialized'}
+            
+            market = MarketData(self.client)
+            result = await market.get_balance(asset='USDT')
+            
+            return result
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return {'success': False, 'error': str(e)}
+    
     async def close_position(self) -> dict:
         """Close tracked position"""
         try:

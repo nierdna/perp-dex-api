@@ -45,6 +45,10 @@ class HedgingBot:
         # State
         self.lighter_side = None
         self.aster_side = None
+        
+        # Balance tracking
+        self.balance_before = None
+        self.balance_after = None
     
     async def setup(self):
         """Initialize all clients"""
@@ -159,6 +163,118 @@ class HedgingBot:
             await self.telegram.send_message(f"❌ Failed to open positions")
             return False
     
+    async def get_balances(self) -> dict:
+        """Get current balances from both exchanges"""
+        balances = {
+            'lighter': None,
+            'aster': None
+        }
+        
+        try:
+            # Get Lighter balance (USDC)
+            lighter_result = await self.lighter.get_balance()
+            if lighter_result.get('success'):
+                balances['lighter'] = {
+                    'asset': 'USDC',
+                    'available': lighter_result.get('available', 0),
+                    'total': lighter_result.get('wallet_balance', 0)
+                }
+            
+            # Get Aster balance (USDT) if available
+            if self.aster.client:
+                aster_result = await self.aster.get_balance()
+                if aster_result.get('success'):
+                    balances['aster'] = {
+                        'asset': 'USDT',
+                        'available': aster_result.get('available', 0),
+                        'total': aster_result.get('wallet_balance', 0)
+                    }
+        
+        except Exception as e:
+            print(f"⚠️ Error getting balances: {e}")
+        
+        return balances
+    
+    def format_balance_report(self, cycle: int, lighter_pnl: float = None, aster_pnl: float = None) -> str:
+        """Format balance tracking report for Telegram"""
+        if not self.balance_before or not self.balance_after:
+            return ""
+        
+        lines = [f"📊 <b>CYCLE {cycle} COMPLETED</b>", ""]
+        
+        # Balance tracking section
+        lines.append("💰 <b>BALANCE TRACKING:</b>")
+        lines.append("━━━━━━━━━━━━━━━━━━━━")
+        
+        # Before opening
+        lines.append("🟢 <b>Before Opening:</b>")
+        
+        lighter_before = self.balance_before.get('lighter')
+        aster_before = self.balance_before.get('aster')
+        
+        if lighter_before:
+            lines.append(f"  • Lighter (USDC): ${lighter_before['total']:,.2f}")
+        if aster_before:
+            lines.append(f"  • Aster (USDT): ${aster_before['total']:,.2f}")
+        
+        total_before = 0
+        if lighter_before:
+            total_before += lighter_before['total']
+        if aster_before:
+            total_before += aster_before['total']
+        lines.append(f"  • <b>Total: ${total_before:,.2f}</b>")
+        lines.append("")
+        
+        # After closing
+        lines.append("🔴 <b>After Closing:</b>")
+        
+        lighter_after = self.balance_after.get('lighter')
+        aster_after = self.balance_after.get('aster')
+        
+        if lighter_after:
+            lines.append(f"  • Lighter (USDC): ${lighter_after['total']:,.2f}")
+        if aster_after:
+            lines.append(f"  • Aster (USDT): ${aster_after['total']:,.2f}")
+        
+        total_after = 0
+        if lighter_after:
+            total_after += lighter_after['total']
+        if aster_after:
+            total_after += aster_after['total']
+        lines.append(f"  • <b>Total: ${total_after:,.2f}</b>")
+        lines.append("")
+        
+        # Cost breakdown
+        lines.append("💸 <b>COST BREAKDOWN:</b>")
+        lines.append("━━━━━━━━━━━━━━━━━━━━")
+        
+        lighter_cost = 0
+        aster_cost = 0
+        
+        if lighter_before and lighter_after:
+            lighter_cost = lighter_before['total'] - lighter_after['total']
+            lines.append(f"  • Lighter Fee: ${lighter_cost:,.2f}")
+        
+        if aster_before and aster_after:
+            aster_cost = aster_before['total'] - aster_after['total']
+            lines.append(f"  • Aster Fee: ${aster_cost:,.2f}")
+        
+        total_cost = lighter_cost + aster_cost
+        cost_percent = (total_cost / total_before * 100) if total_before > 0 else 0
+        lines.append(f"  • <b>Total Cost: ${total_cost:,.2f} ({cost_percent:.2f}%)</b>")
+        lines.append("")
+        
+        # P&L section
+        if lighter_pnl is not None or aster_pnl is not None:
+            lines.append("📈 <b>P&amp;L:</b>")
+            lines.append("━━━━━━━━━━━━━━━━━━━━")
+            if lighter_pnl is not None:
+                lines.append(f"  • Lighter: {lighter_pnl:+.2f}%")
+            if aster_pnl is not None:
+                lines.append(f"  • Aster: {aster_pnl:+.2f}%")
+        
+        return "\n".join(lines)
+    
     async def close_positions(self):
         """Close all positions"""
         print(f"\n🔄 Closing positions...")
@@ -197,10 +313,19 @@ class HedgingBot:
         
         await self.telegram.send_message(f"🔄 Closed positions\n\n" + "\n".join(msg))
         
-        return lighter_ok and aster_ok
+        # Return results for balance reporting
+        return {
+            'success': lighter_ok and aster_ok,
+            'lighter_pnl': lighter_result.get('pnl_percent') if lighter_ok else None,
+            'aster_pnl': aster_result.get('pnl_percent') if aster_ok else None
+        }
     
-    async def run_cycle(self):
-        """Run one trading cycle"""
+    async def run_cycle(self, cycle_number: int = 1):
+        """Run one trading cycle with balance tracking"""
+        # Get balance before opening
+        print(f"\n💰 Getting balance before opening...")
+        self.balance_before = await self.get_balances()
+        
         print(f"\n{'=' * 60}")
         print(f"🚀 OPENING POSITIONS")
         print(f"{'=' * 60}")
@@ -219,9 +344,23 @@ class HedgingBot:
         
         print(f"\n⏰ Time's up! Closing...")
         
-        await self.close_positions()
+        close_result = await self.close_positions()
         
-        return True
+        # Get balance after closing
+        print(f"\n💰 Getting balance after closing...")
+        self.balance_after = await self.get_balances()
+        
+        # Send balance report to Telegram
+        if self.balance_before and self.balance_after:
+            report = self.format_balance_report(
+                cycle=cycle_number,
+                lighter_pnl=close_result.get('lighter_pnl'),
+                aster_pnl=close_result.get('aster_pnl')
+            )
+            if report:
+                await self.telegram.send_message(report)
+        
+        return close_result.get('success', False)
     
     async def run(self):
         """Main bot loop"""
@@ -242,7 +381,7 @@ class HedgingBot:
             print(f"# CYCLE {cycle}")
             print(f"{'#' * 60}")
             
-            success = await self.run_cycle()
+            success = await self.run_cycle(cycle_number=cycle)
             
             if not success:
                 print(f"❌ Cycle {cycle} failed")

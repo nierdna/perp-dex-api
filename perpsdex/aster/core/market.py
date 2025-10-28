@@ -72,24 +72,27 @@ class MarketData:
                 'error': f"Failed to get price: {str(e)}"
             }
     
-    async def get_balance(self) -> Dict:
+    async def get_balance(self, asset: str = 'USDT') -> Dict:
         """
         Lấy số dư tài khoản
+        
+        Input:
+            asset: Asset to get balance for (default: 'USDT')
         
         Output:
             {
                 'success': bool,
+                'asset': str,
                 'available': float,
                 'total': float,
-                'collateral': float
+                'wallet_balance': float
             }
         """
         try:
-            # TODO: Find actual Aster endpoint
-            # ✅ Use correct Aster API endpoint structure
+            # ✅ Use Binance-style /fapi/v1/balance endpoint
             result = await self.client._request(
                 'GET',
-                '/fapi/v1/account',
+                '/fapi/v1/balance',
                 signed=True
             )
             
@@ -98,12 +101,27 @@ class MarketData:
             
             data = result['data']
             
-            # TODO: Adapt based on actual response format
+            # Aster returns array of balances (Binance-style)
+            # Find the requested asset
+            balance_info = None
+            if isinstance(data, list):
+                for balance in data:
+                    if balance.get('asset') == asset:
+                        balance_info = balance
+                        break
+            
+            if not balance_info:
+                return {
+                    'success': False,
+                    'error': f'Asset {asset} not found in balance'
+                }
+            
             return {
                 'success': True,
-                'available': float(data.get('availableBalance', 0)),
-                'total': float(data.get('totalBalance', 0)),
-                'collateral': float(data.get('collateral', 0))
+                'asset': asset,
+                'available': float(balance_info.get('availableBalance', 0)),
+                'total': float(balance_info.get('balance', 0)),
+                'wallet_balance': float(balance_info.get('balance', 0))
             }
             
         except Exception as e:

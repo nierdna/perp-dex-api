@@ -194,13 +194,40 @@ class AsterClient:
                 'message': f"Connection error: {str(e)}"
             }
     
-    # TODO: Add more methods after researching API docs
-    # - get_account_info()
-    # - get_balance()
-    # - get_positions()
-    # - get_ticker()
-    # - create_order()
-    # - cancel_order()
+    async def cancel_order(self, symbol: str, order_id: str) -> Dict:
+        """
+        Cancel an order
+        
+        Input:
+            symbol: Trading pair (e.g., 'BTC-USDT')
+            order_id: Order ID to cancel
+            
+        Output:
+            {'success': bool, 'error': str (if failed)}
+        """
+        try:
+            # Convert symbol format: BTC-USDT -> BTCUSDT
+            symbol_no_dash = symbol.replace('-', '')
+            
+            params = {
+                'symbol': symbol_no_dash,
+                'orderId': str(order_id)
+            }
+            
+            result = await self._request(
+                'DELETE',
+                '/fapi/v1/order',
+                params=params,
+                signed=True
+            )
+            
+            return result
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f"Failed to cancel order: {str(e)}"
+            }
 
 
 # Placeholder for testing
