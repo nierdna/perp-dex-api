@@ -23,10 +23,19 @@ Bot tự động mở vị thế đối xứng trên **Lighter** và **Aster DEX
 
 ## 📚 Documentation
 
-- 🚀 **[Quick Start Guide](docs/welcome.md)** - Giới thiệu về dự án
-- 📊 **[Current Status](docs/CURRENT_STATUS.md)** - Trạng thái hiện tại & known issues
-- 🔧 **[Position Monitor Plan](docs/POSITION_MONITOR_PLAN.md)** - Plan để fix TP/SL bug
-- 📁 **[Scripts Guide](scripts/README.md)** - Hướng dẫn sử dụng scripts
+### 📍 **START HERE:**
+👉 **[docs/INDEX.md](docs/INDEX.md)** - Master navigation cho toàn bộ docs
+
+### ⚡ **Quick Links:**
+| I want to... | Read this... |
+|-------------|-------------|
+| Run API Server | [docs/api/QUICK_START_API.md](docs/api/QUICK_START_API.md) |
+| API Commands | [docs/api/API_COMMANDS.md](docs/api/API_COMMANDS.md) |
+| Deploy Production | [docs/deployment/DEPLOYMENT.md](docs/deployment/DEPLOYMENT.md) |
+| Full API Docs | [docs/api/API_README.md](docs/api/API_README.md) |
+| Scripts Guide | [scripts/README.md](scripts/README.md) |
+
+**📂 Structure:** `docs/` → `api/`, `deployment/`, `implementation/`, `legacy/`
 
 ---
 
