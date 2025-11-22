@@ -454,24 +454,45 @@ async def handle_aster_close_position(
     # Tính close size từ absolute size
     abs_size = position_size_abs
     
-    # Tính close size
+    # Tính close size (số lượng token cần đóng)
     close_size = abs_size * (percentage / 100.0)
     
     # Place close order (reverse side với reduce_only)
     executor = AsterOrderExecutor(client)
     close_side = 'SELL' if is_long else 'BUY'
     
-    # Tính size USD từ close_size
-    # Lấy entry_price từ position để tính size USD
+    # Lấy entry_price và current_price từ position
     entry_price = float(position.get('entry_price', 0))
-    close_size_usd = close_size * entry_price if entry_price > 0 else 0
+    current_price = float(position.get('current_price', 0))
+    
+    # Tính size USD từ close_size (số lượng token) và current_price
+    # Dùng current_price thay vì entry_price để tính chính xác hơn
+    if current_price > 0:
+        close_size_usd = close_size * current_price
+    elif entry_price > 0:
+        close_size_usd = close_size * entry_price
+    else:
+        # Fallback: lấy giá từ market
+        from perpsdex.aster.core.market import MarketData
+        market = MarketData(client)
+        price_result = await market.get_price(symbol_pair)
+        if price_result.get('success'):
+            market_price = price_result.get('ask' if close_side == 'BUY' else 'bid', 0)
+            close_size_usd = close_size * market_price if market_price > 0 else 0
+        else:
+            close_size_usd = 0
     
     print(f"[Aster Close] Position details:")
     print(f"  Size: {abs_size}")
     print(f"  Side: {side_str}")
     print(f"  Entry Price: {entry_price}")
-    print(f"  Close Size: {close_size} ({percentage}%)")
+    print(f"  Current Price: {current_price}")
+    print(f"  Close Size (tokens): {close_size} ({percentage}%)")
     print(f"  Close Size USD: {close_size_usd}")
+    
+    # Đảm bảo close_size_usd > 0
+    if close_size_usd <= 0:
+        raise HTTPException(status_code=400, detail=f"Invalid close size: {close_size_usd} USD (close_size={close_size}, price={current_price or entry_price})")
     
     result = await executor.place_market_order(
         symbol=symbol_api,

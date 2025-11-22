@@ -87,13 +87,30 @@ class OrderExecutor:
             # Floor to avoid exceeding precision
             quantity_rounded = math.floor(quantity * multiplier) / multiplier
             
+            # ⚠️ Khi reduce_only=True, đảm bảo quantity không quá nhỏ hoặc bằng 0
+            # Nếu quantity_rounded <= 0, có thể gây lỗi "Quantity less than zero"
+            if reduce_only:
+                if quantity_rounded <= 0:
+                    # Nếu quantity quá nhỏ, dùng giá trị tối thiểu dựa trên precision
+                    min_quantity = 1.0 / multiplier
+                    quantity_rounded = min_quantity
+                    print(f"⚠️ [reduce_only] Quantity too small ({quantity}), using minimum: {quantity_rounded}")
+                # Đảm bảo quantity_rounded > 0
+                if quantity_rounded <= 0:
+                    return {
+                        'success': False,
+                        'error': f'Invalid quantity for reduce_only order: {quantity_rounded} (calculated from size={size}, price={price})'
+                    }
+            
             actual_usd = quantity_rounded * price
             diff_usd = abs(actual_usd - size)
-            diff_percent = diff_usd / size * 100
+            diff_percent = diff_usd / size * 100 if size > 0 else 0
             
             print(f"📊 Aster Order: {quantity_rounded} {symbol.split('-')[0]} = ${actual_usd:.2f} USD (precision: {precision})")
             if diff_percent > 1:
                 print(f"   ℹ️ Difference: ${diff_usd:.2f} ({diff_percent:.1f}%) from target ${size:.2f}")
+            if reduce_only:
+                print(f"   🔒 [reduce_only] Closing position with quantity: {quantity_rounded}")
             
             # TODO: Set leverage (may need different endpoint or account-level setting)
             # For now, Aster may use account-default leverage or per-position leverage
