@@ -261,4 +261,45 @@ Khi lỗi, API nên trả:
 
 được xử lý ở **layer adapter cho từng sàn**, không lộ ra ngoài API contract.
 
+---
+
+### 7. Ghi chú riêng cho từng sàn (hiện trạng & TODO)
+
+#### 7.1. Aster
+
+- **Market + Limit + TP/SL**:
+  - Aster hỗ trợ đặt TP/SL dưới dạng các lệnh `STOP_MARKET` / `TAKE_PROFIT_MARKET` độc lập.
+  - Flow hiện tại:
+    - Entry (MARKET hoặc LIMIT) được gửi.
+    - TP/SL được gửi ngay sau đó bằng `AsterRiskManager`, và có thể hiển thị như lệnh riêng trên UI Aster.
+- **Trạng thái**:  
+  - Unified API cho Aster **đã hoạt động đúng** với cả MARKET/LIMIT + TP/SL theo giá.
+
+#### 7.2. Lighter
+
+- **Market + TP/SL**:
+  - Entry MARKET dùng limit “aggressive” với `max_slippage_percent` để cố gắng fill ngay.
+  - TP/SL được đặt qua `LighterRiskManager` dưới dạng lệnh đóng vị thế (reduce-only).
+  - Flow này hoạt động ổn hơn vì sau entry MARKET thường đã mở position.
+
+- **Limit + TP/SL (hiện tại)**:
+  - Unified API vẫn cho phép gửi `tp_price` / `sl_price` kèm LIMIT.
+  - Adapter sẽ:
+    - Submit LIMIT entry lên Lighter.
+    - Gửi luôn TP/SL ngay sau đó.
+  - Tuy nhiên, do cách Lighter xử lý lệnh reduce-only / TP/SL:
+    - TP/SL **không được đảm bảo** sẽ được accept nếu tại thời điểm đó **chưa có position**.
+    - Do đó có thể **không thấy TP/SL xuất hiện trên UI Lighter**, dù unified API đã cố gắng đặt.
+
+- **Kết luận hiện trạng**:
+  - MARKET + TP/SL trên Lighter: **được support tốt hơn**, phù hợp với spec.
+  - LIMIT + TP/SL trên Lighter: **chưa đạt trải nghiệm “bracket order” giống Aster** (entry + TP + SL đều hiển thị rõ trên UI).
+
+- **TODO (roadmap)**:
+  - Thiết kế lại flow cho Lighter LIMIT:
+    - Theo dõi fill của LIMIT (positions / fills).
+    - Chỉ gửi TP/SL **sau khi** entry LIMIT thực sự được khớp (đã mở position).
+  - Bổ sung cơ chế đồng bộ/truy vấn TP/SL từ Lighter để:
+    - Xác nhận lệnh TP/SL nào đã được accept.
+    - Hiển thị trạng thái TP/SL nhất quán với UI Lighter.
 

@@ -135,8 +135,8 @@ class OrderExecutor:
         self,
         symbol: str,
         side: str,
-        size: float,
-        price: float,
+        size: float,  # size in USD (tương tự MARKET)
+        price: float,  # limit price
         leverage: float = 1.0,
         time_in_force: str = 'GTC'
     ) -> Dict:
@@ -160,11 +160,42 @@ class OrderExecutor:
             }
         """
         try:
+            # Convert symbol format: BTC-USDT → BTCUSDT (Aster/Binance style)
+            symbol_no_dash = symbol.replace('-', '')
+
+            # Tính quantity (base token) từ size_usd và limit price
+            # Giống MARKET: quantity = size_usd / price, sau đó làm tròn theo precision.
+            import math
+
+            quantity = size / price  # USD -> base token
+
+            # Dynamic precision giống MARKET
+            if quantity < 0.1:        # Very small (BTC, ETH) - price > $10k
+                precision = 3
+                multiplier = 1000
+            elif quantity < 10:       # Small-medium (SOL, BNB)
+                precision = 2
+                multiplier = 100
+            elif quantity < 1000:     # Medium-large
+                precision = 1
+                multiplier = 10
+            else:                     # Very large (meme, cheap tokens)
+                precision = 0
+                multiplier = 1
+
+            # Floor để không vượt precision, nhưng đảm bảo > 0 bằng cách
+            # tối thiểu hoá step (1 / multiplier) nếu size quá nhỏ.
+            quantity_scaled = math.floor(quantity * multiplier)
+            if quantity_scaled <= 0:
+                quantity_scaled = 1
+            quantity_rounded = quantity_scaled / multiplier
+
             params = {
-                'symbol': symbol,
+                'symbol': symbol_no_dash,
                 'side': side.upper(),
                 'type': 'LIMIT',
-                'quantity': size,
+                # Dùng quantity (base) đã convert từ size_usd
+                'quantity': quantity_rounded,
                 'price': price,
                 'leverage': leverage,
                 'timeInForce': time_in_force
@@ -185,8 +216,8 @@ class OrderExecutor:
             return {
                 'success': True,
                 'order_id': data.get('orderId'),
-                'price': float(data.get('price', 0)),
-                'size': float(data.get('origQty', 0))
+                'price': float(data.get('price', price)),
+                'size': float(data.get('origQty', quantity_rounded))
             }
             
         except Exception as e:

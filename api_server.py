@@ -188,7 +188,8 @@ def normalize_symbol(exchange: str, base_symbol: str) -> dict:
 
     aster:
         - base_symbol: 'BTC'
-        - symbol_pair: 'BTC-USDT'
+        - symbol_pair: 'BTC-USDT'   (dùng cho UI/log)
+        - symbol_api:  'BTCUSDT'    (dùng gọi REST /fapi/v1/*)
     """
     symbol = base_symbol.upper()
 
@@ -210,9 +211,11 @@ def normalize_symbol(exchange: str, base_symbol: str) -> dict:
 
     # aster
     pair = f"{symbol}-USDT"
+    symbol_api = f"{symbol}USDT"
     return {
         "base_symbol": symbol,
-        "symbol_pair": pair,
+        "symbol_pair": pair,   # ví dụ BTC-USDT cho UI/log
+        "symbol_api": symbol_api,  # ví dụ BTCUSDT cho REST Aster
     }
 
 
@@ -253,14 +256,29 @@ def validate_tp_sl(side: str, entry_price: float, tp_price: Optional[float], sl_
 
 async def initialize_lighter_client(keys: dict) -> LighterClient:
     """Khởi tạo LighterClient với keys đã chuẩn hoá"""
-    if not keys.get("private_key"):
+    # Log nhẹ thông tin key đang dùng (mask private key để tránh lộ full)
+    pk = keys.get("private_key")
+    acc_idx = keys.get("account_index")
+    api_idx = keys.get("api_key_index")
+
+    if pk:
+        masked_pk = f"{pk[:6]}...{pk[-4:]}" if len(pk) > 10 else "****"
+    else:
+        masked_pk = None
+
+    print(
+        f"[LighterKeys] account_index={acc_idx}, api_key_index={api_idx}, "
+        f"private_key={masked_pk}"
+    )
+
+    if not pk:
         raise HTTPException(
             status_code=400,
             detail="Lighter private key không có (cần trong body hoặc ENV)",
         )
 
     client = LighterClient(
-        private_key=keys["private_key"],
+        private_key=pk,
         api_key_index=keys.get("api_key_index", 0),
         account_index=keys.get("account_index", 0),
     )
@@ -343,6 +361,7 @@ async def handle_lighter_order(order: UnifiedOrderRequest, keys: dict) -> dict:
             market_id=market_id,
             symbol=symbol,
             leverage=order.leverage,
+            max_slippage_percent=order.max_slippage_percent,
         )
     else:
         result = await executor.place_limit_order(
@@ -414,7 +433,8 @@ async def handle_aster_order(order: UnifiedOrderRequest, keys: dict) -> dict:
     """Xử lý lệnh cho Aster (market/limit, long/short, TP/SL theo giá)"""
     client = await initialize_aster_client(keys)
     norm = normalize_symbol("aster", order.symbol)
-    symbol_pair = norm["symbol_pair"]
+    symbol_pair = norm["symbol_pair"]      # BTC-USDT
+    symbol_api = norm["symbol_api"]        # BTCUSDT
 
     market = AsterMarketData(client)
 
@@ -443,7 +463,7 @@ async def handle_aster_order(order: UnifiedOrderRequest, keys: dict) -> dict:
 
     if order.order_type == "market":
         result = await executor.place_market_order(
-            symbol=symbol_pair,
+            symbol=symbol_api,
             side=side_str,
             size=order.size_usd,
             leverage=order.leverage,
@@ -459,7 +479,7 @@ async def handle_aster_order(order: UnifiedOrderRequest, keys: dict) -> dict:
         entry_used = result.get("filled_price", entry_price)
     else:
         result = await executor.place_limit_order(
-            symbol=symbol_pair,
+            symbol=symbol_api,
             side=side_str,
             size=order.size_usd,
             price=order.limit_price,
@@ -483,7 +503,7 @@ async def handle_aster_order(order: UnifiedOrderRequest, keys: dict) -> dict:
         sl_price = order.sl_price
 
         tp_sl_result = await risk_manager.place_tp_sl(
-            symbol=symbol_pair,
+            symbol=symbol_api,
             side=side_str,
             size=position_size,
             entry_price=entry_used,

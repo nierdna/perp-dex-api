@@ -34,7 +34,8 @@ class OrderExecutor:
         position_size_usd: float,
         market_id: int,
         symbol: str = None,
-        leverage: float = 1.0
+        leverage: float = 1.0,
+        max_slippage_percent: float | None = None,
     ) -> dict:
         """
         Đặt lệnh LONG hoặc SHORT
@@ -111,13 +112,16 @@ class OrderExecutor:
             is_ask = 0 if is_long else 1  # 0 = buy/LONG, 1 = sell/SHORT
             
             # 🎯 USE AGGRESSIVE LIMIT ORDER for instant fill
-            # Set limit price with 3% slippage (within Lighter's acceptable range)
+            # Set limit price with configurable slippage (default 3%)
+            slippage = max_slippage_percent if max_slippage_percent is not None else 3.0
+            slippage_factor = 1 + (slippage / 100.0)
+
             if is_long:
-                # LONG (BUY): Set limit 3% higher than market
-                limit_price = entry_price * 1.03  # 3% higher
+                # LONG (BUY): Set limit higher than market
+                limit_price = entry_price * slippage_factor
             else:
-                # SHORT (SELL): Set limit 3% lower than market  
-                limit_price = entry_price * 0.97  # 3% lower
+                # SHORT (SELL): Set limit lower than market
+                limit_price = entry_price / slippage_factor
             
             order_type = self.signer_client.ORDER_TYPE_LIMIT
             time_in_force = self.signer_client.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME  # GTC - most compatible
@@ -129,8 +133,9 @@ class OrderExecutor:
             limit_price_int = Calculator.scale_to_int(limit_price, price_decimals)
             
             print(f"🎯 AGGRESSIVE LIMIT ORDER (3% slippage):")
+            direction_label = f"+{slippage}%" if is_long else f"-{slippage}%"
             print(f"   Market Price: ${entry_price:,.6f}")
-            print(f"   Limit Price: ${limit_price:,.6f} ({'+3%' if is_long else '-3%'})")
+            print(f"   Limit Price: ${limit_price:,.6f} ({direction_label})")
             print(f"   Expected: Instant fill at best available price")
             
             # Create order
@@ -213,11 +218,14 @@ class OrderExecutor:
             }
         """
         try:
-            # Get market metadata
-            metadata_result = await self.order_api.get_market_metadata(market_id)
+            # Get market metadata (dùng cùng helper như MARKET order)
+            metadata_result = await self._get_market_metadata(market_id)
             if not metadata_result['success']:
-                return {'success': False, 'error': 'Failed to get market metadata'}
-            
+                return {
+                    'success': False,
+                    'error': metadata_result.get('error', 'Failed to get market metadata'),
+                }
+
             size_decimals = metadata_result['size_decimals']
             price_decimals = metadata_result['price_decimals']
             min_base_amount = metadata_result['min_base_amount']
@@ -262,12 +270,13 @@ class OrderExecutor:
             print(f"   💵 Limit Price: ${limit_price}")
             print(f"   💸 Total Cost: ${position_size_usd}")
             print(f"   📊 Leverage: {leverage}x")
-            
+
             return {
                 'success': True,
+                'order_id': client_order_index,
                 'tx_hash': response.tx_hash,
                 'position_size': position_size,
-                'entry_price': limit_price
+                'entry_price': limit_price,
             }
             
         except Exception as e:
