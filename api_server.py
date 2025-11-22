@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
+from contextlib import asynccontextmanager
 import os
 from dotenv import load_dotenv
 import json
@@ -23,6 +24,20 @@ import urllib.request
 
 # Load environment
 load_dotenv()
+
+# Optional DB layer for logging orders
+try:
+    from db import (
+        log_order_request,
+        update_order_after_result,
+        test_db_connection,
+    )
+except Exception as _db_import_err:
+    # Không chặn server nếu DB layer lỗi, chỉ log cảnh báo
+    print(f"[DB] Warning: không thể import db module: {_db_import_err}")
+    log_order_request = None  # type: ignore
+    update_order_after_result = None  # type: ignore
+    test_db_connection = None  # type: ignore
 
 # Import Lighter SDK
 from perpsdex.lighter.core.client import LighterClient
@@ -37,11 +52,33 @@ from perpsdex.aster.core.market import MarketData as AsterMarketData
 from perpsdex.aster.core.order import OrderExecutor as AsterOrderExecutor
 from perpsdex.aster.core.risk import RiskManager as AsterRiskManager
 
+
+# Lifespan event: Kiểm tra database connection khi server startup
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager để kiểm tra DB khi startup"""
+    # Startup
+    if test_db_connection is not None:
+        db_status = test_db_connection()
+        status_icon = "✅" if db_status["connected"] else "❌" if db_status["status"] == "failed" else "⚠️"
+        print(f"\n{status_icon} [DB] {db_status['message']}")
+        if not db_status["connected"]:
+            print("   ⚠️  Orders sẽ KHÔNG được lưu vào database cho đến khi fix lỗi.")
+    else:
+        print("\n⚠️  [DB] Database module không available, skip connection check.")
+    
+    yield  # Server running
+    
+    # Shutdown (nếu cần cleanup, thêm code ở đây)
+    pass
+
+
 # FastAPI app
 app = FastAPI(
     title="Trading API Server",
     description="API for placing orders on Lighter and Aster DEX",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 # CORS
@@ -1242,6 +1279,8 @@ async def place_unified_order(order: UnifiedOrderRequest):
     Unified endpoint: đặt lệnh LONG/SHORT, MARKET/LIMIT, TP/SL theo GIÁ
     cho cả Lighter và Aster, theo spec trong docs/api/api.md.
     """
+    db_order_id = None
+
     try:
         print(f"\n{'=' * 60}")
         print("📥 NEW UNIFIED ORDER REQUEST")
@@ -1255,7 +1294,26 @@ async def place_unified_order(order: UnifiedOrderRequest):
         print(f"TP Price   : {order.tp_price}")
         print(f"SL Price   : {order.sl_price}")
 
-        # Chuẩn hoá keys
+        # Ghi log order vào DB ở trạng thái 'pending' (nếu DB được cấu hình)
+        if log_order_request is not None:
+            db_order_id = log_order_request(
+                exchange=order.exchange,
+                symbol_base=order.symbol.upper(),
+                symbol_pair=None,  # sẽ bổ sung nếu cần mapping chi tiết hơn
+                side=order.side,
+                order_type=order.order_type,
+                size_usd=order.size_usd,
+                leverage=order.leverage,
+                limit_price=order.limit_price,
+                tp_price=order.tp_price,
+                sl_price=order.sl_price,
+                max_slippage_percent=order.max_slippage_percent,
+                client_order_id=order.client_order_id,
+                tag=order.tag,
+                raw_request=order.model_dump(),
+            )
+
+        # Chuẩn hoá keys và gửi lệnh xuống từng sàn
         keys = get_keys_or_env(order.keys, order.exchange)
 
         # Dispatch theo sàn
@@ -1270,14 +1328,65 @@ async def place_unified_order(order: UnifiedOrderRequest):
         print(f"Position Size: {result.get('position_size')}")
         print(f"{'=' * 60}\n")
 
+        # Cập nhật DB sau khi gọi sàn thành công
+        if update_order_after_result is not None:
+            try:
+                update_order_after_result(
+                    db_order_id=db_order_id,
+                    status="submitted",
+                    exchange_order_id=str(result.get("order_id"))
+                    if result.get("order_id") is not None
+                    else None,
+                    entry_price_requested=float(result.get("entry_price"))
+                    if result.get("entry_price") is not None
+                    else None,
+                    entry_price_filled=float(result.get("entry_price"))
+                    if result.get("entry_price") is not None
+                    else None,
+                    position_size_asset=float(result.get("position_size"))
+                    if result.get("position_size") is not None
+                    else None,
+                    raw_response=result,
+                )
+            except Exception as db_err:
+                print(f"[DB] Warning: lỗi khi update order sau khi đặt lệnh: {db_err}")
+
         return result
         
-    except HTTPException:
+    except HTTPException as http_exc:
+        # Nếu đã có DB record thì cập nhật trạng thái rejected/error
+        if update_order_after_result is not None:
+            try:
+                update_order_after_result(
+                    db_order_id=db_order_id,
+                    status="rejected" if http_exc.status_code == 400 else "error",
+                    exchange_order_id=None,
+                    entry_price_requested=None,
+                    entry_price_filled=None,
+                    position_size_asset=None,
+                    raw_response={"detail": http_exc.detail},
+                )
+            except Exception as db_err:
+                print(f"[DB] Warning: lỗi khi update order sau HTTPException: {db_err}")
         raise
     except Exception as e:
         import traceback
 
         traceback.print_exc()
+        # Cập nhật DB cho lỗi 500 nội bộ
+        if update_order_after_result is not None:
+            try:
+                update_order_after_result(
+                    db_order_id=db_order_id,
+                    status="error",
+                    exchange_order_id=None,
+                    entry_price_requested=None,
+                    entry_price_filled=None,
+                    position_size_asset=None,
+                    raw_response={"exception": str(e)},
+                )
+            except Exception as db_err:
+                print(f"[DB] Warning: lỗi khi update order sau Exception: {db_err}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

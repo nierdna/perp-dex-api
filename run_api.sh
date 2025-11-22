@@ -11,10 +11,19 @@ cd "$(dirname "$0")"
 # Port có thể override bằng biến môi trường bên ngoài, mặc định 8080
 : "${API_PORT:=8080}"
 
-# Nếu có venv trong project thì tự động activate (Cách 1)
-if [ -d "venv" ]; then
-  # shellcheck disable=SC1091
-  source "venv/bin/activate"
+# Nếu chưa có venv thì tạo, sau đó luôn activate
+if [ ! -d "venv" ]; then
+  echo "[SETUP] Creating Python virtualenv..."
+  python3 -m venv venv
+fi
+
+# shellcheck disable=SC1091
+source "venv/bin/activate"
+
+# Đảm bảo đã cài đủ dependencies (chỉ chạy nếu thiếu sqlalchemy đơn giản nhất)
+if ! python3 -c "import sqlalchemy" >/dev/null 2>&1; then
+  echo "[SETUP] Installing Python dependencies from requirements.txt..."
+  pip install -r requirements.txt
 fi
 
 echo "Starting Trading API Server on port ${API_PORT}..."

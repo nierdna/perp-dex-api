@@ -303,3 +303,107 @@ Khi lỗi, API nên trả:
     - Xác nhận lệnh TP/SL nào đã được accept.
     - Hiển thị trạng thái TP/SL nhất quán với UI Lighter.
 
+---
+
+### 8. Order logging & Database (internal design)
+
+> Mục tiêu: Mỗi request `POST /api/order` đều được lưu lại vào DB (nếu cấu hình `DB_URL`) dưới dạng 1 bản ghi “order”, phục vụ audit, thống kê, và đồng bộ với trạng thái thực tế trên sàn.
+
+#### 8.1. Cấu hình DB
+
+- ENV:
+  - `DB_URL`: chuỗi kết nối SQLAlchemy, ví dụ:
+    - SQLite local: `sqlite:///orders.db`
+    - PostgreSQL: `postgresql+psycopg2://user:pass@host:5432/dbname`
+- Nếu **không cấu hình `DB_URL`**:
+  - Server vẫn chạy bình thường.
+  - Layer DB ở `db.py` sẽ chạy chế độ **no-op** (chỉ log cảnh báo, không lưu gì).
+
+#### 8.2. Bảng `orders` (đơn giản hoá)
+
+Mỗi lệnh entry (LONG/SHORT, MARKET/LIMIT) tương ứng 1 row trong bảng `orders`.
+
+- **Nhóm nhận diện:**
+  - `id`: int, PK, auto-increment.
+  - `exchange`: `"lighter"` hoặc `"aster"`.
+  - `exchange_order_id`: nullable, `order_id` do sàn trả về.
+
+- **Thông tin trading (input):**
+  - `symbol_base`: base symbol client gửi, ví dụ `"BTC"`.
+  - `symbol_pair`: nullable, có thể dùng cho `"BTC-USDT"` hoặc `"BTCUSDT"` (hiện đang để `None` ở unified layer, có thể mở rộng sau).
+  - `side`: `"long"` / `"short"`.
+  - `order_type`: `"market"` / `"limit"`.
+  - `size_usd`: số tiền USD yêu cầu vào lệnh.
+  - `leverage`: đòn bẩy.
+  - `limit_price`: nullable.
+  - `tp_price`, `sl_price`: nullable.
+  - `max_slippage_percent`: nullable.
+  - `client_order_id`: nullable.
+  - `tag`: nullable (strategy/source tag).
+
+- **Trạng thái & kết quả:**
+  - `status`:
+    - `"pending"`: vừa nhận request, chưa gọi sàn xong.
+    - `"submitted"`: đã gửi sàn thành công (có `exchange_order_id`).
+    - `"rejected"`: lỗi logic/400 (VD: validate, not enough margin, invalid signature…).
+    - `"error"`: lỗi 500 nội bộ (exception).
+  - `entry_price_requested`: giá entry mà backend dùng (market/limit).
+  - `entry_price_filled`: hiện tại đang mirror `entry_price` từ kết quả (tương lai có thể dùng giá fill thực tế khi job sync trạng thái).
+  - `position_size_asset`: nullable, số lượng asset (BTC, ETH, …) backend nhận được sau khi place order.
+  - `exchange_raw_response`: JSON (text), lưu raw response (hoặc thông tin lỗi) từ sàn / unified result để tiện debug.
+
+- **Thời gian:**
+  - `created_at`, `updated_at`: UTC.
+
+#### 8.3. Lifecycle trong `/api/order`
+
+1. **Nhận request từ client**
+   - FastAPI nhận `UnifiedOrderRequest`, validate.
+   - Nếu `DB_URL` được cấu hình và `db.log_order_request` khả dụng:
+     - Gọi `log_order_request(...)`:
+       - Tạo bản ghi `orders` với `status = "pending"`.
+       - Lưu lại các field: exchange, symbol_base, side, order_type, size_usd, leverage, limit_price, TP/SL, max_slippage_percent, client_order_id, tag, cùng bản dump payload request.
+       - Hàm trả về `db_order_id` (id trong bảng `orders`) để dùng cho các bước sau.
+
+2. **Gọi adapter theo sàn (Lighter/Aster)**
+   - Chuẩn hoá keys (ENV/body).
+   - Dispatch:
+     - `handle_lighter_order(...)` hoặc
+     - `handle_aster_order(...)`.
+
+3. **Khi đặt lệnh THÀNH CÔNG (result `success=True`)**
+   - Unified layer in log:
+     - `Order ID`, `Entry Price`, `Position Size`, …
+   - Nếu `update_order_after_result` khả dụng:
+     - Gọi `update_order_after_result(...)` với:
+       - `db_order_id`: id đã tạo ở bước 1.
+       - `status = "submitted"`.
+       - `exchange_order_id = result["order_id"]` (nếu có).
+       - `entry_price_requested` / `entry_price_filled` từ `result`.
+       - `position_size_asset` từ `result`.
+       - `raw_response = result` (full dict trả về cho client).
+
+4. **Khi lỗi HTTP 400/HTTPException (validate hoặc lỗi từ sàn)**
+   - Unified layer re-raise `HTTPException` như cũ (client vẫn nhận được JSON `{"detail": ...}`).
+   - Nếu có `db_order_id` và `update_order_after_result`:
+     - Gọi `update_order_after_result(...)` với:
+       - `status = "rejected"` nếu `status_code == 400`, ngược lại `"error"`.
+       - `exchange_order_id = None`.
+       - `raw_response = {"detail": http_exc.detail}`.
+
+5. **Khi lỗi 500 nội bộ (Exception khác)**
+   - In traceback.
+   - Nếu có `db_order_id`:
+     - Cập nhật `status = "error"`, lưu thông tin exception vào `exchange_raw_response`.
+   - Raise `HTTPException(500, detail=str(e))` cho client.
+
+#### 8.4. Ghi chú mở rộng (tương lai)
+
+- Có thể bổ sung:
+  - Bảng riêng `order_tp_sl` để track chi tiết từng lệnh TP/SL.
+  - Job nền (cron/worker) gọi lại API Aster/Lighter để:
+    - Cập nhật `status` thành `filled`/`cancelled`/`partially_filled`.
+    - Lưu `filled_price`, `filled_size`, và PnL cơ bản.
+- Spec DB đã được thiết kế theo hướng có thể mở rộng mà không phải thay đổi API contract `/api/order`.
+
+
