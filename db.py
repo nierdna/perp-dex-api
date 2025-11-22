@@ -287,4 +287,69 @@ def test_db_connection() -> dict:
         }
 
 
+def query_orders(
+    exchange: Optional[str] = None,
+    status: Optional[str] = None,
+    order_type: Optional[str] = None,
+    limit: int = 100,
+) -> list:
+    """
+    Query orders từ database với filter.
+    
+    Returns:
+        list: Danh sách orders (dict)
+    """
+    eng = _init_engine()
+    if eng is None:
+        return []
+    
+    try:
+        query = orders_table.select()
+        
+        if exchange:
+            query = query.where(orders_table.c.exchange == exchange)
+        if status:
+            query = query.where(orders_table.c.status == status)
+        if order_type:
+            query = query.where(orders_table.c.order_type == order_type)
+        
+        query = query.order_by(orders_table.c.created_at.desc()).limit(limit)
+        
+        with eng.connect() as conn:
+            result = conn.execute(query)
+            rows = result.fetchall()
+            
+            orders = []
+            for row in rows:
+                order_dict = {
+                    "id": row.id,
+                    "exchange": row.exchange,
+                    "symbol_base": row.symbol_base,
+                    "symbol_pair": row.symbol_pair,
+                    "side": row.side,
+                    "order_type": row.order_type,
+                    "size_usd": float(row.size_usd) if row.size_usd else None,
+                    "leverage": float(row.leverage) if row.leverage else None,
+                    "limit_price": float(row.limit_price) if row.limit_price else None,
+                    "tp_price": float(row.tp_price) if row.tp_price else None,
+                    "sl_price": float(row.sl_price) if row.sl_price else None,
+                    "max_slippage_percent": float(row.max_slippage_percent) if row.max_slippage_percent else None,
+                    "client_order_id": row.client_order_id,
+                    "tag": row.tag,
+                    "status": row.status,
+                    "exchange_order_id": row.exchange_order_id,
+                    "entry_price_requested": float(row.entry_price_requested) if row.entry_price_requested else None,
+                    "entry_price_filled": float(row.entry_price_filled) if row.entry_price_filled else None,
+                    "position_size_asset": float(row.position_size_asset) if row.position_size_asset else None,
+                    "created_at": row.created_at.isoformat() if row.created_at else None,
+                    "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+                }
+                orders.append(order_dict)
+            
+            return orders
+    except SQLAlchemyError as e:
+        print(f"[DB] Lỗi khi query orders: {e}")
+        return []
+
+
 

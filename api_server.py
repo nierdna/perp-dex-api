@@ -31,6 +31,7 @@ try:
         log_order_request,
         update_order_after_result,
         test_db_connection,
+        query_orders,
     )
 except Exception as _db_import_err:
     # Không chặn server nếu DB layer lỗi, chỉ log cảnh báo
@@ -38,6 +39,7 @@ except Exception as _db_import_err:
     log_order_request = None  # type: ignore
     update_order_after_result = None  # type: ignore
     test_db_connection = None  # type: ignore
+    query_orders = None  # type: ignore
 
 # Import Lighter SDK
 from perpsdex.lighter.core.client import LighterClient
@@ -629,12 +631,12 @@ async def root():
       }
       .shell {
         width: 100%;
-        max-width: 1120px;
+        max-width: 1400px;
         display: grid;
-        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr);
         gap: 24px;
       }
-      @media (max-width: 900px) {
+      @media (max-width: 1200px) {
         .shell {
           grid-template-columns: minmax(0, 1fr);
         }
@@ -843,6 +845,105 @@ async def root():
       }
       .status-line span {
         font-weight: 500;
+      }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 16px;
+      }
+      .tab {
+        padding: 8px 16px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 13px;
+        transition: color 0.15s, border-color 0.15s;
+      }
+      .tab:hover {
+        color: var(--text);
+      }
+      .tab.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      .orders-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 500px;
+        overflow-y: auto;
+      }
+      .order-item {
+        background: var(--input-bg);
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        padding: 12px;
+        font-size: 12px;
+      }
+      .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .order-exchange {
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      .order-side {
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+      }
+      .order-side.long {
+        background: rgba(34, 197, 94, 0.2);
+        color: var(--success);
+      }
+      .order-side.short {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--danger);
+      }
+      .order-details {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .order-detail-item {
+        display: flex;
+        justify-content: space-between;
+      }
+      .pnl {
+        font-weight: 600;
+        font-size: 13px;
+      }
+      .pnl.positive {
+        color: var(--success);
+      }
+      .pnl.negative {
+        color: var(--danger);
+      }
+      .refresh-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--muted);
+        font-size: 13px;
       }
     </style>
   </head>
@@ -1097,6 +1198,45 @@ async def root():
           </div>
           <div id="output" class="output">Chưa có dữ liệu.</div>
         </div>
+
+        <!-- THIRD: ORDERS LIST -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="title">Orders</div>
+              <div class="muted">
+                Danh sách lệnh đang active và pending.
+              </div>
+            </div>
+            <button id="refresh-orders-btn" class="btn btn-secondary btn-sm refresh-btn">
+              🔄 Refresh
+            </button>
+          </div>
+
+          <div class="tabs">
+            <button class="tab active" data-tab="positions">Vị thế</button>
+            <button class="tab" data-tab="open">Lệnh mở</button>
+            <button class="tab" data-tab="history">Lịch sử</button>
+          </div>
+
+          <div id="tab-positions" class="tab-content active">
+            <div id="positions-list" class="orders-list">
+              <div class="empty-state">Đang tải...</div>
+            </div>
+          </div>
+
+          <div id="tab-open" class="tab-content">
+            <div id="open-orders-list" class="orders-list">
+              <div class="empty-state">Đang tải...</div>
+            </div>
+          </div>
+
+          <div id="tab-history" class="tab-content">
+            <div id="history-list" class="orders-list">
+              <div class="empty-state">Đang tải...</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1241,6 +1381,12 @@ async def root():
             statusLine.innerHTML =
               '<span class="tag-success">Success</span> HTTP ' + res.status;
             outputEl.textContent = JSON.stringify(data, null, 2);
+            // Auto refresh orders after successful order
+            setTimeout(() => {
+              loadPositions();
+              loadOpenOrders();
+              loadHistory();
+            }, 1000);
           } else {
             statusLine.innerHTML =
               '<span class="tag-error">Error</span> HTTP ' + res.status;
@@ -1258,6 +1404,290 @@ async def root():
 
       // Initial preview
       updatePreview();
+
+      // =============== ORDERS MANAGEMENT ===============
+      const tabs = document.querySelectorAll(".tab");
+      const tabContents = document.querySelectorAll(".tab-content");
+      const refreshBtn = document.getElementById("refresh-orders-btn");
+      const positionsList = document.getElementById("positions-list");
+      const openOrdersList = document.getElementById("open-orders-list");
+      const historyList = document.getElementById("history-list");
+
+      // Tab switching
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const targetTab = tab.dataset.tab;
+          tabs.forEach((t) => t.classList.remove("active"));
+          tabContents.forEach((tc) => tc.classList.remove("active"));
+          tab.classList.add("active");
+          document.getElementById(`tab-${targetTab}`).classList.add("active");
+          if (targetTab === "positions") {
+            loadPositions();
+          } else if (targetTab === "open") {
+            loadOpenOrders();
+          } else if (targetTab === "history") {
+            loadHistory();
+          }
+        });
+      });
+
+      // Format number
+      function formatNumber(num, decimals = 2) {
+        if (num === null || num === undefined) return "-";
+        return Number(num).toLocaleString("en-US", {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals,
+        });
+      }
+
+      // Format PnL
+      function formatPnL(pnlUsd, pnlPercent) {
+        const sign = pnlUsd >= 0 ? "+" : "";
+        const colorClass = pnlUsd >= 0 ? "positive" : "negative";
+        return `<span class="pnl ${colorClass}">${sign}${formatNumber(pnlUsd)} USD (${sign}${formatNumber(pnlPercent)}%)</span>`;
+      }
+
+      // Render position (vị thế)
+      function renderPosition(order) {
+        const pnlHtml = formatPnL(order.pnl_usd, order.pnl_percent);
+        return `
+          <div class="order-item">
+            <div class="order-header">
+              <div>
+                <span class="order-exchange">${order.exchange.toUpperCase()}</span>
+                <span class="order-side ${order.side}">${order.side.toUpperCase()}</span>
+              </div>
+              ${pnlHtml}
+            </div>
+            <div class="order-details">
+              <div class="order-detail-item">
+                <span>Symbol:</span>
+                <span><strong>${order.symbol_base}</strong></span>
+              </div>
+              <div class="order-detail-item">
+                <span>Type:</span>
+                <span>${order.order_type.toUpperCase()}</span>
+              </div>
+              <div class="order-detail-item">
+                <span>Size:</span>
+                <span>$${formatNumber(order.size_usd)}</span>
+              </div>
+              <div class="order-detail-item">
+                <span>Leverage:</span>
+                <span>${order.leverage}x</span>
+              </div>
+              <div class="order-detail-item">
+                <span>Entry:</span>
+                <span>$${formatNumber(order.entry_price)}</span>
+              </div>
+              <div class="order-detail-item">
+                <span>Current:</span>
+                <span>$${formatNumber(order.current_price)}</span>
+              </div>
+              <div class="order-detail-item">
+                <span>Position:</span>
+                <span>${formatNumber(order.position_size, 6)}</span>
+              </div>
+              <div class="order-detail-item">
+                <span>Order ID:</span>
+                <span style="font-size: 10px;">${order.exchange_order_id || "-"}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Render open order (lệnh mở)
+      function renderOpenOrder(order) {
+        return `
+          <div class="order-item">
+            <div class="order-header">
+              <div>
+                <span class="order-exchange">${order.exchange.toUpperCase()}</span>
+                <span class="order-side ${order.side}">${order.side.toUpperCase()}</span>
+              </div>
+              <span style="font-size: 11px; color: var(--muted);">Waiting...</span>
+            </div>
+            <div class="order-details">
+              <div class="order-detail-item">
+                <span>Symbol:</span>
+                <span><strong>${order.symbol_base}</strong></span>
+              </div>
+              <div class="order-detail-item">
+                <span>Type:</span>
+                <span>${order.order_type.toUpperCase()}</span>
+              </div>
+              <div class="order-detail-item">
+                <span>Limit Price:</span>
+                <span>$${formatNumber(order.limit_price)}</span>
+              </div>
+              <div class="order-detail-item">
+                <span>Size:</span>
+                <span>$${formatNumber(order.size_usd)}</span>
+              </div>
+              <div class="order-detail-item">
+                <span>Leverage:</span>
+                <span>${order.leverage}x</span>
+              </div>
+              ${order.tp_price ? `
+              <div class="order-detail-item">
+                <span>TP:</span>
+                <span style="color: var(--success);">$${formatNumber(order.tp_price)}</span>
+              </div>
+              ` : ""}
+              ${order.sl_price ? `
+              <div class="order-detail-item">
+                <span>SL:</span>
+                <span style="color: var(--danger);">$${formatNumber(order.sl_price)}</span>
+              </div>
+              ` : ""}
+            </div>
+          </div>
+        `;
+      }
+
+      // Render history order
+      function renderHistoryOrder(order) {
+        const statusColor = order.status === "submitted" ? "var(--success)" : 
+                           order.status === "rejected" ? "var(--danger)" : "var(--muted)";
+        return `
+          <div class="order-item">
+            <div class="order-header">
+              <div>
+                <span class="order-exchange">${order.exchange.toUpperCase()}</span>
+                <span class="order-side ${order.side}">${order.side.toUpperCase()}</span>
+                <span style="font-size: 11px; color: ${statusColor}; margin-left: 8px;">${order.status.toUpperCase()}</span>
+              </div>
+              <span style="font-size: 11px; color: var(--muted);">${new Date(order.created_at).toLocaleString("vi-VN")}</span>
+            </div>
+            <div class="order-details">
+              <div class="order-detail-item">
+                <span>Symbol:</span>
+                <span><strong>${order.symbol_base}</strong></span>
+              </div>
+              <div class="order-detail-item">
+                <span>Type:</span>
+                <span>${order.order_type.toUpperCase()}</span>
+              </div>
+              <div class="order-detail-item">
+                <span>Size:</span>
+                <span>$${formatNumber(order.size_usd)}</span>
+              </div>
+              <div class="order-detail-item">
+                <span>Leverage:</span>
+                <span>${order.leverage}x</span>
+              </div>
+              ${order.limit_price ? `
+              <div class="order-detail-item">
+                <span>Limit:</span>
+                <span>$${formatNumber(order.limit_price)}</span>
+              </div>
+              ` : ""}
+              ${order.entry_price_filled ? `
+              <div class="order-detail-item">
+                <span>Entry:</span>
+                <span>$${formatNumber(order.entry_price_filled)}</span>
+              </div>
+              ` : ""}
+              ${order.position_size_asset ? `
+              <div class="order-detail-item">
+                <span>Position:</span>
+                <span>${formatNumber(order.position_size_asset, 6)}</span>
+              </div>
+              ` : ""}
+              ${order.exchange_order_id ? `
+              <div class="order-detail-item">
+                <span>Order ID:</span>
+                <span style="font-size: 10px;">${order.exchange_order_id}</span>
+              </div>
+              ` : ""}
+            </div>
+          </div>
+        `;
+      }
+
+      // Load positions (vị thế)
+      async function loadPositions() {
+        try {
+          positionsList.innerHTML = '<div class="empty-state">Đang tải...</div>';
+          const res = await fetch("/api/orders/positions");
+          const data = await res.json();
+          
+          if (data.positions && data.positions.length > 0) {
+            positionsList.innerHTML = data.positions.map(renderPosition).join("");
+          } else {
+            positionsList.innerHTML = '<div class="empty-state">Không có vị thế nào đang mở.</div>';
+          }
+        } catch (err) {
+          positionsList.innerHTML = `<div class="empty-state" style="color: var(--danger);">Lỗi: ${err.message}</div>`;
+        }
+      }
+
+      // Load open orders (lệnh mở)
+      async function loadOpenOrders() {
+        try {
+          openOrdersList.innerHTML = '<div class="empty-state">Đang tải...</div>';
+          const res = await fetch("/api/orders/open");
+          const data = await res.json();
+          
+          if (data.open_orders && data.open_orders.length > 0) {
+            openOrdersList.innerHTML = data.open_orders.map(renderOpenOrder).join("");
+          } else {
+            openOrdersList.innerHTML = '<div class="empty-state">Không có lệnh mở nào.</div>';
+          }
+        } catch (err) {
+          openOrdersList.innerHTML = `<div class="empty-state" style="color: var(--danger);">Lỗi: ${err.message}</div>`;
+        }
+      }
+
+      // Load history (lịch sử)
+      async function loadHistory() {
+        try {
+          historyList.innerHTML = '<div class="empty-state">Đang tải...</div>';
+          const res = await fetch("/api/orders/history?limit=50");
+          const data = await res.json();
+          
+          if (data.history && data.history.length > 0) {
+            historyList.innerHTML = data.history.map(renderHistoryOrder).join("");
+          } else {
+            historyList.innerHTML = '<div class="empty-state">Không có lịch sử nào.</div>';
+          }
+        } catch (err) {
+          historyList.innerHTML = `<div class="empty-state" style="color: var(--danger);">Lỗi: ${err.message}</div>`;
+        }
+      }
+
+      // Refresh button
+      refreshBtn.addEventListener("click", () => {
+        const activeTab = document.querySelector(".tab.active");
+        const tabName = activeTab.dataset.tab;
+        if (tabName === "positions") {
+          loadPositions();
+        } else if (tabName === "open") {
+          loadOpenOrders();
+        } else if (tabName === "history") {
+          loadHistory();
+        }
+      });
+
+
+      // Load initial data
+      loadPositions();
+      loadOpenOrders();
+      loadHistory();
+
+      // Auto refresh every 10 seconds
+      setInterval(() => {
+        const activeTab = document.querySelector(".tab.active");
+        const tabName = activeTab.dataset.tab;
+        if (tabName === "positions") {
+          loadPositions();
+        } else if (tabName === "open") {
+          loadOpenOrders();
+        } else if (tabName === "history") {
+          loadHistory();
+        }
+      }, 10000);
     </script>
   </body>
 </html>
@@ -1271,6 +1701,123 @@ async def get_status():
         "status": "online",
         "message": "Trading API Server is running",
     }
+
+
+@app.get("/api/orders/positions")
+async def get_positions(
+    exchange: Optional[str] = None,
+):
+    """
+    Lấy danh sách các vị thế đang mở (có position thực tế trên sàn) kèm PnL.
+    
+    TODO: Logic đang được thảo luận, tạm thời trả về mảng rỗng.
+    """
+    return {
+        "positions": [],
+        "total": 0
+    }
+
+
+@app.get("/api/orders/open")
+async def get_open_orders(
+    exchange: Optional[str] = None,
+):
+    """
+    Lấy danh sách các lệnh mở đang chờ khớp (LIMIT, TP/SL orders).
+    
+    TODO: Logic đang được thảo luận, tạm thời trả về mảng rỗng.
+    """
+    return {
+        "open_orders": [],
+        "total": 0
+    }
+
+
+@app.get("/api/orders/history")
+async def get_order_history(
+    exchange: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 100,
+):
+    """
+    Lấy lịch sử tất cả các orders đã lưu trong database.
+    
+    Query params:
+    - exchange: 'lighter' hoặc 'aster' (optional)
+    - status: 'submitted', 'rejected', 'error', 'pending' (optional)
+    - limit: số lượng orders tối đa (default: 100)
+    
+    Returns:
+    {
+        "history": [
+            {
+                "id": int,
+                "exchange": str,
+                "symbol_base": str,
+                "side": str,
+                "order_type": str,
+                "size_usd": float,
+                "leverage": float,
+                "limit_price": float,
+                "tp_price": float,
+                "sl_price": float,
+                "status": str,
+                "exchange_order_id": str,
+                "entry_price_filled": float,
+                "position_size_asset": float,
+                "created_at": str,
+                "updated_at": str
+            }
+        ],
+        "total": int
+    }
+    """
+    if query_orders is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Database module không available, không thể query orders"
+        )
+    
+    try:
+        all_orders = query_orders(
+            exchange=exchange,
+            status=status,
+            limit=limit
+        )
+        
+        history = [
+            {
+                "id": o["id"],
+                "exchange": o["exchange"],
+                "symbol_base": o["symbol_base"],
+                "side": o["side"],
+                "order_type": o["order_type"],
+                "size_usd": o["size_usd"],
+                "leverage": o["leverage"],
+                "limit_price": o.get("limit_price"),
+                "tp_price": o.get("tp_price"),
+                "sl_price": o.get("sl_price"),
+                "status": o["status"],
+                "exchange_order_id": o.get("exchange_order_id"),
+                "entry_price_filled": o.get("entry_price_filled"),
+                "position_size_asset": o.get("position_size_asset"),
+                "created_at": o.get("created_at"),
+                "updated_at": o.get("updated_at"),
+            }
+            for o in all_orders
+        ]
+        
+        return {
+            "history": history,
+            "total": len(history)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/order")
