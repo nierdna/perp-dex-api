@@ -109,7 +109,8 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     
-    port = int(os.getenv('API_PORT', 8080))
+    # Railway cung cấp PORT env variable, ưu tiên PORT > API_PORT > 8080
+    port = int(os.getenv('PORT', os.getenv('API_PORT', 8080)))
     
     print(
         f"""

@@ -4,9 +4,29 @@ __pycache__/
 *$py.class
 *.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
 venv/
 env/
 ENV/
+.venv
+.env
+.venv/
 
 # IDE
 .vscode/
@@ -15,35 +35,57 @@ ENV/
 *.swo
 *~
 
-# Git
-.git/
-.gitignore
-
-# Documentation
-*.md
-docs/
-
-# Environment
-.env
-.env.local
-
-# Logs
-logs/
-*.log
-
 # OS
 .DS_Store
 Thumbs.db
 
-# Test files
-test_*.py
-*_test.py
+# Git
+.git/
+.gitignore
+.gitattributes
 
-# Backup files
-*.backup
-*.bak
-*_backup.py
+# Logs
+*.log
+logs/
+*.log.*
 
-# Node modules (if any)
+# Environment files
+.env
+.env.*
+.env.local
+.envrc
+.env.backup
+
+# Documentation
+*.md
+docs/
+README.md
+
+# Test
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Cache
+.cache/
+.pytest_cache/
+
+# Node (nếu có)
 node_modules/
 
+# Project specific
+long_btc_sdk.log
+.cursor/
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Railway
+railway.json
+railway.toml

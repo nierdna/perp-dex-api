@@ -21,7 +21,8 @@ def run_api_server():
     import uvicorn
     from api_server import app
     
-    port = int(os.getenv('API_PORT', 8080))
+    # Railway cung cấp PORT env variable, ưu tiên PORT > API_PORT > 8080
+    port = int(os.getenv('PORT', os.getenv('API_PORT', 8080)))
     
     print(f"""
 ╔══════════════════════════════════════════════════════════╗
@@ -98,7 +99,8 @@ async def run_both_modes():
 ╚══════════════════════════════════════════════════════════╝
     """)
     
-    port = int(os.getenv('API_PORT', 8080))
+    # Railway cung cấp PORT env variable, ưu tiên PORT > API_PORT > 8080
+    port = int(os.getenv('PORT', os.getenv('API_PORT', 8080)))
     
     # Run API server in background
     config = uvicorn.Config(app, host="0.0.0.0", port=port, log_level="info")
