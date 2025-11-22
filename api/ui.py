@@ -1316,26 +1316,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         }
       });
 
+      // Load initial data
+      loadBalance();
+      loadPositions();
+      loadOpenOrders();
+      loadHistory();
 
-                  // Load initial data
-                  loadBalance();
-                  loadPositions();
-                  loadOpenOrders();
-                  loadHistory();
-
-                  // Auto refresh every 10 seconds
-                  setInterval(() => {
-                    loadBalance(); // Refresh balance
-                    const activeTab = document.querySelector(".tab.active");
-                    const tabName = activeTab.dataset.tab;
-                    if (tabName === "positions") {
-                      loadPositions();
-                    } else if (tabName === "open") {
-                      loadOpenOrders();
-                    } else if (tabName === "history") {
-                      loadHistory();
-                    }
-                  }, 10000);
+      // Auto refresh every 10 seconds
+      setInterval(() => {
+        loadBalance(); // Refresh balance
+        const activeTab = document.querySelector(".tab.active");
+        const tabName = activeTab.dataset.tab;
+        if (tabName === "positions") {
+          loadPositions();
+        } else if (tabName === "open") {
+          loadOpenOrders();
+        } else if (tabName === "history") {
+          loadHistory();
+        }
+      }, 10000);
 
       // Close position function (đóng 1 position cụ thể)
       // Make it global so onclick can access it
