@@ -29,7 +29,8 @@ class OrderExecutor:
         symbol: str,
         side: str,
         size: float,
-        leverage: float = 1.0
+        leverage: float = 1.0,
+        reduce_only: bool = False
     ) -> Dict:
         """
         Đặt lệnh MARKET
@@ -38,7 +39,8 @@ class OrderExecutor:
             symbol: Trading pair (e.g., 'BTC-USDT')
             side: 'BUY' or 'SELL'
             size: Order size in USD
-            leverage: Leverage multiplier
+            leverage: Leverage multiplier (optional, default: 1.0)
+            reduce_only: If True, only close position, don't open new (optional, default: False)
             
         Output:
             {
@@ -103,6 +105,10 @@ class OrderExecutor:
                 'type': 'MARKET',
                 'quantity': str(quantity_rounded)  # Convert to string
             }
+            
+            # Add reduceOnly if specified (for closing positions)
+            if reduce_only:
+                params['reduceOnly'] = 'true'
             
             result = await self.client._request(
                 'POST',

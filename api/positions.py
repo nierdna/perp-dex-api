@@ -36,29 +36,99 @@ async def get_lighter_positions(client: LighterClient, account_index: int) -> Li
         ]
     """
     try:
+        print(f"[Lighter Positions] Starting... account_index={account_index}")
+        
+        # Lấy trực tiếp từ Account API để xem raw data và dùng nó thay vì qua MarketData
+        account_api = client.get_account_api()
+        print(f"[Lighter Positions] Getting account data directly from Account API...")
+        accounts_data = await account_api.account(by='index', value=str(account_index))
+        
+        if not accounts_data or not accounts_data.accounts:
+            print(f"[Lighter Positions] ❌ No account data found")
+            return []
+        
+        account = accounts_data.accounts[0]
+        raw_positions = account.positions or []
+        print(f"[Lighter Positions] Raw positions from account: {len(raw_positions)}")
+        
+        if not raw_positions:
+            print("[Lighter Positions] ⚠️ No positions in account")
+            return []
+        
+        # Log từng position object để xem structure
+        positions_to_process = []
+        for idx, raw_pos in enumerate(raw_positions):
+            print(f"[Lighter Positions] Raw position {idx+1}: {raw_pos}")
+            print(f"[Lighter Positions] Raw position {idx+1} type: {type(raw_pos)}")
+            if hasattr(raw_pos, '__dict__'):
+                print(f"[Lighter Positions] Raw position {idx+1} __dict__: {raw_pos.__dict__}")
+            # Try to get all attributes
+            attrs = [attr for attr in dir(raw_pos) if not attr.startswith('_')]
+            print(f"[Lighter Positions] Raw position {idx+1} attributes: {attrs}")
+            
+            # Lighter dùng field 'position' (string), không phải 'size'
+            market_id = getattr(raw_pos, 'market_id', None)
+            position_str = getattr(raw_pos, 'position', '0')
+            sign = getattr(raw_pos, 'sign', 1)  # 1 = long, -1 = short (có thể)
+            
+            # Convert position string to float
+            try:
+                position_float = float(position_str) if position_str is not None else 0.0
+            except (ValueError, TypeError):
+                print(f"[Lighter Positions] ⚠️ Cannot convert position to float: {position_str} (type: {type(position_str)})")
+                position_float = 0.0
+            
+            # Size = position * sign (nếu sign được dùng để chỉ direction)
+            # Nhưng từ logs, position='0.00119' và sign=1, có vẻ position đã là absolute value
+            # Vậy size = position_float, và side được xác định sau
+            size = position_float
+            
+            avg_entry_price = getattr(raw_pos, 'avg_entry_price', 0)
+            try:
+                avg_entry_price = float(avg_entry_price) if avg_entry_price is not None else 0.0
+            except (ValueError, TypeError):
+                avg_entry_price = 0.0
+            
+            # Log để debug
+            print(f"[Lighter Positions] Raw position {idx+1}.position = {position_str} (type: {type(position_str)})")
+            print(f"[Lighter Positions] Raw position {idx+1}.sign = {sign} (type: {type(sign)})")
+            print(f"[Lighter Positions] Raw position {idx+1} converted: position_float={position_float}, size={size}")
+            
+            print(f"[Lighter Positions] Position {idx+1} extracted: market_id={market_id}, size={size}, entry={avg_entry_price}")
+            
+            # Chỉ thêm position có size != 0
+            if size != 0:
+                positions_to_process.append({
+                    'market_id': market_id,
+                    'size': size,
+                    'avg_entry_price': avg_entry_price,
+                    'raw': raw_pos  # Keep raw for debugging
+                })
+        
+        print(f"[Lighter Positions] Positions with size != 0: {len(positions_to_process)}")
+        
+        if not positions_to_process:
+            print("[Lighter Positions] ⚠️ All positions have size=0, skipping")
+            return []
+        
+        # Use positions_to_process (đã lấy trực tiếp từ Account API)
+        positions = positions_to_process
+        print(f"[Lighter Positions] Processing {len(positions)} positions with size != 0...")
+        
         market = LighterMarketData(
             client.get_order_api(),
             client.get_account_api()
         )
         
-        result = await market.get_positions(account_index)
-        
-        if not result.get('success'):
-            return []
-        
-        positions = result.get('positions', [])
-        if not positions:
-            return []
-        
         # Convert market_id sang symbol và lấy giá hiện tại
         formatted_positions = []
-        for pos in positions:
-            market_id = pos.get('market_id')
-            size = pos.get('size', 0)
-            entry_price = pos.get('avg_entry_price', 0)
+        for idx, pos in enumerate(positions):
+            market_id = pos['market_id']
+            size = pos['size']
+            entry_price = pos['avg_entry_price']
+            raw_pos = pos.get('raw')  # Keep raw for additional fields if needed
             
-            if size == 0:
-                continue
+            print(f"[Lighter Positions] Processing position {idx+1}: market_id={market_id}, size={size}, entry_price={entry_price}")
             
             # Lấy symbol từ market_id (reverse mapping)
             try:
@@ -74,11 +144,22 @@ async def get_lighter_positions(client: LighterClient, account_index: int) -> Li
                 symbol_base = f"MARKET_{market_id}"
             
             # Lấy giá hiện tại
-            price_result = await market.get_price(market_id, symbol_base)
-            current_price = price_result.get('mid', entry_price) if price_result.get('success') else entry_price
+            try:
+                print(f"[Lighter Positions] Getting price for market_id={market_id}, symbol={symbol_base}...")
+                price_result = await market.get_price(market_id, symbol_base)
+                print(f"[Lighter Positions] Price result: success={price_result.get('success')}, mid={price_result.get('mid')}")
+                current_price = price_result.get('mid', entry_price) if price_result.get('success') else entry_price
+            except Exception as price_err:
+                print(f"[Lighter Positions] ⚠️ Error getting price: {price_err}, using entry_price")
+                current_price = entry_price
             
-            # Xác định side (dựa vào size: positive = long, negative = short)
-            side = 'long' if size > 0 else 'short'
+            # Xác định side (dựa vào sign từ raw position, hoặc mặc định long nếu size > 0)
+            if raw_pos:
+                sign = getattr(raw_pos, 'sign', 1)
+                # sign=1 thường là long, nhưng cần kiểm tra
+                side = 'long' if sign >= 0 else 'short'
+            else:
+                side = 'long' if size > 0 else 'short'
             size_abs = abs(size)
             
             # Tính PnL
@@ -91,6 +172,9 @@ async def get_lighter_positions(client: LighterClient, account_index: int) -> Li
             
             # Tính size_usd (approximate)
             size_usd = entry_price * size_abs
+            
+            # Tạo unique position_id từ market_id, entry_price, side
+            position_id = f"lighter_{market_id}_{entry_price}_{side}"
             
             formatted_positions.append({
                 'exchange': 'lighter',
@@ -105,13 +189,19 @@ async def get_lighter_positions(client: LighterClient, account_index: int) -> Li
                 'pnl_usd': pnl_usd,
                 'pnl_percent': pnl_percent,
                 'exchange_order_id': f"lighter_market_{market_id}",
+                'position_id': position_id,  # Unique ID để đóng position cụ thể
+                'market_id': market_id,  # Thêm market_id để dùng khi close
                 'created_at': None  # Lighter không lưu created_at
             })
+            print(f"[Lighter Positions] ✅ Added position: {symbol_base} {side} {size_abs} @ ${entry_price}")
         
+        print(f"[Lighter Positions] ✅ Total formatted positions: {len(formatted_positions)}")
         return formatted_positions
         
     except Exception as e:
-        print(f"[Lighter] Error getting positions: {e}")
+        import traceback
+        print(f"[Lighter Positions] ❌ Exception: {e}")
+        traceback.print_exc()
         return []
 
 
@@ -161,6 +251,9 @@ async def get_aster_positions(client: AsterClient) -> List[Dict]:
             # Tính pnl_percent
             pnl_percent = (pnl_usd / size_usd) * 100 if size_usd > 0 else 0
             
+            # Tạo unique position_id từ symbol, entry_price, side
+            position_id = f"aster_{symbol}_{entry_price}_{side}"
+            
             formatted_positions.append({
                 'exchange': 'aster',
                 'symbol_base': symbol_base,
@@ -174,6 +267,7 @@ async def get_aster_positions(client: AsterClient) -> List[Dict]:
                 'pnl_usd': pnl_usd,
                 'pnl_percent': pnl_percent,
                 'exchange_order_id': f"aster_{symbol}",
+                'position_id': position_id,  # Unique ID để đóng position cụ thể
                 'created_at': None  # Aster không lưu created_at trong position
             })
         
@@ -186,7 +280,7 @@ async def get_aster_positions(client: AsterClient) -> List[Dict]:
 
 async def get_lighter_open_orders(client: LighterClient, account_index: int) -> List[Dict]:
     """
-    Lấy open orders từ Lighter
+    Lấy open orders từ Lighter (từ DB vì SDK không có method trực tiếp)
     
     Returns:
         List[Dict]: [
@@ -204,69 +298,56 @@ async def get_lighter_open_orders(client: LighterClient, account_index: int) -> 
             }
         ]
     """
+    print(f"[Lighter Open Orders] Starting... account_index={account_index}")
+    
+    # Lighter SDK không có method để lấy open orders trực tiếp
+    # Cần query từ DB các lệnh LIMIT/TP/SL đang ở trạng thái 'submitted' hoặc 'pending'
+    # và chưa có position_size_asset > 0
+    
+    # Import query_orders nếu chưa có
     try:
-        order_api = client.get_order_api()
-        
-        # Lấy orders từ account
-        orders_result = await order_api.orders(
-            by='account_index',
-            value=str(account_index),
-            limit=100
+        from db import query_orders as _query_orders
+    except Exception as _db_import_err:
+        print(f"[Lighter Open Orders] ⚠️ DB module not available: {_db_import_err}")
+        return []
+    
+    try:
+        print("[Lighter Open Orders] Querying DB for submitted/pending LIMIT/TP/SL orders...")
+        lighter_open_orders_db = _query_orders(
+            exchange="lighter",
+            status="submitted",  # Hoặc 'pending' nếu muốn hiển thị cả lệnh chưa gửi
+            order_type=["limit", "take_profit", "stop_loss"]
         )
         
-        if not orders_result or not orders_result.orders:
-            return []
+        print(f"[Lighter Open Orders] Found {len(lighter_open_orders_db)} orders from DB")
         
-        # Filter open orders (status = pending/open)
-        open_orders = []
-        for order in orders_result.orders:
-            status = getattr(order, 'status', 'unknown')
-            # Chỉ lấy orders đang pending/open
-            if status not in ['pending', 'open', 'active']:
-                continue
-            
-            market_id = getattr(order, 'market_id', None)
-            if not market_id:
-                continue
-            
-            # Lấy symbol từ market_id (reverse mapping)
-            try:
-                # Reverse lookup từ PAIR_TO_MARKET_ID
-                pair_to_market = LighterConfigLoader.PAIR_TO_MARKET_ID
-                market_to_pair = {v: k for k, v in pair_to_market.items()}
-                pair = market_to_pair.get(market_id)
-                if pair:
-                    symbol_base = pair.split('-')[0]  # BTC-USDT -> BTC
-                else:
-                    symbol_base = f"MARKET_{market_id}"
-            except Exception:
-                symbol_base = f"MARKET_{market_id}"
-            
-            is_ask = getattr(order, 'is_ask', 0)
-            side = 'short' if is_ask == 1 else 'long'
-            price = float(getattr(order, 'price', 0))
-            size = float(getattr(order, 'size', 0))
-            
-            # Tính size_usd
-            size_usd = price * size if price > 0 else 0
-            
-            open_orders.append({
-                'exchange': 'lighter',
-                'symbol_base': symbol_base,
-                'side': side,
-                'order_type': 'limit',
-                'size_usd': size_usd,
-                'leverage': 1,  # Lighter không lưu leverage trong order
-                'limit_price': price,
-                'tp_price': None,  # Lighter không lưu TP/SL trong order object
-                'sl_price': None,
-                'exchange_order_id': str(getattr(order, 'client_order_index', ''))
-            })
+        formatted_open_orders = []
+        for order in lighter_open_orders_db:
+            # Chỉ lấy các lệnh chưa khớp hoặc khớp 1 phần nhỏ
+            position_size = order.get("position_size_asset", 0) or 0
+            if position_size == 0:
+                formatted_open_orders.append({
+                    "exchange": "lighter",
+                    "symbol_base": order.get("symbol_base"),
+                    "side": order.get("side"),
+                    "order_type": order.get("order_type"),
+                    "size_usd": order.get("size_usd"),
+                    "leverage": order.get("leverage"),
+                    "limit_price": order.get("limit_price"),
+                    "tp_price": order.get("tp_price"),
+                    "sl_price": order.get("sl_price"),
+                    "client_order_id": order.get("client_order_id"),
+                    "exchange_order_id": order.get("exchange_order_id"),
+                    "created_at": order.get("created_at"),
+                })
         
-        return open_orders
+        print(f"[Lighter Open Orders] ✅ Returning {len(formatted_open_orders)} open orders from DB")
+        return formatted_open_orders
         
     except Exception as e:
-        print(f"[Lighter] Error getting open orders: {e}")
+        import traceback
+        print(f"[Lighter Open Orders] ❌ Error getting open orders: {e}")
+        traceback.print_exc()
         return []
 
 
@@ -278,14 +359,25 @@ async def get_aster_open_orders(client: AsterClient, symbol: Optional[str] = Non
         List[Dict]: Same format as get_lighter_open_orders
     """
     try:
+        print(f"[Aster Open Orders] Starting... symbol={symbol}")
         executor = AsterOrderExecutor(client)
+        
+        print(f"[Aster Open Orders] Calling executor.get_open_orders(symbol={symbol})...")
         result = await executor.get_open_orders(symbol)
         
+        print(f"[Aster Open Orders] Raw result: {result}")
+        print(f"[Aster Open Orders] Result success: {result.get('success')}")
+        print(f"[Aster Open Orders] Result orders: {result.get('orders')}")
+        
         if not result.get('success'):
+            error_msg = result.get('message', 'Unknown error')
+            print(f"[Aster Open Orders] ❌ Failed: {error_msg}")
             return []
         
         orders = result.get('orders', [])
+        print(f"[Aster Open Orders] Found {len(orders)} orders")
         if not orders:
+            print("[Aster Open Orders] ⚠️ No orders found")
             return []
         
         formatted_orders = []
@@ -321,9 +413,12 @@ async def get_aster_open_orders(client: AsterClient, symbol: Optional[str] = Non
                 'exchange_order_id': str(order.get('orderId', ''))
             })
         
+        print(f"[Aster Open Orders] ✅ Returning {len(formatted_orders)} formatted orders")
         return formatted_orders
         
     except Exception as e:
-        print(f"[Aster] Error getting open orders: {e}")
+        import traceback
+        print(f"[Aster Open Orders] ❌ Error getting open orders: {e}")
+        traceback.print_exc()
         return []
 

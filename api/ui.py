@@ -638,6 +638,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
 
           <div id="tab-positions" class="tab-content active">
+            <div style="margin-bottom: 16px; padding: 12px; background: var(--panel); border-radius: 8px; border: 1px solid var(--border);">
+              <button 
+                class="btn btn-danger" 
+                onclick="closeAllPositions()"
+                style="width: 100%; padding: 10px; font-size: 14px; font-weight: 600;"
+              >
+                🔒 Đóng tất cả vị thế (100%)
+              </button>
+              <div style="margin-top: 8px; font-size: 11px; color: var(--muted); text-align: center;">
+                Đóng tất cả positions đang hiển thị
+              </div>
+            </div>
             <div id="positions-list" class="orders-list">
               <div class="empty-state">Đang tải...</div>
             </div>
@@ -918,6 +930,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <span style="font-size: 10px;">${order.exchange_order_id || "-"}</span>
               </div>
             </div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);">
+              <button 
+                class="btn btn-danger close-position-btn"
+                data-exchange="${order.exchange}"
+                data-symbol="${order.symbol_base}"
+                data-position-id="${order.position_id || ''}"
+                data-entry-price="${order.entry_price || 0}"
+                data-side="${order.side || ''}"
+                style="width: 100%; padding: 8px; font-size: 13px;"
+              >
+                🔒 Đóng lệnh (100%)
+              </button>
+            </div>
           </div>
         `;
       }
@@ -1044,6 +1069,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           
           if (data.positions && data.positions.length > 0) {
             positionsList.innerHTML = data.positions.map(renderPosition).join("");
+            // Attach event listeners to close buttons
+            positionsList.querySelectorAll('.close-position-btn').forEach(btn => {
+              btn.addEventListener('click', function() {
+                const exchange = this.getAttribute('data-exchange');
+                const symbol = this.getAttribute('data-symbol');
+                const positionId = this.getAttribute('data-position-id') || null;
+                const entryPrice = parseFloat(this.getAttribute('data-entry-price')) || null;
+                const side = this.getAttribute('data-side') || null;
+                window.closePosition(exchange, symbol, 100, positionId, entryPrice, side);
+              });
+            });
           } else {
             positionsList.innerHTML = '<div class="empty-state">Không có vị thế nào đang mở.</div>';
           }
@@ -1138,6 +1174,136 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           loadHistory();
         }
       }, 10000);
+
+      // Close position function (đóng 1 position cụ thể)
+      // Make it global so onclick can access it
+      window.closePosition = async function(exchange, symbol, percentage, positionId = null, entryPrice = null, side = null) {
+        if (!confirm(`Bạn có chắc muốn đóng ${percentage}% position ${symbol} trên ${exchange.toUpperCase()}?`)) {
+          return;
+        }
+
+        try {
+          const body = {
+            exchange: exchange,
+            symbol: symbol,
+            percentage: percentage,
+          };
+          
+          // Thêm các field để đóng position cụ thể nếu có
+          if (positionId) body.position_id = positionId;
+          if (entryPrice && entryPrice > 0) body.entry_price = entryPrice;
+          if (side) body.side = side;
+
+          const response = await fetch("/api/positions/close", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.success) {
+            alert(`✅ Đóng lệnh thành công!\nOrder ID: ${data.order_id}\nPnL: ${data.pnl_percent ? data.pnl_percent.toFixed(2) + "%" : "N/A"}`);
+            // Reload positions
+            loadPositions();
+          } else {
+            alert(`❌ Lỗi: ${data.detail || data.error || "Unknown error"}`);
+          }
+        } catch (err) {
+          alert(`❌ Lỗi: ${err.message}`);
+        }
+      }
+
+      // Close all positions function (đóng tất cả positions đang hiển thị)
+      // Make it global so onclick can access it
+      window.closeAllPositions = async function() {
+        const exchange = getExchangeFilter();
+        
+        // Lấy danh sách positions hiện tại
+        let positions = [];
+        try {
+          const url = exchange
+            ? `/api/orders/positions?exchange=${encodeURIComponent(exchange)}`
+            : "/api/orders/positions";
+          const response = await fetch(url);
+          const data = await response.json();
+          positions = data.positions || [];
+        } catch (err) {
+          alert(`❌ Lỗi khi lấy danh sách positions: ${err.message}`);
+          return;
+        }
+
+        if (positions.length === 0) {
+          alert("⚠️ Không có position nào để đóng");
+          return;
+        }
+
+        const count = positions.length;
+        const exchangeText = exchange ? exchange.toUpperCase() : "TẤT CẢ SÀN";
+        if (!confirm(`Bạn có chắc muốn đóng ${count} position(s) trên ${exchangeText}?\n\nĐiều này sẽ đóng 100% tất cả positions đang hiển thị.`)) {
+          return;
+        }
+
+        // Đóng từng position
+        let successCount = 0;
+        let failCount = 0;
+        const errors = [];
+
+        for (const pos of positions) {
+          try {
+            const body = {
+              exchange: pos.exchange,
+              symbol: pos.symbol_base,
+              percentage: 100,
+            };
+            
+            // Thêm các field để đóng position cụ thể
+            if (pos.position_id) body.position_id = pos.position_id;
+            if (pos.entry_price && pos.entry_price > 0) body.entry_price = pos.entry_price;
+            if (pos.side) body.side = pos.side;
+
+            const response = await fetch("/api/positions/close", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(body),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+              successCount++;
+            } else {
+              failCount++;
+              errors.push(`${pos.symbol_base} (${pos.exchange}): ${data.detail || data.error || "Unknown error"}`);
+            }
+          } catch (err) {
+            failCount++;
+            errors.push(`${pos.symbol_base} (${pos.exchange}): ${err.message}`);
+          }
+        }
+
+        // Hiển thị kết quả
+        let message = '✅ Đã đóng ' + successCount + '/' + count + ' position(s)';
+        if (failCount > 0) {
+          message += String.fromCharCode(10) + '❌ Thất bại: ' + failCount + ' position(s)';
+          if (errors.length > 0) {
+            const errorList = errors.slice(0, 5).join(String.fromCharCode(10));
+            message += String.fromCharCode(10) + String.fromCharCode(10) + 'Chi tiết lỗi:' + String.fromCharCode(10) + errorList;
+            if (errors.length > 5) {
+              message += String.fromCharCode(10) + '... và ' + (errors.length - 5) + ' lỗi khác';
+            }
+          }
+        }
+        
+        alert(message);
+        
+        // Reload positions
+        loadPositions();
+      }
     </script>
   </body>
 </html>

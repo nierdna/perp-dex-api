@@ -46,6 +46,11 @@ class ClosePositionRequest(BaseModel):
     keys: Optional[KeysConfig] = Field(None, description="API keys (optional if configured in ENV)")
     exchange: Literal["lighter", "aster"] = Field(..., description="lighter or aster")
     symbol: str = Field(..., description="BTC, ETH, SOL, etc")
+    percentage: Optional[float] = Field(100, ge=0, le=100, description="Percentage to close (0-100, default: 100)")
+    # Optional: Để đóng position cụ thể thay vì tất cả positions cùng symbol
+    position_id: Optional[str] = Field(None, description="ID của position cụ thể (exchange_order_id từ /api/orders/positions)")
+    entry_price: Optional[float] = Field(None, description="Entry price để match position cụ thể (nếu có nhiều position cùng symbol)")
+    side: Optional[Literal["long", "short"]] = Field(None, description="Side để match position cụ thể (nếu có nhiều position cùng symbol)")
 
 
 class UnifiedOrderRequest(BaseModel):

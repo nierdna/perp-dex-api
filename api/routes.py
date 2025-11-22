@@ -6,8 +6,13 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 
-from api.models import UnifiedOrderRequest
-from api.handlers import handle_lighter_order, handle_aster_order
+from api.models import UnifiedOrderRequest, ClosePositionRequest
+from api.handlers import (
+    handle_lighter_order,
+    handle_aster_order,
+    handle_lighter_close_position,
+    handle_aster_close_position,
+)
 from api.utils import get_keys_or_env, initialize_lighter_client, initialize_aster_client
 from api.positions import (
     get_lighter_positions,
@@ -148,12 +153,16 @@ async def get_open_orders(exchange: Optional[str] = None):
         if exchange is None or exchange == "aster":
             client = None
             try:
+                print("[Open Orders] Fetching Aster open orders...")
                 keys = get_keys_or_env(None, "aster")
                 client = await initialize_aster_client(keys)
                 aster_orders = await get_aster_open_orders(client)
+                print(f"[Open Orders] Aster: found {len(aster_orders)} open orders")
                 all_open_orders.extend(aster_orders)
             except Exception as e:
+                import traceback
                 print(f"[Open Orders] Aster error: {e}")
+                traceback.print_exc()
             finally:
                 if client and hasattr(client, 'close'):
                     try:
@@ -342,5 +351,71 @@ async def place_unified_order(order: UnifiedOrderRequest):
                 )
             except Exception as db_err:
                 print(f"[DB] Warning: lỗi khi update order sau Exception: {db_err}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/positions/close")
+async def close_position(request: ClosePositionRequest):
+    """
+    Đóng position (close position) cho cả Lighter và Aster
+    
+    Body:
+    {
+        "exchange": "lighter" | "aster",
+        "symbol": "BTC",
+        "percentage": 100,  # Optional, default: 100 (close 100%)
+        "position_id": "lighter_1_80000_long",  # Optional: ID cụ thể từ /api/orders/positions
+        "entry_price": 80000,  # Optional: Entry price để match position cụ thể
+        "side": "long"  # Optional: Side để match position cụ thể
+    }
+    
+    Lưu ý:
+    - Nếu có nhiều position cùng symbol, dùng position_id, entry_price, hoặc side để đóng position cụ thể
+    - Nếu không có, sẽ đóng position đầu tiên tìm thấy
+    """
+    try:
+        print(f"\n{'=' * 60}")
+        print("🔄 CLOSE POSITION REQUEST")
+        print(f"{'=' * 60}")
+        print(f"Exchange   : {request.exchange.upper()}")
+        print(f"Symbol     : {request.symbol}")
+        print(f"Percentage : {request.percentage}%")
+        
+        # Chuẩn hoá keys
+        keys = get_keys_or_env(request.keys, request.exchange)
+        
+        # Dispatch theo sàn
+        if request.exchange == "lighter":
+            result = await handle_lighter_close_position(
+                symbol=request.symbol,
+                percentage=request.percentage,
+                keys=keys,
+                position_id=request.position_id,
+                entry_price=request.entry_price,
+                side=request.side
+            )
+        else:
+            result = await handle_aster_close_position(
+                symbol=request.symbol,
+                percentage=request.percentage,
+                keys=keys,
+                position_id=request.position_id,
+                entry_price=request.entry_price,
+                side=request.side
+            )
+        
+        print("\n✅ POSITION CLOSED SUCCESSFULLY")
+        print(f"Order ID     : {result.get('order_id')}")
+        print(f"Close Price  : {result.get('close_price')}")
+        print(f"PnL %        : {result.get('pnl_percent')}")
+        print(f"{'=' * 60}\n")
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
