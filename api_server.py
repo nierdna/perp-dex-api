@@ -129,10 +129,13 @@ if __name__ == "__main__":
     # Log IP public để hỗ trợ cấu hình whitelist trên Aster, v.v.
     log_public_ip()
     
+    # Tắt reload để tránh lỗi ModuleNotFoundError với multiprocessing spawn
+    # Nếu cần reload, dùng: uvicorn api_server:app --reload
     uvicorn.run(
-        app,
+        app,  # Pass app object trực tiếp (không dùng import string)
         host="0.0.0.0",
         port=port,
-        log_level="info"
+        log_level="info",
+        reload=False  # Tắt reload để tránh lỗi import
     )
 

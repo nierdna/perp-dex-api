@@ -8,7 +8,13 @@ from fastapi.responses import HTMLResponse
 
 from api.models import UnifiedOrderRequest
 from api.handlers import handle_lighter_order, handle_aster_order
-from api.utils import get_keys_or_env
+from api.utils import get_keys_or_env, initialize_lighter_client, initialize_aster_client
+from api.positions import (
+    get_lighter_positions,
+    get_aster_positions,
+    get_lighter_open_orders,
+    get_aster_open_orders,
+)
 
 # Import DB functions (optional)
 try:
@@ -39,12 +45,75 @@ async def get_positions(exchange: Optional[str] = None):
     """
     Lấy danh sách các vị thế đang mở (có position thực tế trên sàn) kèm PnL.
     
-    TODO: Logic đang được thảo luận, tạm thời trả về mảng rỗng.
+    Call SDK để lấy positions từ exchange và tính PnL.
     """
-    return {
-        "positions": [],
-        "total": 0
-    }
+    print(f"\n[Positions] Request: exchange={exchange}")
+    all_positions = []
+    
+    try:
+        # Lighter
+        if exchange is None or exchange == "lighter":
+            client = None
+            try:
+                print("[Positions] Fetching Lighter positions...")
+                keys = get_keys_or_env(None, "lighter")
+                client = await initialize_lighter_client(keys)
+                account_index = keys.get("account_index", 0)
+                lighter_positions = await get_lighter_positions(client, account_index)
+                print(f"[Positions] Lighter: found {len(lighter_positions)} positions")
+                all_positions.extend(lighter_positions)
+            except Exception as e:
+                import traceback
+                print(f"[Positions] Lighter error: {e}")
+                traceback.print_exc()
+            finally:
+                # Đóng client để tránh "Unclosed client session"
+                if client and hasattr(client, 'close'):
+                    try:
+                        await client.close()
+                    except:
+                        pass
+        
+        # Aster
+        if exchange is None or exchange == "aster":
+            client = None
+            try:
+                print("[Positions] Fetching Aster positions...")
+                keys = get_keys_or_env(None, "aster")
+                client = await initialize_aster_client(keys)
+                aster_positions = await get_aster_positions(client)
+                print(f"[Positions] Aster: found {len(aster_positions)} positions")
+                all_positions.extend(aster_positions)
+            except Exception as e:
+                import traceback
+                print(f"[Positions] Aster error: {e}")
+                traceback.print_exc()
+            finally:
+                # Đóng client để tránh "Unclosed client session"
+                if client and hasattr(client, 'close'):
+                    try:
+                        await client.close()
+                    except:
+                        pass
+        
+        print(f"[Positions] Total: {len(all_positions)} positions")
+        
+        # Debug: Nếu không có positions, log thêm thông tin
+        if len(all_positions) == 0:
+            print("[Positions] ⚠️ No positions found. Check:")
+            print(f"  - Exchange filter: {exchange}")
+            print(f"  - Lighter keys configured: {bool(get_keys_or_env(None, 'lighter').get('private_key'))}")
+            print(f"  - Aster keys configured: {bool(get_keys_or_env(None, 'aster').get('api_key'))}")
+        
+        return {
+            "positions": all_positions,
+            "total": len(all_positions)
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/api/orders/open")
@@ -52,12 +121,55 @@ async def get_open_orders(exchange: Optional[str] = None):
     """
     Lấy danh sách các lệnh mở đang chờ khớp (LIMIT, TP/SL orders).
     
-    TODO: Logic đang được thảo luận, tạm thời trả về mảng rỗng.
+    Call SDK để lấy open orders từ exchange.
     """
-    return {
-        "open_orders": [],
-        "total": 0
-    }
+    all_open_orders = []
+    
+    try:
+        # Lighter
+        if exchange is None or exchange == "lighter":
+            client = None
+            try:
+                keys = get_keys_or_env(None, "lighter")
+                client = await initialize_lighter_client(keys)
+                account_index = keys.get("account_index", 0)
+                lighter_orders = await get_lighter_open_orders(client, account_index)
+                all_open_orders.extend(lighter_orders)
+            except Exception as e:
+                print(f"[Open Orders] Lighter error: {e}")
+            finally:
+                if client and hasattr(client, 'close'):
+                    try:
+                        await client.close()
+                    except:
+                        pass
+        
+        # Aster
+        if exchange is None or exchange == "aster":
+            client = None
+            try:
+                keys = get_keys_or_env(None, "aster")
+                client = await initialize_aster_client(keys)
+                aster_orders = await get_aster_open_orders(client)
+                all_open_orders.extend(aster_orders)
+            except Exception as e:
+                print(f"[Open Orders] Aster error: {e}")
+            finally:
+                if client and hasattr(client, 'close'):
+                    try:
+                        await client.close()
+                    except:
+                        pass
+        
+        return {
+            "open_orders": all_open_orders,
+            "total": len(all_open_orders)
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/api/orders/history")

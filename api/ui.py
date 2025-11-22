@@ -621,6 +621,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             </button>
           </div>
 
+          <!-- Exchange Filter -->
+          <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+            <label style="font-size: 12px; color: var(--muted);">Lọc theo sàn:</label>
+            <select id="exchange-filter" style="flex: 1; max-width: 200px;">
+              <option value="">Tất cả</option>
+              <option value="lighter">Lighter</option>
+              <option value="aster">Aster</option>
+            </select>
+          </div>
+
           <div class="tabs">
             <button class="tab active" data-tab="positions">Vị thế</button>
             <button class="tab" data-tab="open">Lệnh mở</button>
@@ -817,9 +827,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       const tabs = document.querySelectorAll(".tab");
       const tabContents = document.querySelectorAll(".tab-content");
       const refreshBtn = document.getElementById("refresh-orders-btn");
+      const exchangeFilter = document.getElementById("exchange-filter");
       const positionsList = document.getElementById("positions-list");
       const openOrdersList = document.getElementById("open-orders-list");
       const historyList = document.getElementById("history-list");
+
+      // Get current exchange filter
+      function getExchangeFilter() {
+        const value = exchangeFilter.value;
+        return value === "" ? null : value;
+      }
 
       // Tab switching
       tabs.forEach((tab) => {
@@ -1018,7 +1035,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       async function loadPositions() {
         try {
           positionsList.innerHTML = '<div class="empty-state">Đang tải...</div>';
-          const res = await fetch("/api/orders/positions");
+          const exchange = getExchangeFilter();
+          const url = exchange 
+            ? `/api/orders/positions?exchange=${encodeURIComponent(exchange)}`
+            : "/api/orders/positions";
+          const res = await fetch(url);
           const data = await res.json();
           
           if (data.positions && data.positions.length > 0) {
@@ -1035,7 +1056,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       async function loadOpenOrders() {
         try {
           openOrdersList.innerHTML = '<div class="empty-state">Đang tải...</div>';
-          const res = await fetch("/api/orders/open");
+          const exchange = getExchangeFilter();
+          const url = exchange 
+            ? `/api/orders/open?exchange=${encodeURIComponent(exchange)}`
+            : "/api/orders/open";
+          const res = await fetch(url);
           const data = await res.json();
           
           if (data.open_orders && data.open_orders.length > 0) {
@@ -1052,7 +1077,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       async function loadHistory() {
         try {
           historyList.innerHTML = '<div class="empty-state">Đang tải...</div>';
-          const res = await fetch("/api/orders/history?limit=50");
+          const exchange = getExchangeFilter();
+          const url = exchange 
+            ? `/api/orders/history?limit=50&exchange=${encodeURIComponent(exchange)}`
+            : "/api/orders/history?limit=50";
+          const res = await fetch(url);
           const data = await res.json();
           
           if (data.history && data.history.length > 0) {
@@ -1064,6 +1093,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           historyList.innerHTML = `<div class="empty-state" style="color: var(--danger);">Lỗi: ${err.message}</div>`;
         }
       }
+
+      // Exchange filter change handler
+      exchangeFilter.addEventListener("change", () => {
+        const activeTab = document.querySelector(".tab.active");
+        const tabName = activeTab.dataset.tab;
+        if (tabName === "positions") {
+          loadPositions();
+        } else if (tabName === "open") {
+          loadOpenOrders();
+        } else if (tabName === "history") {
+          loadHistory();
+        }
+      });
 
       // Refresh button
       refreshBtn.addEventListener("click", () => {
