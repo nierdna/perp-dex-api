@@ -607,19 +607,59 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <div id="output" class="output">Chưa có dữ liệu.</div>
         </div>
 
-        <!-- THIRD: ORDERS LIST -->
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <div class="title">Orders</div>
-              <div class="muted">
-                Danh sách lệnh đang active và pending.
-              </div>
-            </div>
-            <button id="refresh-orders-btn" class="btn btn-secondary btn-sm refresh-btn">
-              🔄 Refresh
-            </button>
-          </div>
+                    <!-- SECOND: BALANCE -->
+                    <div class="card">
+                      <div class="card-header">
+                        <div>
+                          <div class="title">💰 Số dư tài khoản</div>
+                          <div class="muted">
+                            Tổng số dư từ các sàn giao dịch.
+                          </div>
+                        </div>
+                        <button id="refresh-balance-btn" class="btn btn-secondary btn-sm refresh-btn">
+                          🔄 Refresh
+                        </button>
+                      </div>
+
+                      <!-- Exchange Filter for Balance -->
+                      <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                        <label style="font-size: 12px; color: var(--muted);">Lọc theo sàn:</label>
+                        <select id="balance-exchange-filter" style="flex: 1; max-width: 200px;">
+                          <option value="">Tất cả</option>
+                          <option value="lighter">Lighter</option>
+                          <option value="aster">Aster</option>
+                        </select>
+                      </div>
+
+                      <div id="balance-info" style="display: none;">
+                        <div id="balance-list" class="orders-list"></div>
+                        <div style="margin-top: 16px; padding: 12px; background: var(--input-bg); border-radius: 8px; border: 1px solid var(--border);">
+                          <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600; color: var(--text);">Tổng số dư:</span>
+                            <span id="total-balance" style="font-size: 1.2rem; font-weight: 700; color: var(--accent);">$0.00</span>
+                          </div>
+                          <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--muted);">Tổng khả dụng:</span>
+                            <span id="total-available" style="font-size: 1rem; font-weight: 600; color: var(--success);">$0.00</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div id="balance-loading" class="empty-state">Đang tải...</div>
+                    </div>
+
+                    <!-- THIRD: ORDERS LIST -->
+                    <div class="card">
+                      <div class="card-header">
+                        <div>
+                          <div class="title">Orders</div>
+                          <div class="muted">
+                            Danh sách lệnh đang active và pending.
+                          </div>
+                        </div>
+                        <button id="refresh-orders-btn" class="btn btn-secondary btn-sm refresh-btn">
+                          🔄 Refresh
+                        </button>
+                      </div>
 
           <!-- Exchange Filter -->
           <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
@@ -1088,6 +1128,126 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         }
       }
 
+      // =============== BALANCE MANAGEMENT ===============
+      const refreshBalanceBtn = document.getElementById("refresh-balance-btn");
+      const balanceExchangeFilter = document.getElementById("balance-exchange-filter");
+      const balanceInfo = document.getElementById("balance-info");
+      const balanceList = document.getElementById("balance-list");
+      const balanceLoading = document.getElementById("balance-loading");
+      const totalBalanceEl = document.getElementById("total-balance");
+      const totalAvailableEl = document.getElementById("total-available");
+
+      // Get current balance exchange filter
+      function getBalanceExchangeFilter() {
+        if (!balanceExchangeFilter) return null;
+        const value = balanceExchangeFilter.value;
+        return value === "" ? null : value;
+      }
+
+      // Render balance item
+      function renderBalance(balance) {
+        const isSuccess = balance.success;
+        const exchangeName = balance.exchange.toUpperCase();
+        
+        if (!isSuccess) {
+          return `
+            <div class="order-item" style="border-color: var(--danger);">
+              <div class="order-header">
+                <div>
+                  <span class="order-exchange">${exchangeName}</span>
+                </div>
+                <span style="color: var(--danger); font-size: 11px;">❌ Lỗi</span>
+              </div>
+              <div class="order-details">
+                <div class="order-detail-item">
+                  <span>Lỗi:</span>
+                  <span style="color: var(--danger);">${balance.error || 'Unknown error'}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        // Lighter có collateral, Aster không có
+        const hasCollateral = balance.collateral !== undefined;
+        
+        return `
+          <div class="order-item">
+            <div class="order-header">
+              <div>
+                <span class="order-exchange">${exchangeName}</span>
+              </div>
+              <span style="color: var(--success); font-size: 11px;">✅ Online</span>
+            </div>
+            <div class="order-details">
+              <div class="order-detail-item">
+                <span>Khả dụng:</span>
+                <span style="color: var(--success); font-weight: 600;">$${formatNumber(balance.available)}</span>
+              </div>
+              ${hasCollateral ? `
+              <div class="order-detail-item">
+                <span>Collateral:</span>
+                <span>$${formatNumber(balance.collateral)}</span>
+              </div>
+              ` : ''}
+              <div class="order-detail-item">
+                <span>Tổng:</span>
+                <span style="font-weight: 600;">$${formatNumber(balance.total)}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Load balance
+      async function loadBalance() {
+        if (!balanceLoading || !balanceInfo || !balanceList || !totalBalanceEl || !totalAvailableEl) {
+          console.warn("Balance elements not found, skipping loadBalance");
+          return;
+        }
+        
+        try {
+          balanceLoading.style.display = 'block';
+          balanceInfo.style.display = 'none';
+          
+          const exchange = getBalanceExchangeFilter();
+          const url = exchange
+            ? `/api/balance?exchange=${encodeURIComponent(exchange)}`
+            : "/api/balance";
+          
+          const res = await fetch(url);
+          const data = await res.json();
+          
+          if (data.balances && data.balances.length > 0) {
+            balanceList.innerHTML = data.balances.map(renderBalance).join("");
+            totalBalanceEl.textContent = '$' + formatNumber(data.total_balance);
+            totalAvailableEl.textContent = '$' + formatNumber(data.total_available);
+            balanceLoading.style.display = 'none';
+            balanceInfo.style.display = 'block';
+          } else {
+            balanceLoading.innerHTML = '<div class="empty-state">Không có dữ liệu số dư.</div>';
+            balanceInfo.style.display = 'none';
+          }
+        } catch (err) {
+          balanceLoading.innerHTML = `<div class="empty-state" style="color: var(--danger);">Lỗi: ${err.message}</div>`;
+          balanceInfo.style.display = 'none';
+        }
+      }
+
+      // Balance exchange filter change handler
+      if (balanceExchangeFilter) {
+        balanceExchangeFilter.addEventListener("change", () => {
+          loadBalance();
+        });
+      }
+
+      // Refresh balance button
+      if (refreshBalanceBtn) {
+        refreshBalanceBtn.addEventListener("click", () => {
+          loadBalance();
+        });
+      }
+
       // Load open orders (lệnh mở)
       async function loadOpenOrders() {
         try {
@@ -1157,23 +1317,25 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       });
 
 
-      // Load initial data
-      loadPositions();
-      loadOpenOrders();
-      loadHistory();
+                  // Load initial data
+                  loadBalance();
+                  loadPositions();
+                  loadOpenOrders();
+                  loadHistory();
 
-      // Auto refresh every 10 seconds
-      setInterval(() => {
-        const activeTab = document.querySelector(".tab.active");
-        const tabName = activeTab.dataset.tab;
-        if (tabName === "positions") {
-          loadPositions();
-        } else if (tabName === "open") {
-          loadOpenOrders();
-        } else if (tabName === "history") {
-          loadHistory();
-        }
-      }, 10000);
+                  // Auto refresh every 10 seconds
+                  setInterval(() => {
+                    loadBalance(); // Refresh balance
+                    const activeTab = document.querySelector(".tab.active");
+                    const tabName = activeTab.dataset.tab;
+                    if (tabName === "positions") {
+                      loadPositions();
+                    } else if (tabName === "open") {
+                      loadOpenOrders();
+                    } else if (tabName === "history") {
+                      loadHistory();
+                    }
+                  }, 10000);
 
       // Close position function (đóng 1 position cụ thể)
       // Make it global so onclick can access it

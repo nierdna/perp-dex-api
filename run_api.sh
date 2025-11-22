@@ -11,6 +11,21 @@ cd "$(dirname "$0")"
 # Port có thể override bằng biến môi trường bên ngoài, mặc định 8080
 : "${API_PORT:=8080}"
 
+# Kill process đang dùng port nếu có
+echo "[CLEANUP] Checking for existing process on port ${API_PORT}..."
+if lsof -ti:${API_PORT} >/dev/null 2>&1; then
+  echo "[CLEANUP] Found existing process on port ${API_PORT}, killing it..."
+  lsof -ti:${API_PORT} | xargs kill -9 2>/dev/null || true
+  sleep 2
+  if lsof -ti:${API_PORT} >/dev/null 2>&1; then
+    echo "⚠️  Warning: Port ${API_PORT} may still be in use"
+  else
+    echo "✅ Port ${API_PORT} is now free"
+  fi
+else
+  echo "✅ Port ${API_PORT} is free"
+fi
+
 # Nếu chưa có venv thì tạo, sau đó luôn activate
 if [ ! -d "venv" ]; then
   echo "[SETUP] Creating Python virtualenv..."

@@ -20,6 +20,10 @@ from api.positions import (
     get_lighter_open_orders,
     get_aster_open_orders,
 )
+from api.balance import (
+    get_lighter_balance,
+    get_aster_balance,
+)
 
 # Import DB functions (optional)
 try:
@@ -173,6 +177,114 @@ async def get_open_orders(exchange: Optional[str] = None):
         return {
             "open_orders": all_open_orders,
             "total": len(all_open_orders)
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/balance")
+async def get_balance(exchange: Optional[str] = None):
+    """
+    Lấy số dư tài khoản từ các sàn.
+    
+    Query params:
+        - exchange: "lighter" | "aster" | None (tất cả)
+    
+    Returns:
+        {
+            "balances": [
+                {
+                    "exchange": "lighter",
+                    "available": float,
+                    "collateral": float,  # chỉ có Lighter
+                    "total": float,
+                    "success": bool,
+                    "error": str (nếu có)
+                },
+                ...
+            ],
+            "total_available": float,  # Tổng available từ tất cả sàn
+            "total_balance": float,    # Tổng balance từ tất cả sàn
+            "count": int
+        }
+    """
+    print(f"\n[Balance] Request: exchange={exchange}")
+    all_balances = []
+    
+    try:
+        # Lighter
+        if exchange is None or exchange == "lighter":
+            client = None
+            try:
+                print("[Balance] Fetching Lighter balance...")
+                keys = get_keys_or_env(None, "lighter")
+                client = await initialize_lighter_client(keys)
+                account_index = keys.get("account_index", 0)
+                lighter_balance = await get_lighter_balance(client, account_index)
+                print(f"[Balance] Lighter: available=${lighter_balance.get('available', 0):.2f}, total=${lighter_balance.get('total', 0):.2f}")
+                all_balances.append(lighter_balance)
+            except Exception as e:
+                import traceback
+                print(f"[Balance] Lighter error: {e}")
+                traceback.print_exc()
+                all_balances.append({
+                    'exchange': 'lighter',
+                    'available': 0,
+                    'collateral': 0,
+                    'total': 0,
+                    'success': False,
+                    'error': str(e)
+                })
+            finally:
+                if client and hasattr(client, 'close'):
+                    try:
+                        await client.close()
+                    except:
+                        pass
+        
+        # Aster
+        if exchange is None or exchange == "aster":
+            client = None
+            try:
+                print("[Balance] Fetching Aster balance...")
+                keys = get_keys_or_env(None, "aster")
+                client = await initialize_aster_client(keys)
+                aster_balance = await get_aster_balance(client)
+                print(f"[Balance] Aster: available=${aster_balance.get('available', 0):.2f}, total=${aster_balance.get('total', 0):.2f}")
+                all_balances.append(aster_balance)
+            except Exception as e:
+                import traceback
+                print(f"[Balance] Aster error: {e}")
+                traceback.print_exc()
+                all_balances.append({
+                    'exchange': 'aster',
+                    'available': 0,
+                    'total': 0,
+                    'wallet_balance': 0,
+                    'success': False,
+                    'error': str(e)
+                })
+            finally:
+                if client and hasattr(client, 'close'):
+                    try:
+                        await client.close()
+                    except:
+                        pass
+        
+        # Tính tổng
+        total_available = sum(b.get('available', 0) for b in all_balances if b.get('success'))
+        total_balance = sum(b.get('total', 0) for b in all_balances if b.get('success'))
+        
+        print(f"[Balance] Total: available=${total_available:.2f}, total=${total_balance:.2f}")
+        
+        return {
+            "balances": all_balances,
+            "total_available": total_available,
+            "total_balance": total_balance,
+            "count": len(all_balances)
         }
         
     except Exception as e:
