@@ -82,7 +82,6 @@ long_btc_sdk.log
 .cursor/
 
 # Docker
-Dockerfile
 .dockerignore
 docker-compose.yml
 
