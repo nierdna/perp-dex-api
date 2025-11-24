@@ -7,6 +7,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ApiModule } from '@/api';
 import { BullModule } from '@nestjs/bull';
 import { UserConsumer } from './consumers';
+import { SolanaWorkerService } from './solana-worker.service';
 
 const isWorker = Boolean(Number(process.env.IS_WORKER || 0));
 
@@ -15,7 +16,7 @@ let schedulers = [];
 
 if (isWorker) {
   consumers = [UserConsumer];
-  schedulers = [ScheduleService];
+  schedulers = [ScheduleService, SolanaWorkerService];
 }
 
 @Module({
@@ -53,4 +54,4 @@ if (isWorker) {
   providers: [...consumers, ...schedulers],
   exports: [],
 })
-export class WorkerModule {}
+export class WorkerModule { }

@@ -1,0 +1,129 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+
+export default function DashboardPage() {
+    const router = useRouter();
+    const [isFarming, setIsFarming] = useState(false);
+
+    useEffect(() => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            router.push('/login');
+        }
+    }, [router]);
+
+    const handleLogout = () => {
+        localStorage.removeItem('accessToken');
+        router.push('/login');
+    };
+
+    const toggleFarming = () => {
+        setIsFarming(!isFarming);
+        // TODO: Call API to start/stop farming
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-900 text-white">
+            {/* Header */}
+            <header className="border-b border-gray-800 bg-gray-800/50 backdrop-blur-sm">
+                <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+                    <h1 className="text-2xl font-bold text-blue-500">Point Farming</h1>
+                    <div className="flex items-center gap-4">
+                        <span className="text-sm text-gray-400">@username</span>
+                        <button
+                            onClick={handleLogout}
+                            className="rounded-md bg-gray-700 px-3 py-2 text-sm font-medium text-white hover:bg-gray-600"
+                        >
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="rounded-xl bg-gray-800 p-6 shadow-lg">
+                        <p className="text-sm font-medium text-gray-400">Total Volume</p>
+                        <p className="mt-2 text-3xl font-bold text-white">$1,234,567</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-800 p-6 shadow-lg">
+                        <p className="text-sm font-medium text-gray-400">Current Balance</p>
+                        <p className="mt-2 text-3xl font-bold text-white">$5,432.10</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-800 p-6 shadow-lg">
+                        <p className="text-sm font-medium text-gray-400">Active Orders</p>
+                        <p className="mt-2 text-3xl font-bold text-white">2</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-800 p-6 shadow-lg">
+                        <p className="text-sm font-medium text-gray-400">Status</p>
+                        <div className="mt-2 flex items-center gap-2">
+                            <span
+                                className={`h-3 w-3 rounded-full ${isFarming ? 'bg-green-500' : 'bg-red-500'
+                                    }`}
+                            ></span>
+                            <span className="text-lg font-bold text-white">
+                                {isFarming ? 'Running' : 'Stopped'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Actions */}
+                <div className="mt-8">
+                    <button
+                        onClick={toggleFarming}
+                        className={`rounded-lg px-6 py-3 text-lg font-bold text-white transition-colors ${isFarming
+                                ? 'bg-red-500 hover:bg-red-600'
+                                : 'bg-green-500 hover:bg-green-600'
+                            }`}
+                    >
+                        {isFarming ? 'Stop Farming' : 'Start Farming'}
+                    </button>
+                </div>
+
+                {/* Recent Activity */}
+                <div className="mt-8 rounded-xl bg-gray-800 shadow-lg">
+                    <div className="border-b border-gray-700 px-6 py-4">
+                        <h3 className="text-lg font-medium text-white">Recent Activity</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm text-gray-400">
+                            <thead className="bg-gray-700/50 text-xs uppercase text-gray-300">
+                                <tr>
+                                    <th className="px-6 py-3">Time</th>
+                                    <th className="px-6 py-3">Pair</th>
+                                    <th className="px-6 py-3">Side</th>
+                                    <th className="px-6 py-3">Size</th>
+                                    <th className="px-6 py-3">Price</th>
+                                    <th className="px-6 py-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-700">
+                                {/* Mock Data */}
+                                {[1, 2, 3].map((i) => (
+                                    <tr key={i} className="hover:bg-gray-700/30">
+                                        <td className="px-6 py-4">2023-10-27 10:30:{i}0</td>
+                                        <td className="px-6 py-4">ETH-USD</td>
+                                        <td className="px-6 py-4">
+                                            <span className="text-green-400">Long</span>
+                                        </td>
+                                        <td className="px-6 py-4">1.5 ETH</td>
+                                        <td className="px-6 py-4">$1,850.00</td>
+                                        <td className="px-6 py-4">
+                                            <span className="rounded-full bg-green-500/10 px-2 py-1 text-xs font-medium text-green-400">
+                                                Filled
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    );
+}
