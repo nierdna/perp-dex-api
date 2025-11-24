@@ -3,15 +3,39 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+interface UserInfo {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string;
+}
+
 export default function DashboardPage() {
     const router = useRouter();
     const [isFarming, setIsFarming] = useState(false);
+    const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
         if (!token) {
             router.push('/login');
+            return;
         }
+
+        // Fetch user info
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        })
+            .then(res => res.json())
+            .then(data => setUserInfo(data))
+            .catch(err => {
+                console.error('Failed to fetch user info:', err);
+                // Token might be invalid, redirect to login
+                localStorage.removeItem('accessToken');
+                router.push('/login');
+            });
     }, [router]);
 
     const handleLogout = () => {
@@ -31,7 +55,16 @@ export default function DashboardPage() {
                 <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
                     <h1 className="text-2xl font-bold text-blue-500">Point Farming</h1>
                     <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-400">@username</span>
+                        {userInfo?.avatarUrl && (
+                            <img
+                                src={userInfo.avatarUrl}
+                                alt={userInfo.username}
+                                className="h-8 w-8 rounded-full"
+                            />
+                        )}
+                        <span className="text-sm text-gray-400">
+                            {userInfo ? `@${userInfo.username}` : 'Loading...'}
+                        </span>
                         <button
                             onClick={handleLogout}
                             className="rounded-md bg-gray-700 px-3 py-2 text-sm font-medium text-white hover:bg-gray-600"
@@ -76,8 +109,8 @@ export default function DashboardPage() {
                     <button
                         onClick={toggleFarming}
                         className={`rounded-lg px-6 py-3 text-lg font-bold text-white transition-colors ${isFarming
-                                ? 'bg-red-500 hover:bg-red-600'
-                                : 'bg-green-500 hover:bg-green-600'
+                            ? 'bg-red-500 hover:bg-red-600'
+                            : 'bg-green-500 hover:bg-green-600'
                             }`}
                     >
                         {isFarming ? 'Stop Farming' : 'Start Farming'}
