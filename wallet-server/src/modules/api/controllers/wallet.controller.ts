@@ -82,6 +82,7 @@ export class WalletController {
           type: 'SOLANA',
           chain: 'Solana Mainnet',
           chain_id: 901,
+          icon: 'https://assets.coingecko.com/coins/images/4128/standard/solana.png',
         },
         base: {
           wallet_id: wallets.evm.id,
@@ -89,6 +90,7 @@ export class WalletController {
           type: 'EVM',
           chain: 'Base',
           chain_id: 8453,
+          icon: 'https://assets.coingecko.com/coins/images/31199/standard/base.png',
         },
         arbitrum: {
           wallet_id: wallets.evm.id,
@@ -96,6 +98,7 @@ export class WalletController {
           type: 'EVM',
           chain: 'Arbitrum One',
           chain_id: 42161,
+          icon: 'https://assets.coingecko.com/coins/images/16547/standard/arbitrum.png',
         },
       },
       note: 'EVM wallets (Base & Arbitrum) share the same address and private key',

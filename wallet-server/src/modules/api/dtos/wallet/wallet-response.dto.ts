@@ -1,34 +1,47 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class WalletResponseDto {
-  @ApiProperty({
-    description: 'Wallet ID',
-    example: 'd1fb2a2c-7f40-4d1b-8a8e-76a9d0176c33',
-  })
+export class WalletDetailDto {
+  @ApiProperty({ example: 'd1fb2a2c-7f40-4d1b-8a8e-76a9d0176c33' })
   wallet_id: string;
 
-  @ApiProperty({
-    description: 'User ID',
-    example: '2d9b2c46-2a9e-4d1b-8bdf-8b7f9d7a0ef1',
-  })
-  user_id: string;
-
-  @ApiProperty({
-    description: 'Chain ID',
-    example: 8453,
-  })
-  chain_id: number;
-
-  @ApiProperty({
-    description: 'Wallet address',
-    example: '0xAbCDef1234567890aBCdEF1234567890abCDef12',
-  })
+  @ApiProperty({ example: '0xAbCDef1234567890aBCdEF1234567890abCDef12' })
   address: string;
 
-  @ApiProperty({
-    description: 'Created timestamp',
-    example: '2025-10-27T08:00:00Z',
-  })
+  @ApiProperty({ example: 'EVM' })
+  type: string;
+
+  @ApiProperty({ example: 'Base' })
+  chain: string;
+
+  @ApiProperty({ example: 8453 })
+  chain_id: number;
+
+  @ApiProperty({ example: 'https://assets.coingecko.com/coins/images/31199/standard/base.png' })
+  icon: string;
+}
+
+export class WalletsMapDto {
+  @ApiProperty({ type: WalletDetailDto })
+  solana: WalletDetailDto;
+
+  @ApiProperty({ type: WalletDetailDto })
+  base: WalletDetailDto;
+
+  @ApiProperty({ type: WalletDetailDto })
+  arbitrum: WalletDetailDto;
+}
+
+export class WalletResponseDto {
+  @ApiProperty({ example: 'user_123456' })
+  user_id: string;
+
+  @ApiProperty({ type: WalletsMapDto })
+  wallets: WalletsMapDto;
+
+  @ApiProperty({ example: 'EVM wallets (Base & Arbitrum) share the same address and private key' })
+  note: string;
+
+  @ApiProperty({ example: '2025-10-27T08:00:00Z' })
   created_at: string;
 }
 
