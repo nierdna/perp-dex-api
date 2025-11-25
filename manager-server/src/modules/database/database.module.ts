@@ -29,4 +29,4 @@ const entities = [AdminConfigEntity];
   providers: [...repositories, ...services, SeedDatabase],
   exports: [...repositories, ...services],
 })
-export class DatabaseModule {}
+export class DatabaseModule { }
