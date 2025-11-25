@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { configQueue } from './configs';
 import { DatabaseModule } from '@/database';
-import { BusinessModule } from '@/business';
+import { BusinessModule } from '../business/business.module';
 import { ScheduleService } from './schedulers/schedule.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ApiModule } from '@/api';

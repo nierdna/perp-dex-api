@@ -10,7 +10,7 @@ import {
     DepositRepository,
 } from '@/database/repositories';
 import { WalletType } from '@/database/entities';
-import { WebhookService } from '@/business/services/webhook.service';
+import { WebhookService } from '../../business/services/webhook.service';
 
 // ERC20 ABI (only balanceOf function)
 const ERC20_ABI = [
