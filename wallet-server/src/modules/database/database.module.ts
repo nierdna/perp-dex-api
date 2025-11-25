@@ -2,15 +2,15 @@ import { Module } from '@nestjs/common';
 import { configDb } from './configs';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AdminConfigRepository, UserWalletRepository, AuditLogRepository } from './repositories';
-import { AdminConfigEntity, UserWalletEntity, AuditLogEntity } from './entities';
+import { AdminConfigRepository, UserWalletRepository, AuditLogRepository, WalletBalanceRepository } from './repositories';
+import { AdminConfigEntity, UserWalletEntity, AuditLogEntity, WalletBalanceEntity } from './entities';
 import { SeedDatabase } from './seeders/seed.database';
 
-const repositories = [AdminConfigRepository, UserWalletRepository, AuditLogRepository];
+const repositories = [AdminConfigRepository, UserWalletRepository, AuditLogRepository, WalletBalanceRepository];
 
 const services = [];
 
-const entities = [AdminConfigEntity, UserWalletEntity, AuditLogEntity];
+const entities = [AdminConfigEntity, UserWalletEntity, AuditLogEntity, WalletBalanceEntity];
 
 @Module({
   imports: [
@@ -29,4 +29,4 @@ const entities = [AdminConfigEntity, UserWalletEntity, AuditLogEntity];
   providers: [...repositories, ...services, SeedDatabase],
   exports: [...repositories, ...services],
 })
-export class DatabaseModule {}
+export class DatabaseModule { }

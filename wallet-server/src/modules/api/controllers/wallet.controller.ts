@@ -7,6 +7,7 @@ import {
   HttpStatus,
   BadRequestException,
   UseGuards,
+  Param,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags, ApiSecurity } from '@nestjs/swagger';
 import { ResponseMessage } from '@/shared/decorators/response-message.decorator';
@@ -35,12 +36,16 @@ export class WalletController {
   @ApiOperation({
     summary: 'Create new wallet for a user',
     description:
-      'Creates a new EVM wallet for the specified user. If a wallet already exists, returns the existing wallet.',
+      'Creates a new EVM wallet for the specified user. If a wallet already exists, returns 409 Conflict.',
   })
   @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Wallet created successfully or wallet already exists',
+    status: HttpStatus.CREATED,
+    description: 'Wallet created successfully',
     type: WalletResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Wallet already exists for user',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -62,6 +67,7 @@ export class WalletController {
     console.log(`🔍 [WalletController] [createWallet] user_id: ${createWalletDto.user_id}, currentUserId: ${currentUserId}`);
 
     // Create both Solana and EVM wallets
+    // This will throw ConflictException if wallets exist
     const wallets = await this.walletService.createAllWallets(createWalletDto.user_id);
 
     // Log audit trail for both wallets
@@ -73,37 +79,30 @@ export class WalletController {
 
     console.log(`✅ [WalletController] [createWallet] Returning wallet response`);
 
-    return {
-      user_id: createWalletDto.user_id,
-      wallets: {
-        solana: {
-          wallet_id: wallets.solana.id,
-          address: wallets.solana.address,
-          type: 'SOLANA',
-          chain: 'Solana Mainnet',
-          chain_id: 901,
-          icon: 'https://assets.coingecko.com/coins/images/4128/standard/solana.png',
-        },
-        base: {
-          wallet_id: wallets.evm.id,
-          address: wallets.evm.address,
-          type: 'EVM',
-          chain: 'Base',
-          chain_id: 8453,
-          icon: 'https://assets.coingecko.com/coins/images/31199/standard/base.png',
-        },
-        arbitrum: {
-          wallet_id: wallets.evm.id,
-          address: wallets.evm.address,
-          type: 'EVM',
-          chain: 'Arbitrum One',
-          chain_id: 42161,
-          icon: 'https://assets.coingecko.com/coins/images/16547/standard/arbitrum.png',
-        },
-      },
-      note: 'EVM wallets (Base & Arbitrum) share the same address and private key',
-      created_at: wallets.solana.created_at.toISOString(),
-    };
+    // Return the detail response immediately after creation (balances will be 0)
+    return this.walletService.getWalletsDetail(createWalletDto.user_id);
+  }
+
+  @Get(':user_id')
+  @ApiOperation({
+    summary: 'Get wallets by user ID',
+    description: 'Retrieves all wallets and balances for a specific user ID.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Wallets retrieved successfully',
+    type: WalletResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Wallets not found for user',
+  })
+  @ResponseMessage('Wallets retrieved successfully')
+  async getWallets(
+    @Param('user_id') userId: string,
+  ): Promise<any> {
+    console.log(`🔍 [WalletController] [getWallets] user_id: ${userId}`);
+    return this.walletService.getWalletsDetail(userId);
   }
 
   @Get('private-key')

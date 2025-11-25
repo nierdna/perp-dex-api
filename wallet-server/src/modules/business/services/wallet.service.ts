@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserWalletRepository } from '@/database/repositories';
-import { UserWalletEntity, WalletType } from '@/database/entities';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { UserWalletRepository, WalletBalanceRepository } from '@/database/repositories';
+import { UserWalletEntity, WalletType, WalletBalanceEntity } from '@/database/entities';
 import { EncryptionService } from './encryption.service';
 import { Wallet } from 'ethers';
 import { Keypair } from '@solana/web3.js';
@@ -12,6 +12,7 @@ export type SupportedChain = 'SOLANA' | 'EVM';
 export class WalletService {
   constructor(
     private userWalletRepository: UserWalletRepository,
+    private walletBalanceRepository: WalletBalanceRepository,
     private encryptionService: EncryptionService,
   ) { }
 
@@ -85,6 +86,15 @@ export class WalletService {
   async createAllWallets(userId: string): Promise<{ solana: UserWalletEntity; evm: UserWalletEntity }> {
     console.log(`🔍 [WalletService] [createAllWallets] Creating all wallets for userId: ${userId}`);
 
+    // Check if ANY wallet exists for this user
+    const existingWallets = await this.userWalletRepository.find({
+      where: { userId },
+    });
+
+    if (existingWallets.length > 0) {
+      throw new ConflictException(`Wallets already exist for user: ${userId}`);
+    }
+
     // Create Solana wallet
     const solanaWallet = await this.createWallet(userId, 'SOLANA');
 
@@ -98,6 +108,73 @@ export class WalletService {
     return {
       solana: solanaWallet,
       evm: evmWallet,
+    };
+  }
+
+  /**
+   * Get wallet details with balances for a user
+   */
+  async getWalletsDetail(userId: string): Promise<any> {
+    const solanaWallet = await this.userWalletRepository.findOne({ where: { userId, walletType: WalletType.SOLANA } });
+    const evmWallet = await this.userWalletRepository.findOne({ where: { userId, walletType: WalletType.EVM } });
+
+    if (!solanaWallet || !evmWallet) {
+      throw new NotFoundException(`Wallets not found for user: ${userId}`);
+    }
+
+    // Helper to get balances
+    const getBalances = async (walletId: string, chainId: number) => {
+      const balances = await this.walletBalanceRepository.find({
+        where: { walletId, chainId },
+      });
+
+      const usdc = balances.find(b => b.token === 'USDC')?.balance || 0;
+      const usdt = balances.find(b => b.token === 'USDT')?.balance || 0;
+
+      return {
+        amount_usdc: Number(usdc),
+        amount_usdt: Number(usdt),
+        amount_usd: Number(usdc) + Number(usdt),
+      };
+    };
+
+    const solanaBalances = await getBalances(solanaWallet.id, 901);
+    const baseBalances = await getBalances(evmWallet.id, 8453);
+    const arbitrumBalances = await getBalances(evmWallet.id, 42161);
+
+    return {
+      user_id: userId,
+      wallets: {
+        solana: {
+          wallet_id: solanaWallet.id,
+          address: solanaWallet.address,
+          type: 'SOLANA',
+          chain: 'Solana Mainnet',
+          chain_id: 901,
+          icon: 'https://assets.coingecko.com/coins/images/4128/standard/solana.png',
+          ...solanaBalances,
+        },
+        base: {
+          wallet_id: evmWallet.id,
+          address: evmWallet.address,
+          type: 'EVM',
+          chain: 'Base',
+          chain_id: 8453,
+          icon: 'https://assets.coingecko.com/coins/images/31199/standard/base.png',
+          ...baseBalances,
+        },
+        arbitrum: {
+          wallet_id: evmWallet.id,
+          address: evmWallet.address,
+          type: 'EVM',
+          chain: 'Arbitrum One',
+          chain_id: 42161,
+          icon: 'https://assets.coingecko.com/coins/images/16547/standard/arbitrum.png',
+          ...arbitrumBalances,
+        },
+      },
+      note: 'EVM wallets (Base & Arbitrum) share the same address and private key',
+      created_at: solanaWallet.created_at.toISOString(), // Assuming created at same time
     };
   }
 

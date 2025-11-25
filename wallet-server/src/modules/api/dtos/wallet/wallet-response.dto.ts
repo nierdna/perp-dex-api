@@ -18,6 +18,15 @@ export class WalletDetailDto {
 
   @ApiProperty({ example: 'https://assets.coingecko.com/coins/images/31199/standard/base.png' })
   icon: string;
+
+  @ApiProperty({ example: 0 })
+  amount_usdc: number;
+
+  @ApiProperty({ example: 0 })
+  amount_usdt: number;
+
+  @ApiProperty({ example: 0 })
+  amount_usd: number;
 }
 
 export class WalletsMapDto {
