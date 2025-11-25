@@ -20,18 +20,45 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "paths": {
-      "@/database": ["modules/database/index"],
-      "@/database/*": ["modules/database/*"],
-      "@/api": ["modules/api/index"],
-      "@/api/*": ["modules/api/*"],
-      "@/shared/*": ["shared/*"],
-      "@/worker/*": ["modules/worker/*"],
-      "@/business/*": ["modules/business/*"],
-      "@/queue/*": ["modules/queue/*"],
-      "@nestjs/passport": ["./node_modules/@nestjs/passport"],
-      "passport-jwt": ["./node_modules/passport-jwt"],
-      "ethers": ["./node_modules/ethers"]
+      "@/database": [
+        "modules/database/index"
+      ],
+      "@/database/*": [
+        "modules/database/*"
+      ],
+      "@/api": [
+        "modules/api/index"
+      ],
+      "@/api/*": [
+        "modules/api/*"
+      ],
+      "@/business": [
+        "modules/business/index"
+      ],
+      "@/business/*": [
+        "modules/business/*"
+      ],
+      "@/shared/*": [
+        "shared/*"
+      ],
+      "@/worker/*": [
+        "modules/worker/*"
+      ],
+      "@/queue/*": [
+        "modules/queue/*"
+      ],
+      "@nestjs/passport": [
+        "./node_modules/@nestjs/passport"
+      ],
+      "passport-jwt": [
+        "./node_modules/passport-jwt"
+      ],
+      "ethers": [
+        "./node_modules/ethers"
+      ]
     }
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

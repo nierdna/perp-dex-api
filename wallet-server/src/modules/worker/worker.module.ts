@@ -2,12 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { configQueue } from './configs';
 import { DatabaseModule } from '@/database';
+import { BusinessModule } from '@/business';
 import { ScheduleService } from './schedulers/schedule.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ApiModule } from '@/api';
 import { BullModule } from '@nestjs/bull';
 import { UserConsumer } from './consumers';
 import { SolanaWorkerService } from './solana-worker.service';
+import { DepositMonitoringService } from './services/deposit-monitoring.service';
 
 const isWorker = Boolean(Number(process.env.IS_WORKER || 0));
 
@@ -16,13 +18,14 @@ let schedulers = [];
 
 if (isWorker) {
   consumers = [UserConsumer];
-  schedulers = [ScheduleService, SolanaWorkerService];
+  schedulers = [ScheduleService, SolanaWorkerService, DepositMonitoringService];
 }
 
 @Module({
   imports: [
     ApiModule,
     DatabaseModule,
+    BusinessModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory(config: ConfigService) {

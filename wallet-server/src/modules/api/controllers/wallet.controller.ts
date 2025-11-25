@@ -23,9 +23,7 @@ import {
 } from '@/api/dtos/wallet';
 
 @ApiTags('Wallet')
-@ApiSecurity('X-API-Key')
 @Controller('wallets')
-@UseGuards(IpWhitelistGuard, ApiKeyGuard)
 export class WalletController {
   constructor(
     private readonly walletService: WalletService,
@@ -50,14 +48,6 @@ export class WalletController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid user ID',
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized - JWT token required',
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Forbidden - IP not whitelisted',
   })
   @ResponseMessage('Wallets created successfully')
   async createWallet(
@@ -106,6 +96,8 @@ export class WalletController {
   }
 
   @Get('private-key')
+  @UseGuards(IpWhitelistGuard, ApiKeyGuard)
+  @ApiSecurity('X-API-Key')
   @ApiOperation({
     summary: 'Get private key for a wallet (Admin only)',
     description:

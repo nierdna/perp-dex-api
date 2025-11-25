@@ -1,6 +1,6 @@
 import { Module, OnApplicationBootstrap } from '@nestjs/common';
 import { DatabaseModule } from '@/database';
-import { HealthController, WalletController } from '@/api/controllers';
+import { HealthController, WalletController, WebhookController } from '@/api/controllers';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { QueueModule } from '@/queue/queue.module';
@@ -13,7 +13,7 @@ import { configCache } from './configs/cache';
 import { HttpCacheInterceptor } from './interceptors';
 import { BusinessModule } from '@/business/business.module';
 
-const controllers = [HealthController, WalletController];
+const controllers = [HealthController, WalletController, WebhookController];
 
 @Module({
   imports: [
@@ -73,7 +73,7 @@ const controllers = [HealthController, WalletController];
   exports: [],
 })
 export class ApiModule implements OnApplicationBootstrap {
-  constructor() {}
+  constructor() { }
 
-  async onApplicationBootstrap() {}
+  async onApplicationBootstrap() { }
 }
