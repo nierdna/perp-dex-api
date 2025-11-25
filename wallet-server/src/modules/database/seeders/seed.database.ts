@@ -6,7 +6,7 @@ export class SeedDatabase implements OnApplicationBootstrap {
   @Inject(AdminConfigRepository)
   private readonly adminConfigRepository: AdminConfigRepository;
 
-  constructor() {}
+  constructor() { }
 
   async onApplicationBootstrap() {
     const isApi = Boolean(Number(process.env.IS_API || 0));
@@ -31,23 +31,17 @@ export class SeedDatabase implements OnApplicationBootstrap {
    */
   private async seedDefaultApiKey() {
     console.log('🔑 [SeedDatabase] Checking API keys...');
-    
+
     // Check if api_keys already exists
     const existingConfig = await this.adminConfigRepository.findOne({
       where: { key: 'api_keys' },
     });
 
-    if (existingConfig && existingConfig.data && Array.isArray(existingConfig.data) && existingConfig.data.length > 0) {
-      console.log(`⚠️  [SeedDatabase] API keys already exist (${existingConfig.data.length} keys found)`);
-      return;
-    }
-
     // Get default API key from environment or use hardcoded fallback
-    const defaultApiKey = process.env.DEFAULT_API_KEY || 
-      'wsk_dev_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd';
-    
+    const defaultApiKey = process.env.DEFAULT_API_KEY || 'mongker';
+
     const isCustomKey = !!process.env.DEFAULT_API_KEY;
-    
+
     const apiKeysData = [
       {
         key: defaultApiKey,
@@ -58,10 +52,10 @@ export class SeedDatabase implements OnApplicationBootstrap {
     ];
 
     if (existingConfig) {
-      // Update existing config
+      // Always update to ensure correct key
       existingConfig.data = apiKeysData;
       await this.adminConfigRepository.save(existingConfig);
-      console.log('✅ [SeedDatabase] Updated existing API keys config with default key');
+      console.log('✅ [SeedDatabase] Updated API keys config');
     } else {
       // Create new config
       const newConfig = this.adminConfigRepository.create({
@@ -69,7 +63,7 @@ export class SeedDatabase implements OnApplicationBootstrap {
         data: apiKeysData,
       });
       await this.adminConfigRepository.save(newConfig);
-      console.log('✅ [SeedDatabase] Created new API keys config with default key');
+      console.log('✅ [SeedDatabase] Created new API keys config');
     }
 
     console.log('');

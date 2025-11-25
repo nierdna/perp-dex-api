@@ -93,7 +93,7 @@ pnpm start:dev
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔑 DEFAULT API KEY (For Development/Testing Only)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   wsk_dev_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd
+   mongker
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🚀 Application is running in port http://localhost:3000
@@ -106,7 +106,7 @@ pnpm start:dev
 ### Bước 1: Set API Key
 
 ```bash
-export API_KEY="wsk_dev_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd"
+export API_KEY="mongker"
 ```
 
 ### Bước 2: Tạo Ví
@@ -166,7 +166,7 @@ http://localhost:3000/docs
 
 **Authorize với API Key:**
 1. Click nút **"Authorize"** (🔒 icon)
-2. Nhập API key: `wsk_dev_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd`
+2. Nhập API key: `mongker`
 3. Click **"Authorize"**
 4. Test các API trực tiếp trên UI
 
@@ -217,7 +217,7 @@ SELECT action, user_id, address, created_at FROM audit_logs ORDER BY created_at 
 ### Default API Key
 
 ```
-wsk_dev_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd
+mongker
 ```
 
 ---
@@ -264,7 +264,7 @@ IP_WHITELIST=127.0.0.1,your-ip-here
 **Solution:**
 Add header to request:
 ```bash
--H "X-API-Key: wsk_dev_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd"
+-H "X-API-Key: mongker"
 ```
 
 ---

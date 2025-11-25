@@ -1,47 +1,55 @@
 import { Entity, Column, Index, BeforeInsert, BeforeUpdate } from 'typeorm';
 import { BaseEntity } from './base.entity';
 
+export enum WalletType {
+  SOLANA = 'SOLANA',
+  EVM = 'EVM',
+}
+
 @Entity('user_wallets')
 export class UserWalletEntity extends BaseEntity {
-  @Column()
+  @Column({ name: 'user_id' })
   @Index()
   userId: string;
 
-  @Column()
+  @Column({
+    type: 'enum',
+    enum: WalletType,
+    name: 'wallet_type',
+  })
   @Index()
-  chainId: number;
+  walletType: WalletType;
 
   @Column({ unique: true })
   @Index()
   address: string;
 
-  @Column({ type: 'bytea' })
+  @Column({ type: 'bytea', name: 'enc_priv_key' })
   encPrivKey: Buffer;
 
-  @Column({ nullable: true, type: 'bytea' })
+  @Column({ nullable: true, type: 'bytea', name: 'enc_meta' })
   encMeta?: Buffer;
 
   @Column({ default: 'aes_gcm' })
   custodian: string;
 
   /**
-   * Normalize address to lowercase before insert
+   * Normalize address to lowercase before insert (only for EVM)
    */
   @BeforeInsert()
   normalizeAddressBeforeInsert() {
-    if (this.address) {
+    if (this.address && this.walletType === WalletType.EVM) {
       this.address = this.address.toLowerCase();
     }
   }
 
   /**
-   * Normalize address to lowercase before update
+   * Normalize address to lowercase before update (only for EVM)
    */
   @BeforeUpdate()
   normalizeAddressBeforeUpdate() {
-    if (this.address) {
+    if (this.address && this.walletType === WalletType.EVM) {
       this.address = this.address.toLowerCase();
     }
   }
 }
-

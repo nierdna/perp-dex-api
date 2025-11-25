@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { UserWalletRepository } from '@/database/repositories';
+import { WalletType } from '@/database/entities';
 
 @Injectable()
 export class SolanaWorkerService implements OnModuleInit {
@@ -43,14 +44,22 @@ export class SolanaWorkerService implements OnModuleInit {
         // Fetch all Solana wallets
         // Note: This is heavy for DB if many users. Should be optimized.
         const wallets = await this.userWalletRepository.find({
-            where: { chainId: 999999 }, // Solana Devnet ID
+            where: { walletType: WalletType.SOLANA },
         });
 
         this.logger.log(`👀 Watching ${wallets.length} Solana wallets...`);
 
         for (const wallet of wallets) {
             try {
-                const pubKey = new PublicKey(wallet.address);
+                // Validate address format before using
+                let pubKey: PublicKey;
+                try {
+                    pubKey = new PublicKey(wallet.address);
+                } catch (e) {
+                    this.logger.warn(`⚠️ Skipping invalid wallet address: ${wallet.address} (Invalid Format)`);
+                    continue;
+                }
+
                 this.connection.onAccountChange(
                     pubKey,
                     (updatedAccountInfo, context) => {

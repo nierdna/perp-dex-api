@@ -23,13 +23,13 @@ DEFAULT_API_KEY=your-custom-key-here
 
 Nếu không set `DEFAULT_API_KEY` trong `.env`, sẽ dùng key mặc định:
 ```
-wsk_dev_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd
+mongker
 ```
 
 **Sử dụng ngay:**
 
 ```bash
-export API_KEY="wsk_dev_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd"
+export API_KEY="mongker"
 
 curl -X POST http://localhost:3000/v1/wallets \
   -H "X-API-Key: $API_KEY" \

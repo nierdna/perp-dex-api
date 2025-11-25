@@ -1,38 +1,43 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserWalletRepository } from '@/database/repositories';
-import { UserWalletEntity } from '@/database/entities';
+import { UserWalletEntity, WalletType } from '@/database/entities';
 import { EncryptionService } from './encryption.service';
 import { Wallet } from 'ethers';
 import { Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 
+export type SupportedChain = 'SOLANA' | 'EVM';
+
 @Injectable()
 export class WalletService {
-  // Hardcode chain ID: 8453 = Base (Base chain)
-  private readonly defaultChainId = 8453;
-
   constructor(
     private userWalletRepository: UserWalletRepository,
     private encryptionService: EncryptionService,
   ) { }
 
   /**
+   * Convert chain string to WalletType enum
+   */
+  private getWalletType(chain: SupportedChain): WalletType {
+    return chain === 'SOLANA' ? WalletType.SOLANA : WalletType.EVM;
+  }
+
+  /**
    * Create a new wallet for a user
    * If wallet already exists, return existing wallet
    */
-  async createWallet(userId: string, chain: 'EVM' | 'SOLANA' = 'EVM'): Promise<UserWalletEntity> {
+  async createWallet(userId: string, chain: SupportedChain = 'EVM'): Promise<UserWalletEntity> {
     console.log(`🔍 [WalletService] [createWallet] Creating ${chain} wallet for userId: ${userId}`);
 
-    // Determine chain ID (mock for now)
-    const chainId = chain === 'EVM' ? this.defaultChainId : 999999; // 999999 for Solana Devnet
+    const walletType = this.getWalletType(chain);
 
     // Check if wallet already exists
     const existingWallet = await this.userWalletRepository.findOne({
-      where: { userId, chainId },
+      where: { userId, walletType },
     });
 
     if (existingWallet) {
-      console.log(`⚠️ [WalletService] [createWallet] Wallet already exists for userId: ${userId}`);
+      console.log(`⚠️ [WalletService] [createWallet] Wallet already exists for userId: ${userId}, type: ${walletType}`);
       return existingWallet;
     }
 
@@ -40,26 +45,26 @@ export class WalletService {
     let privateKey: string;
 
     if (chain === 'SOLANA') {
+      // Generate Solana keypair
       const keypair = Keypair.generate();
       address = keypair.publicKey.toBase58();
       privateKey = bs58.encode(keypair.secretKey);
     } else {
+      // Generate EVM wallet (for Base, Arbitrum)
       const wallet = Wallet.createRandom();
       address = wallet.address;
       privateKey = wallet.privateKey;
     }
 
-    console.log(`✅ [WalletService] [createWallet] Generated new wallet with address: ${address}`);
+    console.log(`✅ [WalletService] [createWallet] Generated ${chain} wallet with address: ${address}`);
 
     // Encrypt private key
-    const { ciphertext } = this.encryptionService.encryptPrivateKey(
-      privateKey,
-    );
+    const { ciphertext } = this.encryptionService.encryptPrivateKey(privateKey);
 
     // Create wallet entity
     const walletEntity = this.userWalletRepository.create({
       userId,
-      chainId,
+      walletType,
       address,
       encPrivKey: ciphertext,
       custodian: 'aes_gcm',
@@ -74,18 +79,43 @@ export class WalletService {
   }
 
   /**
+   * Create all wallets (SOLANA + EVM) for a user at once
+   * Returns both wallet addresses
+   */
+  async createAllWallets(userId: string): Promise<{ solana: UserWalletEntity; evm: UserWalletEntity }> {
+    console.log(`🔍 [WalletService] [createAllWallets] Creating all wallets for userId: ${userId}`);
+
+    // Create Solana wallet
+    const solanaWallet = await this.createWallet(userId, 'SOLANA');
+
+    // Create EVM wallet
+    const evmWallet = await this.createWallet(userId, 'EVM');
+
+    console.log(`✅ [WalletService] [createAllWallets] All wallets created for userId: ${userId}`);
+    console.log(`   - Solana: ${solanaWallet.address}`);
+    console.log(`   - EVM: ${evmWallet.address}`);
+
+    return {
+      solana: solanaWallet,
+      evm: evmWallet,
+    };
+  }
+
+  /**
    * Get wallet by user ID
    */
-  async getWalletByUserId(userId: string): Promise<UserWalletEntity> {
-    console.log(`🔍 [WalletService] [getWalletByUserId] Getting wallet for userId: ${userId}`);
+  async getWalletByUserId(userId: string, chain: SupportedChain = 'EVM'): Promise<UserWalletEntity> {
+    console.log(`🔍 [WalletService] [getWalletByUserId] Getting ${chain} wallet for userId: ${userId}`);
+
+    const walletType = this.getWalletType(chain);
 
     const wallet = await this.userWalletRepository.findOne({
-      where: { userId, chainId: this.defaultChainId },
+      where: { userId, walletType },
     });
 
     if (!wallet) {
-      console.log(`🔴 [WalletService] [getWalletByUserId] Wallet not found for userId: ${userId}`);
-      throw new NotFoundException(`Wallet not found for user: ${userId}`);
+      console.log(`🔴 [WalletService] [getWalletByUserId] Wallet not found for userId: ${userId}, type: ${walletType}`);
+      throw new NotFoundException(`Wallet not found for user: ${userId} on chain: ${chain}`);
     }
 
     console.log(`✅ [WalletService] [getWalletByUserId] Found wallet with address: ${wallet.address}`);
@@ -97,8 +127,8 @@ export class WalletService {
    * Get wallet by address
    */
   async getWalletByAddress(address: string): Promise<UserWalletEntity> {
-    // Normalize address to lowercase for comparison
-    const normalizedAddress = address.toLowerCase();
+    // Normalize address to lowercase for comparison only if it looks like EVM
+    const normalizedAddress = address.startsWith('0x') ? address.toLowerCase() : address;
     console.log(`🔍 [WalletService] [getWalletByAddress] Getting wallet for address: ${normalizedAddress}`);
 
     const wallet = await this.userWalletRepository.findOne({

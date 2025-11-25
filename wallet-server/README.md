@@ -160,7 +160,7 @@ JWT_SECRET_KEY=your-jwt-secret
 **Development (Tự động):**
 - Khi chạy lần đầu, 1 API key mặc định sẽ được tự động tạo
 - Có thể set custom key trong `.env`: `DEFAULT_API_KEY=your-key-here`
-- Nếu không set, dùng key mặc định: `wsk_dev_1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd`
+- Nếu không set, dùng key mặc định: `mongker`
 - Dùng ngay không cần setup thêm
 
 **Production (Generate key mới):**

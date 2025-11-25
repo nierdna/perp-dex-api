@@ -16,8 +16,12 @@ export class GetPrivateKeyDto {
     example: '0xAbCDef1234567890aBCdEF1234567890abCDef12',
   })
   @IsOptional()
-  @IsEthereumAddress()
-  @Transform(({ value }) => value?.toLowerCase())
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => {
+    // Only lowercase if it looks like an EVM address
+    return value?.startsWith('0x') ? value.toLowerCase() : value;
+  })
   address?: string;
 }
 
