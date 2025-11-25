@@ -3,20 +3,20 @@ import { BaseEntity } from './base.entity';
 
 @Entity('users')
 export class UserEntity extends BaseEntity {
-    @Column({ unique: true })
+    @Column({ unique: true, name: 'twitter_id' })
     @Index()
     twitterId: string;
 
     @Column()
     username: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, name: 'display_name' })
     displayName: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, name: 'avatar_url' })
     avatarUrl: string;
 
-    @Column({ default: true })
+    @Column({ default: true, name: 'is_active' })
     isActive: boolean;
 
     @Column({ default: 'user' })
