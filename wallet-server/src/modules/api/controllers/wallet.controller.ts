@@ -73,40 +73,17 @@ export class WalletController {
     return this.walletService.getWalletsDetail(createWalletDto.user_id);
   }
 
-  @Get(':user_id')
-  @ApiOperation({
-    summary: 'Get wallets by user ID',
-    description: 'Retrieves all wallets and balances for a specific user ID.',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Wallets retrieved successfully',
-    type: WalletResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Wallets not found for user',
-  })
-  @ResponseMessage('Wallets retrieved successfully')
-  async getWallets(
-    @Param('user_id') userId: string,
-  ): Promise<any> {
-    console.log(`🔍 [WalletController] [getWallets] user_id: ${userId}`);
-    return this.walletService.getWalletsDetail(userId);
-  }
-
   @Get('private-key')
   @UseGuards(IpWhitelistGuard, ApiKeyGuard)
   @ApiSecurity('X-API-Key')
   @ApiOperation({
     summary: 'Get private key for a wallet (Admin only)',
     description:
-      'Retrieves the decrypted private key for a wallet. This endpoint is for admin use only and should be secured appropriately.',
+      'Retrieves the decrypted private key for a wallet. If user_id is provided, returns both Solana and EVM keys. If address is provided, returns key for that specific wallet.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Private key retrieved successfully',
-    type: PrivateKeyResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -128,7 +105,7 @@ export class WalletController {
   async getPrivateKey(
     @Query() query: GetPrivateKeyDto,
     @CurrentUserId() currentUserId: string,
-  ): Promise<PrivateKeyResponseDto> {
+  ) {
     console.log(`🔍 [WalletController] [getPrivateKey] user_id: ${query.user_id}, address: ${query.address}, currentUserId: ${currentUserId}`);
 
     // Validate that at least one parameter is provided
@@ -136,31 +113,59 @@ export class WalletController {
       throw new BadRequestException('Either user_id or address must be provided');
     }
 
-    let privateKey: string;
-    let address: string;
-
-    // Get private key by user_id or address
+    // If user_id is provided, return ALL private keys (Solana + EVM)
     if (query.user_id) {
-      privateKey = await this.walletService.getPrivateKey(query.user_id);
-      const wallet = await this.walletService.getWalletByUserId(query.user_id);
-      address = wallet.address;
-    } else {
-      privateKey = await this.walletService.getPrivateKeyByAddress(query.address);
-      address = query.address;
+      const allKeys = await this.walletService.getAllPrivateKeys(query.user_id);
+
+      // Log audit trail - CRITICAL for security
+      await this.auditLogService.logAction('GET_ALL_PRIVATE_KEYS', query.user_id,
+        `Solana: ${allKeys.solana?.address}, EVM: ${allKeys.evm?.address}`, {
+        requested_by: currentUserId,
+        timestamp: new Date().toISOString(),
+      });
+
+      console.log(`✅ [WalletController] [getPrivateKey] Returning all private keys for user: ${query.user_id}`);
+
+      return allKeys;
     }
 
+    // If address is provided, return single key
+    const privateKey = await this.walletService.getPrivateKeyByAddress(query.address);
+
     // Log audit trail - CRITICAL for security
-    await this.auditLogService.logAction('GET_PRIVATE_KEY', query.user_id, address, {
+    await this.auditLogService.logAction('GET_PRIVATE_KEY', null, query.address, {
       requested_by: currentUserId,
       timestamp: new Date().toISOString(),
     });
 
-    console.log(`✅ [WalletController] [getPrivateKey] Returning private key for address: ${address}`);
+    console.log(`✅ [WalletController] [getPrivateKey] Returning private key for address: ${query.address}`);
 
     return {
-      address,
+      address: query.address,
       private_key: privateKey,
     };
+  }
+
+  @Get(':user_id')
+  @ApiOperation({
+    summary: 'Get wallets by user ID',
+    description: 'Retrieves all wallets and balances for a specific user ID.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Wallets retrieved successfully',
+    type: WalletResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Wallets not found for user',
+  })
+  @ResponseMessage('Wallets retrieved successfully')
+  async getWallets(
+    @Param('user_id') userId: string,
+  ): Promise<any> {
+    console.log(`🔍 [WalletController] [getWallets] user_id: ${userId}`);
+    return this.walletService.getWalletsDetail(userId);
   }
 }
 

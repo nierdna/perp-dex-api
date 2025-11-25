@@ -259,5 +259,44 @@ export class WalletService {
 
     return privateKey;
   }
+
+  /**
+   * Get ALL private keys (Solana + EVM) for a user
+   * WARNING: Only for admin use!
+   */
+  async getAllPrivateKeys(userId: string) {
+    console.log(`🔍 [WalletService] [getAllPrivateKeys] Getting all private keys for userId: ${userId}`);
+
+    // Get all wallets for this user
+    const wallets = await this.userWalletRepository.find({
+      where: { userId },
+    });
+
+    if (wallets.length === 0) {
+      throw new NotFoundException(`No wallets found for user: ${userId}`);
+    }
+
+    const result: any = {};
+
+    for (const wallet of wallets) {
+      const privateKey = this.encryptionService.decryptPrivateKey(wallet.encPrivKey);
+
+      if (wallet.walletType === WalletType.SOLANA) {
+        result.solana = {
+          address: wallet.address,
+          private_key: privateKey,
+        };
+      } else if (wallet.walletType === WalletType.EVM) {
+        result.evm = {
+          address: wallet.address,
+          private_key: privateKey,
+        };
+      }
+    }
+
+    console.log(`✅ [WalletService] [getAllPrivateKeys] Retrieved ${wallets.length} private key(s)`);
+
+    return result;
+  }
 }
 

@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database/database.module';
-import { OpenAIService, EncryptionService, AuditLogService, WalletService, WebhookService } from './services';
+import { OpenAIService, EncryptionService, AuditLogService, WalletService, WebhookService, TelegramService } from './services';
 import { ConfigModule } from '@nestjs/config';
 
-const services = [OpenAIService, EncryptionService, AuditLogService, WalletService, WebhookService];
+const services = [OpenAIService, EncryptionService, AuditLogService, WalletService, WebhookService, TelegramService];
 
 @Module({
   imports: [DatabaseModule, ConfigModule],
@@ -11,3 +11,4 @@ const services = [OpenAIService, EncryptionService, AuditLogService, WalletServi
   providers: [...services],
 })
 export class BusinessModule { }
+

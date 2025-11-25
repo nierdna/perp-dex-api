@@ -10,7 +10,7 @@ import {
     DepositRepository,
 } from '@/database/repositories';
 import { WalletType } from '@/database/entities';
-import { WebhookService } from '../../business/services/webhook.service';
+import { WebhookService, TelegramService } from '@/business/services';
 
 // ERC20 ABI (only balanceOf function)
 const ERC20_ABI = [
@@ -35,6 +35,7 @@ export class DepositMonitoringService {
         private walletBalanceRepository: WalletBalanceRepository,
         private depositRepository: DepositRepository,
         private webhookService: WebhookService,
+        private telegramService: TelegramService,
     ) {
         this.initializeRpcConnections();
     }
@@ -303,6 +304,22 @@ export class DepositMonitoringService {
             });
         } catch (error) {
             this.logger.error(`Failed to send webhook for deposit ${savedDeposit.id}: ${error.message}`);
+        }
+
+        // Send Telegram alert (always, even if webhook fails)
+        try {
+            const message = this.telegramService.formatDepositAlert({
+                userId: data.userId,
+                walletAddress: data.walletAddress,
+                amount: data.amount,
+                tokenSymbol: data.tokenSymbol,
+                chainName: this.getChainName(data.chainId),
+                txHash: null,
+            });
+            await this.telegramService.sendMessage(message);
+            this.logger.log('✅ Telegram notification sent');
+        } catch (error) {
+            this.logger.error(`Failed to send Telegram alert: ${error.message}`);
         }
     }
 
