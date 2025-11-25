@@ -106,6 +106,78 @@ sequenceDiagram
 | `stopped` | User/Admin dừng | "🔴 Đã dừng" |
 | `error` | Có lỗi xảy ra | "⚠️ Lỗi - Liên hệ support" |
 
+### 3.3 Edge Cases: Deposit & Withdrawal
+
+#### 3.3.1 Nạp Tiền Khi Đang Farm (Deposit During Farming)
+
+**Scenario:** User đang ở trạng thái `farming`, quyết định nạp thêm tiền vào ví.
+
+**Flow:**
+1. Solana Worker phát hiện transaction deposit mới.
+2. Webhook gọi về `wallet-server` → Update balance trong DB.
+3. `manager-server` nhận notification balance tăng.
+4. **Perps Server tự động điều chỉnh:**
+   - Tăng `amount_per_order` tương ứng với balance mới.
+   - Đặt thêm cặp lệnh mới (nếu chiến lược cho phép).
+5. Dashboard hiển thị balance mới + volume tăng.
+
+**Admin Action:** Không cần (tự động).
+
+**Telegram Notification:**
+```
+💰 Balance Update
+
+👤 User: @mr_mmon
+📈 Old Balance: $15.00
+📈 New Balance: $30.00
+✅ Farming đã điều chỉnh tự động
+```
+
+---
+
+#### 3.3.2 Rút Tiền (Withdrawal)
+
+**Scenario:** User muốn rút một phần hoặc toàn bộ tiền trong ví.
+
+**Flow:**
+1. User bấm nút "Withdraw" trên Dashboard.
+2. UI hiển thị modal:
+   - **Available Balance:** `$25.00` (Tổng balance - Margin đang dùng)
+   - **Amount:** Input field
+   - **Destination:** Solana address
+3. User nhập số tiền và địa chỉ → Bấm "Request Withdrawal".
+4. `manager-server` nhận request:
+   - Kiểm tra `available_balance >= withdrawal_amount`.
+   - Tạo record trong bảng `withdrawal_requests` với status `pending`.
+5. **Admin nhận notification trên Telegram:**
+   ```
+   💸 Withdrawal Request
+
+   👤 User: @mr_mmon
+   💵 Amount: $10.00
+   📍 Address: ABC...XYZ
+   ⚠️ Action: Approve hoặc Reject
+   ```
+6. Admin review → Approve/Reject:
+   - **Approve:** 
+     - `wallet-server` thực hiện transfer Solana.
+     - Update balance.
+     - Nếu balance còn lại < $10 → Dừng farming (status = `stopped`).
+     - Telegram notify user: "Rút tiền thành công!"
+   - **Reject:** 
+     - Update status = `rejected`.
+     - Telegram notify user: "Yêu cầu rút tiền bị từ chối - Lý do: ..."
+
+**Business Rules:**
+- **Minimum Balance:** Sau khi rút, balance phải ≥ $10 (nếu muốn tiếp tục farm).
+- **Withdrawal Fee:** 0.5% (hoặc free, tùy policy).
+- **Processing Time:** Manual approval (Admin check KYC/AML).
+
+**Security:**
+- Mỗi withdrawal phải có 2FA (nếu có).
+- Admin verify địa chỉ rút tiền có thuộc whitelist không.
+- Log tất cả withdrawals vào audit trail.
+
 ---
 
 ## 4. Database Schema
@@ -214,6 +286,25 @@ CREATE TABLE admin_configs (
 );
 ```
 
+#### Table: `withdrawal_requests`
+```sql
+CREATE TABLE withdrawal_requests (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES users(id),
+    amount DECIMAL(20,6) NOT NULL,
+    destination_address VARCHAR NOT NULL,
+    fee DECIMAL(20,6) DEFAULT 0,
+    status VARCHAR DEFAULT 'pending',
+    -- Status: pending | approved | rejected | completed | failed
+    admin_note TEXT,
+    processed_by UUID REFERENCES users(id), -- Admin user
+    processed_at TIMESTAMP,
+    tx_hash VARCHAR, -- Solana transaction hash
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+```
+
 ---
 
 ## 5. API Specification
@@ -313,7 +404,63 @@ Lấy trạng thái farming hiện tại.
 
 ---
 
-### 5.4 Admin API (`manager-server`)
+### 5.4 Withdrawal API (`manager-server`)
+
+#### `POST /withdrawals/request`
+User tạo yêu cầu rút tiền.
+
+**Request:**
+```json
+{
+  "amount": 10.50,
+  "destinationAddress": "ABC...XYZ"
+}
+```
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "status": "pending",
+  "amount": 10.50,
+  "fee": 0.05,
+  "estimatedProcessTime": "1-2 hours"
+}
+```
+
+#### `GET /withdrawals/history`
+Lấy lịch sử rút tiền của user.
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "amount": 10.50,
+    "fee": 0.05,
+    "status": "completed",
+    "txHash": "...",
+    "createdAt": "2025-11-26T10:00:00Z",
+    "processedAt": "2025-11-26T11:30:00Z"
+  }
+]
+```
+
+#### `GET /withdrawals/available-balance`
+Lấy số dư khả dụng (có thể rút).
+
+**Response:**
+```json
+{
+  "totalBalance": 25.00,
+  "marginUsed": 5.00,
+  "availableBalance": 20.00
+}
+```
+
+---
+
+### 5.5 Admin API (`manager-server`)
 
 #### `POST /admin/exchange-keys`
 Admin tạo API key cho user.
@@ -345,6 +492,60 @@ Lấy danh sách user đang chờ setup (balance ≥ $10).
     "status": "pending_setup"
   }
 ]
+```
+
+#### `GET /admin/withdrawals/pending`
+Lấy danh sách yêu cầu rút tiền đang chờ duyệt.
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "userId": "uuid",
+    "username": "mr_mmon",
+    "amount": 10.50,
+    "destinationAddress": "ABC...XYZ",
+    "createdAt": "2025-11-26T10:00:00Z"
+  }
+]
+```
+
+#### `POST /admin/withdrawals/:id/approve`
+Admin duyệt yêu cầu rút tiền.
+
+**Request:**
+```json
+{
+  "note": "KYC verified"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "approved",
+  "txHash": "...",
+  "processedAt": "2025-11-26T11:00:00Z"
+}
+```
+
+#### `POST /admin/withdrawals/:id/reject`
+Admin từ chối yêu cầu rút tiền.
+
+**Request:**
+```json
+{
+  "reason": "Suspicious activity"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "rejected",
+  "processedAt": "2025-11-26T11:00:00Z"
+}
 ```
 
 ---
