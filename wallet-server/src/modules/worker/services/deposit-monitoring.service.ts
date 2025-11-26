@@ -138,7 +138,7 @@ export class DepositMonitoringService {
                     chainId,
                     token: token.symbol,
                 },
-                order: { lastUpdatedAt: 'DESC' },
+                order: { updated_at: 'DESC' },
             });
 
             const previousBalance = balanceRecord ? Number(balanceRecord.balance) : 0;
@@ -197,16 +197,27 @@ export class DepositMonitoringService {
             }
 
             // Update balance in DB (nếu không có deposit, vẫn update để track last check)
+            // SAFETY: Không update balance = 0 nếu trước đó > 0 (có thể do blockchain API lỗi)
             if (balanceRecord) {
-                this.logger.log(`[NO DEPOSIT] Updating balance for ${wallet.address} - ${token.symbol}:
-                    - Previous: ${balanceRecord.balance}
-                    - Current from blockchain: ${currentBalance}
-                    - Will update to: ${String(currentBalance)}
-                `);
+                // Chỉ update nếu:
+                // 1. Balance tăng hoặc giữ nguyên
+                // 2. Hoặc balance giảm NHƯNG vẫn > 0 (rút một phần)
+                // KHÔNG update nếu: previousBalance > 0 nhưng currentBalance = 0 (nghi ngờ API lỗi)
+                const shouldUpdate = currentBalance > 0 || Number(balanceRecord.balance) === 0;
 
-                await this.walletBalanceRepository.update(balanceRecord.id, {
-                    balance: String(currentBalance),
-                });
+                if (shouldUpdate) {
+                    this.logger.log(`[NO DEPOSIT] Updating balance for ${wallet.address} - ${token.symbol}:
+                        - Previous: ${balanceRecord.balance}
+                        - Current from blockchain: ${currentBalance}
+                        - Will update to: ${String(currentBalance)}
+                    `);
+
+                    await this.walletBalanceRepository.update(balanceRecord.id, {
+                        balance: String(currentBalance),
+                    });
+                } else {
+                    this.logger.warn(`[SKIP UPDATE] Blockchain returned 0 but previous balance was ${balanceRecord.balance} for ${wallet.address} - ${token.symbol}. Skipping update to prevent data loss.`);
+                }
             } else {
                 this.logger.log(`[NO DEPOSIT] Creating new balance record for ${wallet.address} - ${token.symbol}: ${currentBalance}`);
 
@@ -325,7 +336,6 @@ export class DepositMonitoringService {
 
             const updateResult = await this.walletBalanceRepository.update(data.balanceRecord.id, {
                 balance: String(data.newBalance), // Convert to string for decimal type
-                lastUpdatedAt: new Date(),
             });
 
             this.logger.log(`[DEBUG] Update result: affected=${updateResult.affected}`);
@@ -349,7 +359,6 @@ export class DepositMonitoringService {
                 chainId: data.chainId,
                 token: data.tokenSymbol,
                 balance: String(data.newBalance),
-                lastUpdatedAt: new Date(),
             });
 
             const savedBalance = await this.walletBalanceRepository.save(newBalanceRecord);
