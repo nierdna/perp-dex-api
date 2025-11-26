@@ -131,13 +131,14 @@ export class DepositMonitoringService {
                 chainId,
             );
 
-            // Get previous balance from DB
+            // Get previous balance from DB (order by latest update to avoid stale duplicate rows)
             const balanceRecord = await this.walletBalanceRepository.findOne({
                 where: {
                     walletId: wallet.id,
                     chainId,
                     token: token.symbol,
                 },
+                order: { lastUpdatedAt: 'DESC' },
             });
 
             const previousBalance = balanceRecord ? Number(balanceRecord.balance) : 0;
@@ -145,8 +146,9 @@ export class DepositMonitoringService {
             this.logger.debug(`[BALANCE CHECK] Wallet: ${wallet.address}, Token: ${token.symbol}, Chain: ${chainId}
                 - balanceRecord found: ${!!balanceRecord}
                 - balanceRecord.id: ${balanceRecord?.id || 'N/A'}
-                - previousBalance: ${previousBalance}
-                - currentBalance: ${currentBalance}
+                - balanceRecord.balance (RAW from DB): "${balanceRecord?.balance}" (type: ${typeof balanceRecord?.balance})
+                - previousBalance (converted): ${previousBalance}
+                - currentBalance (from blockchain): ${currentBalance}
             `);
 
             // Check if balance increased (deposit detected)
