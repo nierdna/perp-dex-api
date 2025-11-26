@@ -150,8 +150,8 @@ export class DepositMonitoringService {
                     `💰 Deposit detected! User: ${wallet.userId}, ${depositAmount} ${token.symbol} on chain ${chainId}`,
                 );
 
-                // Record deposit
-                await this.recordDeposit({
+                // 1. LƯU DATABASE TRƯỚC (deposit + update balance)
+                const savedDeposit = await this.saveDepositToDatabase({
                     walletId: wallet.id,
                     userId: wallet.userId,
                     chainId,
@@ -164,10 +164,30 @@ export class DepositMonitoringService {
                     previousBalance,
                     newBalance: currentBalance,
                     walletAddress: wallet.address,
+                    balanceRecord,
                 });
+
+                // 2. GỬI WEBHOOK & TELEGRAM SAU (async, không chờ)
+                this.sendDepositNotifications(savedDeposit, {
+                    userId: wallet.userId,
+                    walletAddress: wallet.address,
+                    chainId,
+                    tokenSymbol: token.symbol,
+                    tokenName: token.name,
+                    tokenDecimals: token.decimals,
+                    tokenIcon: token.icon,
+                    tokenAddress: token.address,
+                    amount: depositAmount,
+                    previousBalance,
+                    newBalance: currentBalance,
+                }).catch(err => {
+                    this.logger.error(`Failed to send notifications for deposit ${savedDeposit.id}: ${err.message}`);
+                });
+
+                return; // Deposit detected và đã xử lý, thoát sớm
             }
 
-            // Update balance in DB (whether changed or not, to track last check)
+            // Update balance in DB (nếu không có deposit, vẫn update để track last check)
             if (balanceRecord) {
                 await this.walletBalanceRepository.update(balanceRecord.id, {
                     balance: currentBalance,
@@ -250,9 +270,10 @@ export class DepositMonitoringService {
     }
 
     /**
-     * Record deposit and send webhook
+     * Save deposit to database ATOMICALLY (deposit + balance update together)
+     * Trả về deposit record đã lưu
      */
-    private async recordDeposit(data: any) {
+    private async saveDepositToDatabase(data: any): Promise<any> {
         // Create deposit record
         const deposit = this.depositRepository.create({
             walletId: data.walletId,
@@ -267,15 +288,44 @@ export class DepositMonitoringService {
             webhookSent: false,
         });
 
+        // Lưu deposit
         const savedDeposit = await this.depositRepository.save(deposit);
+        this.logger.log(`✅ Deposit saved to DB: ${savedDeposit.id}`);
 
-        this.logger.log(`✅ Deposit recorded: ${savedDeposit.id}`);
+        // CẬP NHẬT wallet_balances NGAY (quan trọng để tránh duplicate scan!)
+        if (data.balanceRecord) {
+            // Update existing record
+            await this.walletBalanceRepository.update(data.balanceRecord.id, {
+                balance: data.newBalance,
+                lastUpdatedAt: new Date(),
+            });
+            this.logger.log(`✅ Balance updated: ${data.tokenSymbol} = ${data.newBalance}`);
+        } else {
+            // Create new balance record
+            const newBalanceRecord = this.walletBalanceRepository.create({
+                walletId: data.walletId,
+                chainId: data.chainId,
+                token: data.tokenSymbol,
+                balance: data.newBalance,
+                lastUpdatedAt: new Date(),
+            });
+            await this.walletBalanceRepository.save(newBalanceRecord);
+            this.logger.log(`✅ New balance record created: ${data.tokenSymbol} = ${data.newBalance}`);
+        }
 
+        return savedDeposit;
+    }
+
+    /**
+     * Send webhook and Telegram notifications AFTER database is saved
+     * Chạy async, không blocking
+     */
+    private async sendDepositNotifications(savedDeposit: any, data: any): Promise<void> {
         // Prepare webhook payload
         const webhookPayload = {
             deposit_id: savedDeposit.id,
             user_id: data.userId,
-            wallet_id: data.walletId,
+            wallet_id: savedDeposit.walletId,
             wallet_address: data.walletAddress,
             chain: this.getChainName(data.chainId),
             chain_id: data.chainId,
@@ -302,6 +352,8 @@ export class DepositMonitoringService {
                 webhookSent: true,
                 webhookSentAt: new Date(),
             });
+
+            this.logger.log(`✅ Webhook sent for deposit ${savedDeposit.id}`);
         } catch (error) {
             this.logger.error(`Failed to send webhook for deposit ${savedDeposit.id}: ${error.message}`);
         }
