@@ -3,14 +3,17 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { ethers } from 'ethers';
+import { LessThan } from 'typeorm';
 import {
     UserWalletRepository,
     SupportedTokenRepository,
     WalletBalanceRepository,
     DepositRepository,
 } from '@/database/repositories';
-import { WalletType } from '@/database/entities';
+import { WalletType, ScanPriority } from '@/database/entities';
 import { WebhookService, TelegramService } from '@/business/services';
+import { RpcManagerService } from './rpc-manager.service';
+import { ScanMetricsService } from './scan-metrics.service';
 
 // ERC20 ABI (only balanceOf function)
 const ERC20_ABI = [
@@ -22,6 +25,10 @@ const ERC20_ABI = [
 export class DepositMonitoringService {
     private readonly logger = new Logger(DepositMonitoringService.name);
     private isScanning = false;
+
+    // Batch processing configuration
+    private readonly BATCH_SIZE: number;
+    private readonly BATCH_DELAY_MS: number;
 
     // RPC connections
     private solanaConnection: Connection;
@@ -36,8 +43,16 @@ export class DepositMonitoringService {
         private depositRepository: DepositRepository,
         private webhookService: WebhookService,
         private telegramService: TelegramService,
+        private rpcManagerService: RpcManagerService,
+        private scanMetricsService: ScanMetricsService,
     ) {
+        // Initialize batch configuration
+        this.BATCH_SIZE = parseInt(this.configService.get('SCAN_BATCH_SIZE') || '50');
+        this.BATCH_DELAY_MS = parseInt(this.configService.get('SCAN_BATCH_DELAY_MS') || '1000');
+
         this.initializeRpcConnections();
+
+        this.logger.log(`📦 Batch configuration: size=${this.BATCH_SIZE}, delay=${this.BATCH_DELAY_MS}ms`);
     }
 
     /**
@@ -68,31 +83,111 @@ export class DepositMonitoringService {
 
         this.isScanning = true;
         const startTime = Date.now();
+        let totalWalletsScanned = 0;
 
         try {
             this.logger.log('🔍 Starting deposit scan...');
 
-            // Get all wallets
-            const wallets = await this.userWalletRepository.find();
+            // Scan wallets by priority using database pagination
+            const highCount = await this.scanWalletsByPriorityWithPagination(ScanPriority.HIGH, 'HIGH');
+            const mediumCount = await this.scanWalletsByPriorityWithPagination(ScanPriority.MEDIUM, 'MEDIUM');
+            const lowCount = await this.scanWalletsByPriorityWithPagination(ScanPriority.LOW, 'LOW');
 
-            if (wallets.length === 0) {
+            totalWalletsScanned = highCount + mediumCount + lowCount;
+
+            if (totalWalletsScanned === 0) {
                 this.logger.log('ℹ️ No wallets to monitor');
                 return;
             }
 
-            this.logger.log(`📊 Monitoring ${wallets.length} wallet(s)`);
-
-            // Process wallets in parallel
-            const promises = wallets.map(wallet => this.checkWalletDeposits(wallet));
-            await Promise.allSettled(promises);
-
             const duration = ((Date.now() - startTime) / 1000).toFixed(2);
             this.logger.log(`✅ Deposit scan completed in ${duration}s`);
+
+            // Record scan metrics
+            this.scanMetricsService.recordScan(parseFloat(duration), totalWalletsScanned);
         } catch (error) {
             this.logger.error(`❌ Error during deposit scan: ${error.message}`);
+            this.scanMetricsService.recordError();
         } finally {
             this.isScanning = false;
         }
+    }
+
+    /**
+     * Scan wallets by priority using database pagination
+     * This approach queries wallets in batches from database instead of loading all into memory
+     */
+    private async scanWalletsByPriorityWithPagination(priority: ScanPriority, priorityLabel: string): Promise<number> {
+        const now = new Date();
+        let page = 0;
+        let totalScanned = 0;
+        let hasMore = true;
+
+        // Determine time filter based on priority
+        let timeFilter: Date | null = null;
+        if (priority === ScanPriority.MEDIUM) {
+            timeFilter = new Date(now.getTime() - 2 * 60 * 1000); // 2 minutes ago
+        } else if (priority === ScanPriority.LOW) {
+            timeFilter = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutes ago
+        }
+
+        this.logger.log(`🔍 Scanning ${priorityLabel} priority wallets...`);
+
+        while (hasMore) {
+            // Query batch from database with pagination
+            const batch = await this.getWalletBatch(priority, page, timeFilter);
+
+            if (batch.length === 0) {
+                hasMore = false;
+                break;
+            }
+
+            const batchNumber = page + 1;
+            this.logger.log(`📦 Processing ${priorityLabel} batch ${batchNumber} (${batch.length} wallets)`);
+
+            // Process batch in parallel
+            const promises = batch.map(wallet => this.checkWalletDeposits(wallet));
+            await Promise.allSettled(promises);
+
+            totalScanned += batch.length;
+
+            // Check if there are more wallets to scan
+            if (batch.length < this.BATCH_SIZE) {
+                hasMore = false;
+            } else {
+                // Delay between batches to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, this.BATCH_DELAY_MS));
+                page++;
+            }
+        }
+
+        if (totalScanned > 0) {
+            this.logger.log(`✅ Scanned ${totalScanned} ${priorityLabel} priority wallets`);
+        }
+
+        return totalScanned;
+    }
+
+    /**
+     * Get a batch of wallets from database with pagination
+     */
+    private async getWalletBatch(priority: ScanPriority, page: number, timeFilter: Date | null): Promise<any[]> {
+        const queryOptions: any = {
+            where: { scanPriority: priority },
+            take: this.BATCH_SIZE,
+            skip: page * this.BATCH_SIZE,
+            order: { lastActivityAt: 'DESC' },
+        };
+
+        const wallets = await this.userWalletRepository.find(queryOptions);
+
+        // Apply time-based filtering for MEDIUM and LOW priorities
+        if (timeFilter) {
+            return wallets.filter(w => !w.lastActivityAt || w.lastActivityAt < timeFilter);
+        }
+
+        // HIGH priority: return all wallets
+        return wallets;
     }
 
     /**
@@ -175,6 +270,9 @@ export class DepositMonitoringService {
                     walletAddress: wallet.address,
                     balanceRecord,
                 });
+
+                // Record deposit detection in metrics
+                this.scanMetricsService.recordDeposit();
 
                 // 2. GỬI WEBHOOK & TELEGRAM SAU (async, không chờ)
                 this.sendDepositNotifications(savedDeposit, {
@@ -259,22 +357,24 @@ export class DepositMonitoringService {
      * Get Solana SPL token balance
      */
     private async getSolanaTokenBalance(walletAddress: string, tokenMint: string): Promise<number> {
-        try {
-            const tokenAccounts = await this.solanaConnection.getParsedTokenAccountsByOwner(
-                new PublicKey(walletAddress),
-                { mint: new PublicKey(tokenMint) },
-            );
+        return this.rpcManagerService.executeRpcCall(async () => {
+            try {
+                const tokenAccounts = await this.solanaConnection.getParsedTokenAccountsByOwner(
+                    new PublicKey(walletAddress),
+                    { mint: new PublicKey(tokenMint) },
+                );
 
-            if (tokenAccounts.value.length === 0) {
+                if (tokenAccounts.value.length === 0) {
+                    return 0;
+                }
+
+                const balance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+                return balance || 0;
+            } catch (error) {
+                // Invalid wallet address or no token account
                 return 0;
             }
-
-            const balance = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
-            return balance || 0;
-        } catch (error) {
-            // Invalid wallet address or no token account
-            return 0;
-        }
+        });
     }
 
     /**
@@ -286,13 +386,15 @@ export class DepositMonitoringService {
         decimals: number,
         chainId: number,
     ): Promise<number> {
-        const provider = chainId === 8453 ? this.baseProvider : this.arbitrumProvider;
+        return this.rpcManagerService.executeRpcCall(async () => {
+            const provider = chainId === 8453 ? this.baseProvider : this.arbitrumProvider;
 
-        const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-        const balance = await contract.balanceOf(walletAddress);
-        const formattedBalance = Number(ethers.utils.formatUnits(balance, decimals));
+            const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+            const balance = await contract.balanceOf(walletAddress);
+            const formattedBalance = Number(ethers.utils.formatUnits(balance, decimals));
 
-        return formattedBalance;
+            return formattedBalance;
+        });
     }
 
     /**
@@ -366,6 +468,13 @@ export class DepositMonitoringService {
             this.logger.log(`✅ New balance record created: ${data.tokenSymbol} = ${data.newBalance}`);
         }
 
+        // UPDATE WALLET PRIORITY TO HIGH when deposit detected
+        await this.userWalletRepository.update(data.walletId, {
+            lastActivityAt: new Date(),
+            scanPriority: ScanPriority.HIGH,
+        });
+        this.logger.log(`✅ Wallet priority updated to HIGH for wallet ${data.walletId}`);
+
         return savedDeposit;
     }
 
@@ -438,5 +547,42 @@ export class DepositMonitoringService {
             42161: 'Arbitrum One',
         };
         return chainNames[chainId] || `Chain ${chainId}`;
+    }
+
+    /**
+     * Cron job - Auto-downgrade wallet priorities based on inactivity
+     * Runs every 10 minutes
+     */
+    @Cron('0 */10 * * * *')
+    async adjustWalletPriorities() {
+        try {
+            const now = new Date();
+
+            // Downgrade HIGH → MEDIUM if no activity in last 1 hour
+            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+            const highToMedium = await this.userWalletRepository.update(
+                {
+                    scanPriority: ScanPriority.HIGH,
+                    lastActivityAt: LessThan(oneHourAgo) as any,
+                },
+                { scanPriority: ScanPriority.MEDIUM }
+            );
+
+            // Downgrade MEDIUM → LOW if no activity in last 24 hours
+            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            const mediumToLow = await this.userWalletRepository.update(
+                {
+                    scanPriority: ScanPriority.MEDIUM,
+                    lastActivityAt: LessThan(oneDayAgo) as any,
+                },
+                { scanPriority: ScanPriority.LOW }
+            );
+
+            if (highToMedium.affected || mediumToLow.affected) {
+                this.logger.log(`✅ Wallet priorities adjusted: HIGH→MEDIUM (${highToMedium.affected}), MEDIUM→LOW (${mediumToLow.affected})`);
+            }
+        } catch (error) {
+            this.logger.error(`❌ Error adjusting wallet priorities: ${error.message}`);
+        }
     }
 }

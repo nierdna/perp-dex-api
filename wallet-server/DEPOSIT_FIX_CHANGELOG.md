@@ -90,7 +90,6 @@ private async saveDepositToDatabase(data: any): Promise<any> {
     if (data.balanceRecord) {
         await this.walletBalanceRepository.update(data.balanceRecord.id, {
             balance: data.newBalance,
-            lastUpdatedAt: new Date(),
         });
     } else {
         await this.walletBalanceRepository.save(newBalanceRecord);

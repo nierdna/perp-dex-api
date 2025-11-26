@@ -5,11 +5,12 @@ import { DatabaseModule } from '@/database';
 import { BusinessModule } from '../business/business.module';
 import { ScheduleService } from './schedulers/schedule.service';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ApiModule } from '@/api';
 import { BullModule } from '@nestjs/bull';
 import { UserConsumer } from './consumers';
 import { SolanaWorkerService } from './solana-worker.service';
 import { DepositMonitoringService } from './services/deposit-monitoring.service';
+import { RpcManagerService } from './services/rpc-manager.service';
+import { ScanMetricsService } from './services/scan-metrics.service';
 
 const isWorker = Boolean(Number(process.env.IS_WORKER || 0));
 
@@ -18,12 +19,11 @@ let schedulers = [];
 
 if (isWorker) {
   consumers = [UserConsumer];
-  schedulers = [ScheduleService, SolanaWorkerService, DepositMonitoringService];
+  schedulers = [ScheduleService, SolanaWorkerService, DepositMonitoringService, RpcManagerService, ScanMetricsService];
 }
 
 @Module({
   imports: [
-    ApiModule,
     DatabaseModule,
     BusinessModule,
     BullModule.forRootAsync({
@@ -54,7 +54,7 @@ if (isWorker) {
     ScheduleModule.forRoot(),
   ],
   controllers: [],
-  providers: [...consumers, ...schedulers],
-  exports: [],
+  providers: [...consumers, ...schedulers, RpcManagerService, ScanMetricsService],
+  exports: [RpcManagerService, ScanMetricsService],
 })
 export class WorkerModule { }

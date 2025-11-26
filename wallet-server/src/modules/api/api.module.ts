@@ -12,6 +12,7 @@ import { configAuth } from './configs/auth';
 import { configCache } from './configs/cache';
 import { HttpCacheInterceptor } from './interceptors';
 import { BusinessModule } from '@/business/business.module';
+import { WorkerModule } from '@/worker/worker.module';
 
 const controllers = [HealthController, WalletController, WebhookController];
 
@@ -24,6 +25,7 @@ const controllers = [HealthController, WalletController, WebhookController];
     DatabaseModule,
     QueueModule,
     BusinessModule,
+    WorkerModule,
     CacheModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -10,11 +10,17 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FormatResponseInterceptor } from '../interceptors';
+import { ScanMetricsService } from '@/worker/services/scan-metrics.service';
+import { RpcManagerService } from '@/worker/services/rpc-manager.service';
 
 @ApiTags('Health')
 @Controller('health')
 export class HealthController {
-  constructor(private adminConfigRepository: AdminConfigRepository) {}
+  constructor(
+    private adminConfigRepository: AdminConfigRepository,
+    private scanMetricsService: ScanMetricsService,
+    private rpcManagerService: RpcManagerService,
+  ) { }
 
   funErr() {
     console.log('Test error ');
@@ -59,5 +65,47 @@ export class HealthController {
   })
   throwError() {
     this.funErr();
+  }
+
+  @Get('scan-metrics')
+  @ApiOperation({ summary: 'Get deposit scan metrics' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns scan performance metrics',
+  })
+  getScanMetrics() {
+    return {
+      success: true,
+      data: {
+        scanMetrics: this.scanMetricsService.getFormattedMetrics(),
+        rpcMetrics: this.rpcManagerService.getStats(),
+      },
+    };
+  }
+
+  @Get('status')
+  @ApiOperation({ summary: 'Get system health status' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Returns system health status',
+  })
+  getHealthStatus() {
+    const scanMetrics = this.scanMetricsService.getMetrics();
+    const rpcStats = this.rpcManagerService.getStats();
+
+    return {
+      success: true,
+      data: {
+        status: 'healthy',
+        uptime: process.uptime(),
+        memory: {
+          used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+          unit: 'MB',
+        },
+        lastScan: scanMetrics.lastScanTimestamp,
+        rpcQueueLength: rpcStats.queueLength,
+      },
+    };
   }
 }

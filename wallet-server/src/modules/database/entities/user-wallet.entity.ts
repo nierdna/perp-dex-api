@@ -6,6 +6,12 @@ export enum WalletType {
   EVM = 'EVM',
 }
 
+export enum ScanPriority {
+  HIGH = 'high',
+  MEDIUM = 'medium',
+  LOW = 'low',
+}
+
 @Entity('user_wallets')
 export class UserWalletEntity extends BaseEntity {
   @Column({ name: 'user_id' })
@@ -32,6 +38,23 @@ export class UserWalletEntity extends BaseEntity {
 
   @Column({ default: 'aes_gcm' })
   custodian: string;
+
+  @Column({
+    type: 'timestamp',
+    name: 'last_activity_at',
+    nullable: true
+  })
+  @Index()
+  lastActivityAt?: Date;
+
+  @Column({
+    type: 'enum',
+    enum: ScanPriority,
+    name: 'scan_priority',
+    default: ScanPriority.MEDIUM,
+  })
+  @Index()
+  scanPriority: ScanPriority;
 
   /**
    * Normalize address to lowercase before insert (only for EVM)
