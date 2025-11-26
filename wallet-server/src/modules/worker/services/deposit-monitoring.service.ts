@@ -143,7 +143,7 @@ export class DepositMonitoringService {
 
             const previousBalance = balanceRecord ? Number(balanceRecord.balance) : 0;
 
-            this.logger.debug(`[BALANCE CHECK] Wallet: ${wallet.address}, Token: ${token.symbol}, Chain: ${chainId}
+            this.logger.log(`[BALANCE CHECK] Wallet: ${wallet.address}, Token: ${token.symbol}, Chain: ${chainId}
                 - balanceRecord found: ${!!balanceRecord}
                 - balanceRecord.id: ${balanceRecord?.id || 'N/A'}
                 - balanceRecord.balance (RAW from DB): "${balanceRecord?.balance}" (type: ${typeof balanceRecord?.balance})
