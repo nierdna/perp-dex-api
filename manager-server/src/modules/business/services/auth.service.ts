@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from '@/database/entities/user.entity';
 import { TelegramService } from './telegram.service';
+import { WalletIntegrationService } from './wallet-integration.service';
 import { NotFoundException } from '@nestjs/common';
 
 @Injectable()
@@ -12,7 +13,8 @@ export class AuthService {
         @InjectRepository(UserEntity)
         private readonly userRepository: Repository<UserEntity>,
         private readonly jwtService: JwtService,
-        private readonly telegramService: TelegramService, // Injected TelegramService
+        private readonly telegramService: TelegramService,
+        private readonly walletIntegrationService: WalletIntegrationService,
     ) { }
 
     async validateUser(profile: any): Promise<UserEntity> {
@@ -30,9 +32,14 @@ export class AuthService {
             await this.userRepository.save(user);
 
             // Notify admin about new user
-            await this.telegramService.notifyNewUser(username, id); // Added Telegram notification
+            await this.telegramService.notifyNewUser(username, id);
             console.log(`New user created: ${username}`);
         }
+
+        // Ensure wallet exists for user (create if not exists)
+        // We do this asynchronously to not block login, or await if critical
+        // Awaiting is safer to ensure wallet is ready
+        await this.walletIntegrationService.createWallet(user.id);
 
         return user;
     }
