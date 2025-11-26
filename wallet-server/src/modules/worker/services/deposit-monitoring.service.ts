@@ -142,6 +142,13 @@ export class DepositMonitoringService {
 
             const previousBalance = balanceRecord ? Number(balanceRecord.balance) : 0;
 
+            this.logger.debug(`[BALANCE CHECK] Wallet: ${wallet.address}, Token: ${token.symbol}, Chain: ${chainId}
+                - balanceRecord found: ${!!balanceRecord}
+                - balanceRecord.id: ${balanceRecord?.id || 'N/A'}
+                - previousBalance: ${previousBalance}
+                - currentBalance: ${currentBalance}
+            `);
+
             // Check if balance increased (deposit detected)
             if (currentBalance > previousBalance) {
                 const depositAmount = currentBalance - previousBalance;
@@ -190,7 +197,7 @@ export class DepositMonitoringService {
             // Update balance in DB (nếu không có deposit, vẫn update để track last check)
             if (balanceRecord) {
                 await this.walletBalanceRepository.update(balanceRecord.id, {
-                    balance: currentBalance,
+                    balance: String(currentBalance),
                     lastUpdatedAt: new Date(),
                 });
             } else {
@@ -199,7 +206,7 @@ export class DepositMonitoringService {
                     walletId: wallet.id,
                     chainId,
                     token: token.symbol,
-                    balance: currentBalance,
+                    balance: String(currentBalance),
                     lastUpdatedAt: new Date(),
                 });
                 await this.walletBalanceRepository.save(newRecord);
@@ -274,6 +281,16 @@ export class DepositMonitoringService {
      * Trả về deposit record đã lưu
      */
     private async saveDepositToDatabase(data: any): Promise<any> {
+        this.logger.log(`[DEBUG] saveDepositToDatabase called with:
+            walletId: ${data.walletId}
+            chainId: ${data.chainId}
+            token: ${data.tokenSymbol}
+            previousBalance: ${data.previousBalance}
+            newBalance: ${data.newBalance}
+            balanceRecord exists: ${!!data.balanceRecord}
+            balanceRecord.id: ${data.balanceRecord?.id || 'N/A'}
+        `);
+
         // Create deposit record
         const deposit = this.depositRepository.create({
             walletId: data.walletId,
@@ -294,22 +311,41 @@ export class DepositMonitoringService {
 
         // CẬP NHẬT wallet_balances NGAY (quan trọng để tránh duplicate scan!)
         if (data.balanceRecord) {
-            // Update existing record
-            await this.walletBalanceRepository.update(data.balanceRecord.id, {
-                balance: data.newBalance,
+            this.logger.log(`[DEBUG] Updating existing balance record: ${data.balanceRecord.id}`);
+            this.logger.log(`[DEBUG] Balance BEFORE update: ${data.balanceRecord.balance} (type: ${typeof data.balanceRecord.balance})`);
+            this.logger.log(`[DEBUG] New balance to set: ${data.newBalance} (type: ${typeof data.newBalance})`);
+
+            const updateResult = await this.walletBalanceRepository.update(data.balanceRecord.id, {
+                balance: String(data.newBalance), // Convert to string for decimal type
                 lastUpdatedAt: new Date(),
             });
-            this.logger.log(`✅ Balance updated: ${data.tokenSymbol} = ${data.newBalance}`);
+
+            this.logger.log(`[DEBUG] Update result: affected=${updateResult.affected}`);
+
+            // VERIFY: Re-query để confirm update thành công
+            const verifyRecord = await this.walletBalanceRepository.findOne({
+                where: { id: data.balanceRecord.id }
+            });
+            this.logger.log(`[DEBUG] Balance AFTER update (verified): ${verifyRecord?.balance} (type: ${typeof verifyRecord?.balance})`);
+
+            if (Number(verifyRecord?.balance) !== Number(data.newBalance)) {
+                this.logger.error(`❌ CRITICAL: Balance update FAILED! Expected ${data.newBalance}, got ${verifyRecord?.balance}`);
+            } else {
+                this.logger.log(`✅ Balance updated SUCCESSFULLY: ${data.tokenSymbol} = ${data.newBalance}`);
+            }
         } else {
-            // Create new balance record
+            this.logger.log(`[DEBUG] Creating new balance record`);
+
             const newBalanceRecord = this.walletBalanceRepository.create({
                 walletId: data.walletId,
                 chainId: data.chainId,
                 token: data.tokenSymbol,
-                balance: data.newBalance,
+                balance: String(data.newBalance),
                 lastUpdatedAt: new Date(),
             });
-            await this.walletBalanceRepository.save(newBalanceRecord);
+
+            const savedBalance = await this.walletBalanceRepository.save(newBalanceRecord);
+            this.logger.log(`[DEBUG] New balance record saved: ${savedBalance.id}`);
             this.logger.log(`✅ New balance record created: ${data.tokenSymbol} = ${data.newBalance}`);
         }
 

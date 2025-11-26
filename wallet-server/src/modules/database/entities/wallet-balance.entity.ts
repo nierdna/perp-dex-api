@@ -16,7 +16,8 @@ export class WalletBalanceEntity extends BaseEntity {
     token: string; // 'USDC', 'USDT', 'SOL', 'ETH'
 
     @Column({ type: 'decimal', precision: 20, scale: 6, default: 0 })
-    balance: number;
+    balance: string; // TypeORM decimal returns string, not number
+
 
     @Column({ type: 'timestamp', nullable: true, name: 'last_updated_at' })
     lastUpdatedAt: Date;
