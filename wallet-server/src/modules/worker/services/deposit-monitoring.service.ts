@@ -198,18 +198,24 @@ export class DepositMonitoringService {
 
             // Update balance in DB (nếu không có deposit, vẫn update để track last check)
             if (balanceRecord) {
+                this.logger.log(`[NO DEPOSIT] Updating balance for ${wallet.address} - ${token.symbol}:
+                    - Previous: ${balanceRecord.balance}
+                    - Current from blockchain: ${currentBalance}
+                    - Will update to: ${String(currentBalance)}
+                `);
+
                 await this.walletBalanceRepository.update(balanceRecord.id, {
                     balance: String(currentBalance),
-                    lastUpdatedAt: new Date(),
                 });
             } else {
+                this.logger.log(`[NO DEPOSIT] Creating new balance record for ${wallet.address} - ${token.symbol}: ${currentBalance}`);
+
                 // Create new balance record
                 const newRecord = this.walletBalanceRepository.create({
                     walletId: wallet.id,
                     chainId,
                     token: token.symbol,
                     balance: String(currentBalance),
-                    lastUpdatedAt: new Date(),
                 });
                 await this.walletBalanceRepository.save(newRecord);
             }
