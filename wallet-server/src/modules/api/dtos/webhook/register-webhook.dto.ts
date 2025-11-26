@@ -6,7 +6,15 @@ export class RegisterWebhookDto {
         description: 'Webhook URL endpoint',
         example: 'https://your-server.com/webhooks/deposit',
     })
-    @IsUrl({}, { message: 'Invalid URL format' })
+    @IsUrl(
+        {
+            require_protocol: true,
+            require_valid_protocol: true,
+            protocols: ['http', 'https'],
+            require_tld: false, // Allow localhost and IP addresses
+        },
+        { message: 'Invalid URL format' },
+    )
     @IsNotEmpty()
     url: string;
 

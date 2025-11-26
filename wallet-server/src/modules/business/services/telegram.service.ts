@@ -82,14 +82,11 @@ export class TelegramService {
 
         return `
 🎉 *DEPOSIT RECEIVED* 🎉
-━━━━━━━━━━━━━━━━━━━━
 
 👤 *User:* \`${escapedUserId}\`
 💳 *Wallet:* \`${escapedWallet}\`
 💰 *Amount:* *${escapedAmount} ${escapedToken}*
 ⛓ *Chain:* ${escapedChain}
-
-━━━━━━━━━━━━━━━━━━━━
 `;
     }
 }

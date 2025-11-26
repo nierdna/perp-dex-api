@@ -4,13 +4,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminConfigRepository } from './repositories';
 import { AdminConfigEntity } from './entities/admin-config.entity';
+import { DepositTransactionEntity } from './entities/deposit-transaction.entity';
+import { WebhookLogEntity } from './entities/webhook-log.entity';
 import { SeedDatabase } from './seeders/seed.database';
 
 const repositories = [AdminConfigRepository];
 
 const services = [];
 
-const entities = [AdminConfigEntity];
+const entities = [AdminConfigEntity, DepositTransactionEntity, WebhookLogEntity];
 
 @Module({
   imports: [
