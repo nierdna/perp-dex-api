@@ -203,5 +203,22 @@ export class WalletController {
 
     return updatedWallet;
   }
+  @Post(':user_id/priority')
+  @ApiOperation({
+    summary: 'Set high scan priority for user wallets',
+    description: 'Sets the scan priority of all wallets belonging to the user to HIGH. This is typically called when the user opens the deposit modal.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Wallet priority updated successfully',
+  })
+  @ResponseMessage('Wallet priority updated successfully')
+  async setHighPriority(
+    @Param('user_id') userId: string,
+  ) {
+    console.log(`🔍 [WalletController] [setHighPriority] Setting HIGH priority for user_id: ${userId}`);
+    await this.walletService.setHighPriority(userId);
+    return { success: true };
+  }
 }
 

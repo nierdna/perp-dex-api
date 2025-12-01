@@ -71,42 +71,29 @@ export class DepositMonitoringService {
     }
 
     /**
-     * Cron job - scan for deposits every 30 seconds
+     * Cron job - Scan HIGH priority wallets every 30 seconds
      */
     @Cron('*/30 * * * * *')
-    async scanDeposits() {
-        // Prevent overlapping scans
+    async scanHighPriorityWallets() {
         if (this.isScanning) {
-            this.logger.warn('⚠️ Previous scan still running, skipping...');
+            this.logger.warn('⚠️ Previous scan still running, skipping HIGH priority scan...');
             return;
         }
 
         this.isScanning = true;
         const startTime = Date.now();
-        let totalWalletsScanned = 0;
 
         try {
-            this.logger.log('🔍 Starting deposit scan...');
+            this.logger.log('🔍 Starting HIGH priority wallet scan...');
+            const count = await this.scanWalletsByPriority(ScanPriority.HIGH, 'HIGH');
 
-            // Scan wallets by priority using database pagination
-            const highCount = await this.scanWalletsByPriorityWithPagination(ScanPriority.HIGH, 'HIGH');
-            const mediumCount = await this.scanWalletsByPriorityWithPagination(ScanPriority.MEDIUM, 'MEDIUM');
-            const lowCount = await this.scanWalletsByPriorityWithPagination(ScanPriority.LOW, 'LOW');
-
-            totalWalletsScanned = highCount + mediumCount + lowCount;
-
-            if (totalWalletsScanned === 0) {
-                this.logger.log('ℹ️ No wallets to monitor');
-                return;
+            if (count > 0) {
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                this.logger.log(`✅ HIGH priority scan completed in ${duration}s (${count} wallets)`);
+                this.scanMetricsService.recordScan(parseFloat(duration), count);
             }
-
-            const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-            this.logger.log(`✅ Deposit scan completed in ${duration}s`);
-
-            // Record scan metrics
-            this.scanMetricsService.recordScan(parseFloat(duration), totalWalletsScanned);
         } catch (error) {
-            this.logger.error(`❌ Error during deposit scan: ${error.message}`);
+            this.logger.error(`❌ Error during HIGH priority scan: ${error.message}`);
             this.scanMetricsService.recordError();
         } finally {
             this.isScanning = false;
@@ -114,28 +101,63 @@ export class DepositMonitoringService {
     }
 
     /**
+     * Cron job - Scan MEDIUM priority wallets every 5 minutes
+     */
+    @Cron('0 */5 * * * *')
+    async scanMediumPriorityWallets() {
+        const startTime = Date.now();
+
+        try {
+            this.logger.log('🔍 Starting MEDIUM priority wallet scan...');
+            const count = await this.scanWalletsByPriority(ScanPriority.MEDIUM, 'MEDIUM');
+
+            if (count > 0) {
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                this.logger.log(`✅ MEDIUM priority scan completed in ${duration}s (${count} wallets)`);
+                this.scanMetricsService.recordScan(parseFloat(duration), count);
+            }
+        } catch (error) {
+            this.logger.error(`❌ Error during MEDIUM priority scan: ${error.message}`);
+            this.scanMetricsService.recordError();
+        }
+    }
+
+    /**
+     * Cron job - Scan LOW priority wallets every 15 minutes
+     */
+    @Cron('0 */15 * * * *')
+    async scanLowPriorityWallets() {
+        const startTime = Date.now();
+
+        try {
+            this.logger.log('🔍 Starting LOW priority wallet scan...');
+            const count = await this.scanWalletsByPriority(ScanPriority.LOW, 'LOW');
+
+            if (count > 0) {
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                this.logger.log(`✅ LOW priority scan completed in ${duration}s (${count} wallets)`);
+                this.scanMetricsService.recordScan(parseFloat(duration), count);
+            }
+        } catch (error) {
+            this.logger.error(`❌ Error during LOW priority scan: ${error.message}`);
+            this.scanMetricsService.recordError();
+        }
+    }
+
+    /**
      * Scan wallets by priority using database pagination
      * This approach queries wallets in batches from database instead of loading all into memory
      */
-    private async scanWalletsByPriorityWithPagination(priority: ScanPriority, priorityLabel: string): Promise<number> {
-        const now = new Date();
+    private async scanWalletsByPriority(priority: ScanPriority, priorityLabel: string): Promise<number> {
         let page = 0;
         let totalScanned = 0;
         let hasMore = true;
-
-        // Determine time filter based on priority
-        let timeFilter: Date | null = null;
-        if (priority === ScanPriority.MEDIUM) {
-            timeFilter = new Date(now.getTime() - 2 * 60 * 1000); // 2 minutes ago
-        } else if (priority === ScanPriority.LOW) {
-            timeFilter = new Date(now.getTime() - 5 * 60 * 1000); // 5 minutes ago
-        }
 
         this.logger.log(`🔍 Scanning ${priorityLabel} priority wallets...`);
 
         while (hasMore) {
             // Query batch from database with pagination
-            const batch = await this.getWalletBatch(priority, page, timeFilter);
+            const batch = await this.getWalletBatch(priority, page);
 
             if (batch.length === 0) {
                 hasMore = false;
@@ -171,7 +193,7 @@ export class DepositMonitoringService {
     /**
      * Get a batch of wallets from database with pagination
      */
-    private async getWalletBatch(priority: ScanPriority, page: number, timeFilter: Date | null): Promise<any[]> {
+    private async getWalletBatch(priority: ScanPriority, page: number): Promise<any[]> {
         const queryOptions: any = {
             where: { scanPriority: priority },
             take: this.BATCH_SIZE,
@@ -179,15 +201,7 @@ export class DepositMonitoringService {
             order: { lastActivityAt: 'DESC' },
         };
 
-        const wallets = await this.userWalletRepository.find(queryOptions);
-
-        // Apply time-based filtering for MEDIUM and LOW priorities
-        if (timeFilter) {
-            return wallets.filter(w => !w.lastActivityAt || w.lastActivityAt < timeFilter);
-        }
-
-        // HIGH priority: return all wallets
-        return wallets;
+        return await this.userWalletRepository.find(queryOptions);
     }
 
     /**
@@ -558,22 +572,22 @@ export class DepositMonitoringService {
         try {
             const now = new Date();
 
-            // Downgrade HIGH → MEDIUM if no activity in last 1 hour
-            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+            // Downgrade HIGH → MEDIUM if no activity in last 30 minutes
+            const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
             const highToMedium = await this.userWalletRepository.update(
                 {
                     scanPriority: ScanPriority.HIGH,
-                    lastActivityAt: LessThan(oneHourAgo) as any,
+                    lastActivityAt: LessThan(thirtyMinutesAgo) as any,
                 },
                 { scanPriority: ScanPriority.MEDIUM }
             );
 
-            // Downgrade MEDIUM → LOW if no activity in last 24 hours
-            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            // Downgrade MEDIUM → LOW if no activity in last 1 hour
+            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
             const mediumToLow = await this.userWalletRepository.update(
                 {
                     scanPriority: ScanPriority.MEDIUM,
-                    lastActivityAt: LessThan(oneDayAgo) as any,
+                    lastActivityAt: LessThan(oneHourAgo) as any,
                 },
                 { scanPriority: ScanPriority.LOW }
             );

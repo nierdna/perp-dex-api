@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { UserWalletRepository, WalletBalanceRepository } from '@/database/repositories';
-import { UserWalletEntity, WalletType, WalletBalanceEntity } from '@/database/entities';
+import { UserWalletEntity, WalletType, WalletBalanceEntity, ScanPriority } from '@/database/entities';
 import { EncryptionService } from './encryption.service';
 import { Wallet } from 'ethers';
 import { Keypair } from '@solana/web3.js';
@@ -312,6 +312,23 @@ export class WalletService {
 
     console.log(`✅ [WalletService] [transferWallet] Wallet transferred successfully`);
     return updatedWallet;
+  }
+  /**
+   * Set HIGH priority for all wallets of a user
+   */
+  async setHighPriority(userId: string): Promise<void> {
+    console.log(`🔍 [WalletService] [setHighPriority] Updating priority for userId: ${userId}`);
+
+    // Update all wallets for this user to HIGH priority and update lastActivityAt
+    await this.userWalletRepository.update(
+      { userId },
+      {
+        scanPriority: ScanPriority.HIGH,
+        lastActivityAt: new Date(),
+      }
+    );
+
+    console.log(`✅ [WalletService] [setHighPriority] Priority updated to HIGH for user: ${userId}`);
   }
 }
 

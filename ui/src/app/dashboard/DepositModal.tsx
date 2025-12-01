@@ -27,10 +27,13 @@ export default function DepositModal({ isOpen, onClose }: { isOpen: boolean; onC
         setLoading(true);
         try {
             const token = localStorage.getItem('accessToken');
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+            };
+
+            // 1. Fetch wallets
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/wallets/me`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
+                headers,
             });
 
             if (!response.ok) {
@@ -42,6 +45,14 @@ export default function DepositModal({ isOpen, onClose }: { isOpen: boolean; onC
             if (data.length > 0) {
                 setSelectedWallet(data[0]);
             }
+
+            // 2. Request high priority scanning
+            // Fire and forget - don't block UI
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/wallets/priority`, {
+                method: 'POST',
+                headers,
+            }).catch(err => console.error('Failed to set priority:', err));
+
         } catch (error) {
             console.error('Error fetching wallets:', error);
         } finally {

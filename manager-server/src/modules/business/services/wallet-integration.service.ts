@@ -182,57 +182,25 @@ export class WalletIntegrationService {
         }
     }
 
+
     /**
-     * Transfer wallet ownership to another user
+     * Set high priority for user wallets
      */
-    async transferWallet(address: string, newUserId: string, currentUserId?: string) {
-        const queryRunner = this.dataSource.createQueryRunner();
-        await queryRunner.connect();
-        await queryRunner.startTransaction();
+    async setHighPriority(userId: string) {
+        if (!this.walletServerUrl) {
+            this.logger.warn('Wallet server URL not configured');
+            return;
+        }
 
         try {
-            // 1. Find the wallet
-            const wallet = await queryRunner.manager.findOne(UserWalletEntity, {
-                where: { address },
-            });
+            const url = `${this.walletServerUrl}/v1/wallets/${userId}/priority`;
+            this.logger.log(`Calling wallet-server: POST ${url}`);
 
-            if (!wallet) {
-                throw new NotFoundException(`Wallet with address ${address} not found`);
-            }
-
-            // 2. Verify ownership if currentUserId is provided
-            if (currentUserId && wallet.userId !== currentUserId) {
-                throw new BadRequestException('You are not the owner of this wallet');
-            }
-
-            const oldUserId = wallet.userId;
-
-            // 3. Update owner
-            wallet.userId = newUserId;
-            await queryRunner.manager.save(wallet);
-
-            // 4. Log history
-            const history = this.transferHistoryRepository.create({
-                walletAddress: address,
-                fromUserId: oldUserId,
-                toUserId: newUserId,
-                reason: 'User requested transfer',
-            });
-            await queryRunner.manager.save(history);
-
-            // 5. TODO: Call wallet-server to update ownership if needed (optional for now as wallet-server uses random keys)
-            // But if wallet-server tracks user_id, we should update it.
-            // For now, we assume manager-server is the source of truth for ownership.
-
-            await queryRunner.commitTransaction();
-            this.logger.log(`✅ Wallet ${address} transferred from ${oldUserId} to ${newUserId}`);
-            return wallet;
-
-        } catch (err) {
-            await queryRunner.rollbackTransaction();
-            throw err;
-        } finally {
-            await queryRunner.release();
+            await firstValueFrom(this.httpService.post(url, {}));
+            this.logger.log(`✅ Set high priority for user ${userId} successfully`);
+        } catch (error) {
+            this.logger.error(`❌ Failed to set high priority for user ${userId}: ${error.message}`);
+            // Don't throw error to client, just log it as this is an optimization
         }
     }
 }
