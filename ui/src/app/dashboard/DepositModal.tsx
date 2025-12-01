@@ -55,13 +55,24 @@ export default function DepositModal({ isOpen, onClose }: { isOpen: boolean; onC
         setTimeout(() => setCopiedAddress(null), 2000);
     };
 
-    const getChainName = (chainKey: string) => {
+    const getChainIcon = (wallet: Wallet) => {
+        if (wallet.icon) return wallet.icon;
+        const icons: Record<string, string> = {
+            solana: 'https://assets.coingecko.com/coins/images/4128/standard/solana.png',
+            base: 'https://assets.coingecko.com/coins/images/31199/standard/base.png',
+            arbitrum: 'https://assets.coingecko.com/coins/images/16547/standard/arbitrum.png',
+        };
+        return icons[wallet.chainKey] || '';
+    };
+
+    const getChainName = (wallet: Wallet) => {
+        if (wallet.chainName) return wallet.chainName;
         const names: Record<string, string> = {
             solana: 'Solana',
             base: 'Base',
             arbitrum: 'Arbitrum',
         };
-        return names[chainKey] || chainKey;
+        return names[wallet.chainKey] || wallet.chainKey;
     };
 
     if (!isOpen) return null;
@@ -92,21 +103,30 @@ export default function DepositModal({ isOpen, onClose }: { isOpen: boolean; onC
                         {/* Chain Selection */}
                         <div>
                             <label className="mb-2 block text-sm font-medium text-gray-400">Select Network</label>
-                            <select
-                                value={selectedWallet?.chainKey || ''}
-                                onChange={(e) => {
-                                    const wallet = wallets.find((w) => w.chainKey === e.target.value);
-                                    setSelectedWallet(wallet || null);
-                                }}
-                                className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white focus:border-blue-500 focus:outline-none"
-                            >
-                                <option value="" disabled>-- Choose network --</option>
-                                {wallets.map((wallet) => (
-                                    <option key={wallet.chainKey} value={wallet.chainKey}>
-                                        {getChainName(wallet.chainKey)}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="relative">
+                                <select
+                                    value={selectedWallet?.chainKey || ''}
+                                    onChange={(e) => {
+                                        const wallet = wallets.find((w) => w.chainKey === e.target.value);
+                                        setSelectedWallet(wallet || null);
+                                    }}
+                                    className="w-full appearance-none rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 pl-12 text-white focus:border-blue-500 focus:outline-none"
+                                >
+                                    <option value="" disabled>-- Choose network --</option>
+                                    {wallets.map((wallet) => (
+                                        <option key={wallet.chainKey} value={wallet.chainKey}>
+                                            {getChainName(wallet)}
+                                        </option>
+                                    ))}
+                                </select>
+                                {selectedWallet && (
+                                    <img
+                                        src={getChainIcon(selectedWallet)}
+                                        alt={selectedWallet.chainKey}
+                                        className="absolute left-4 top-1/2 h-6 w-6 -translate-y-1/2 rounded-full"
+                                    />
+                                )}
+                            </div>
                         </div>
 
                         {selectedWallet ? (
@@ -116,6 +136,12 @@ export default function DepositModal({ isOpen, onClose }: { isOpen: boolean; onC
                                     <QRCodeCanvas
                                         value={selectedWallet.address}
                                         size={180}
+                                        imageSettings={{
+                                            src: 'https://assets.coingecko.com/coins/images/6319/standard/usdc.png',
+                                            height: 40,
+                                            width: 40,
+                                            excavate: true,
+                                        }}
                                     />
                                 </div>
 
@@ -123,6 +149,13 @@ export default function DepositModal({ isOpen, onClose }: { isOpen: boolean; onC
                                 <div className="w-full">
                                     <label className="mb-2 block text-sm font-medium text-gray-400">Deposit Address</label>
                                     <div className="flex items-center gap-2 rounded-xl border border-gray-700 bg-gray-900 p-2">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-800">
+                                            <img
+                                                src={getChainIcon(selectedWallet)}
+                                                alt={selectedWallet.chainKey}
+                                                className="h-6 w-6 rounded-full"
+                                            />
+                                        </div>
                                         <input
                                             type="text"
                                             value={selectedWallet.address}
@@ -137,7 +170,7 @@ export default function DepositModal({ isOpen, onClose }: { isOpen: boolean; onC
                                         </button>
                                     </div>
                                     <p className="mt-2 text-center text-xs text-gray-500">
-                                        Only send USDT or USDC to this address on {getChainName(selectedWallet.chainKey)} network.
+                                        USDC/USDT are both accepted. Only send USDT or USDC to this address on {getChainName(selectedWallet)} network.
                                     </p>
                                 </div>
                             </div>

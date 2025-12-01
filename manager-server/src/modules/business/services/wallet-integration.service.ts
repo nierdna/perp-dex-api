@@ -85,6 +85,7 @@ export class WalletIntegrationService {
                     chainKey: 'solana',
                     chainType: 'SOLANA',
                     address: data.wallets.solana.address,
+                    icon: data.wallets.solana.icon,
                 }));
             }
 
@@ -95,6 +96,7 @@ export class WalletIntegrationService {
                     chainKey: 'base',
                     chainType: 'EVM',
                     address: data.wallets.base.address,
+                    icon: data.wallets.base.icon,
                 }));
             }
 
@@ -105,6 +107,7 @@ export class WalletIntegrationService {
                     chainKey: 'arbitrum',
                     chainType: 'EVM',
                     address: data.wallets.arbitrum.address,
+                    icon: data.wallets.arbitrum.icon,
                 }));
             }
 
@@ -139,6 +142,7 @@ export class WalletIntegrationService {
                             chainKey: 'solana',
                             chainType: 'SOLANA',
                             address: data.wallets.solana.address,
+                            icon: data.wallets.solana.icon,
                         }));
                     }
                     if (data.wallets.base) {
@@ -147,6 +151,7 @@ export class WalletIntegrationService {
                             chainKey: 'base',
                             chainType: 'EVM',
                             address: data.wallets.base.address,
+                            icon: data.wallets.base.icon,
                         }));
                     }
                     if (data.wallets.arbitrum) {
@@ -155,6 +160,7 @@ export class WalletIntegrationService {
                             chainKey: 'arbitrum',
                             chainType: 'EVM',
                             address: data.wallets.arbitrum.address,
+                            icon: data.wallets.arbitrum.icon,
                         }));
                     }
                     // Không thực hiện upsert để tránh duplicate key

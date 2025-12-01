@@ -20,4 +20,7 @@ export class UserWalletEntity extends BaseEntity {
 
     @Column({ name: 'is_active', default: true })
     isActive: boolean;
+
+    @Column({ nullable: true })
+    icon: string;
 }

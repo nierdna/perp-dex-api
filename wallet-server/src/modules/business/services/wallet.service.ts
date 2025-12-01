@@ -160,7 +160,7 @@ export class WalletService {
           type: 'EVM',
           chain: 'Base',
           chain_id: 8453,
-          icon: 'https://assets.coingecko.com/coins/images/31199/standard/base.png',
+          icon: 'https://basescan.org/assets/base/images/svg/logos/chain-light.svg?v=25.11.3.0',
           ...baseBalances,
         },
         arbitrum: {
@@ -169,7 +169,7 @@ export class WalletService {
           type: 'EVM',
           chain: 'Arbitrum One',
           chain_id: 42161,
-          icon: 'https://assets.coingecko.com/coins/images/16547/standard/arbitrum.png',
+          icon: 'https://assets.coingecko.com/coins/images/16547/standard/arb.jpg?1721358242',
           ...arbitrumBalances,
         },
       },
