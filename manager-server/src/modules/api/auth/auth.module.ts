@@ -10,13 +10,16 @@ import { TwitterStrategy } from './twitter.strategy';
 import { JwtStrategy } from './jwt.strategy';
 import { UserEntity } from '@/database/entities/user.entity';
 import { TelegramService } from '@/business/services/telegram.service';
-import { WalletIntegrationService } from '@/business/services/wallet-integration.service';
+import { BusinessModule } from '@/business/business.module';
+import { QueueModule } from '@/queue/queue.module';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([UserEntity]),
         PassportModule,
         HttpModule,
+        BusinessModule, // Import BusinessModule to get WalletIntegrationService
+        QueueModule,
         JwtModule.registerAsync({
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({
@@ -27,7 +30,7 @@ import { WalletIntegrationService } from '@/business/services/wallet-integration
         }),
     ],
     controllers: [AuthController],
-    providers: [AuthService, TwitterStrategy, JwtStrategy, TelegramService, WalletIntegrationService],
+    providers: [AuthService, TwitterStrategy, JwtStrategy, TelegramService],
     exports: [AuthService],
 })
 export class AuthModule { }

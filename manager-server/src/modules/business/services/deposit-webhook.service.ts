@@ -5,6 +5,9 @@ import { Repository } from 'typeorm';
 import * as crypto from 'crypto';
 import { DepositTransactionEntity } from '@/database/entities/deposit-transaction.entity';
 import { WebhookLogEntity, WebhookStatus } from '@/database/entities/webhook-log.entity';
+import { UserWalletEntity } from '@/database/entities/user-wallet.entity';
+import { UserEntity } from '@/database/entities/user.entity';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class DepositWebhookService {
@@ -16,7 +19,12 @@ export class DepositWebhookService {
         private readonly depositRepository: Repository<DepositTransactionEntity>,
         @InjectRepository(WebhookLogEntity)
         private readonly webhookLogRepository: Repository<WebhookLogEntity>,
+        @InjectRepository(UserWalletEntity)
+        private readonly userWalletRepository: Repository<UserWalletEntity>,
+        @InjectRepository(UserEntity)
+        private readonly userRepository: Repository<UserEntity>,
         private readonly configService: ConfigService,
+        private readonly dataSource: DataSource,
     ) {
         this.webhookSecret = this.configService.get<string>('WALLET_WEBHOOK_SECRET');
     }
@@ -185,15 +193,45 @@ export class DepositWebhookService {
     /**
      * Handle business logic after deposit is saved
      */
+    /**
+     * Handle business logic after deposit is saved
+     */
     private async handleDepositBusinessLogic(deposit: DepositTransactionEntity): Promise<void> {
-        // Example: Log the deposit
-        this.logger.log(`💰 User ${deposit.userId} deposited ${deposit.amount} ${deposit.tokenSymbol}`);
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
 
-        // TODO: Implement your business logic
-        // - Credit user account
-        // - Award points/bonuses
-        // - Send push notification
-        // - Update leaderboard
-        // etc.
+        try {
+            // 1. Find the CURRENT owner of the wallet
+            // This handles the case where wallet ownership was transferred
+            const wallet = await queryRunner.manager.findOne(UserWalletEntity, {
+                where: { address: deposit.walletAddress },
+            });
+
+            if (!wallet) {
+                this.logger.warn(`⚠️ Wallet ${deposit.walletAddress} not found in user_wallets. Using deposit.userId as fallback.`);
+                // Fallback to the userId sent in the webhook (which might be outdated if transferred, but better than nothing)
+            }
+
+            const targetUserId = wallet ? wallet.userId : deposit.userId;
+
+            this.logger.log(`💰 Crediting user ${targetUserId} for deposit ${deposit.amount} ${deposit.tokenSymbol}`);
+
+            // 2. Update User Balance
+            // We use increment to be safe with concurrent updates
+            await queryRunner.manager.increment(UserEntity, { id: targetUserId }, 'balance', deposit.amount);
+
+            // 3. Log activity or send notification (TODO)
+
+            await queryRunner.commitTransaction();
+            this.logger.log(`✅ Balance updated for user ${targetUserId}`);
+
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            this.logger.error(`❌ Failed to update balance: ${error.message}`);
+            throw error; // Rethrow to mark webhook as failed
+        } finally {
+            await queryRunner.release();
+        }
     }
 }

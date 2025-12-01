@@ -2,18 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import DepositModal from './DepositModal';
 
 interface UserInfo {
     id: string;
     username: string;
     displayName: string;
     avatarUrl: string;
+    balance?: string;
 }
 
 export default function DashboardPage() {
     const router = useRouter();
     const [isFarming, setIsFarming] = useState(false);
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+    const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
@@ -84,7 +87,9 @@ export default function DashboardPage() {
                     </div>
                     <div className="rounded-xl bg-gray-800 p-6 shadow-lg">
                         <p className="text-sm font-medium text-gray-400">Current Balance</p>
-                        <p className="mt-2 text-3xl font-bold text-white">$5,432.10</p>
+                        <p className="mt-2 text-3xl font-bold text-white">
+                            ${userInfo?.balance ? parseFloat(userInfo.balance).toFixed(2) : '0.00'}
+                        </p>
                     </div>
                     <div className="rounded-xl bg-gray-800 p-6 shadow-lg">
                         <p className="text-sm font-medium text-gray-400">Active Orders</p>
@@ -105,15 +110,21 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="mt-8">
+                <div className="mt-8 flex gap-4">
                     <button
                         onClick={toggleFarming}
                         className={`rounded-lg px-6 py-3 text-lg font-bold text-white transition-colors ${isFarming
-                            ? 'bg-red-500 hover:bg-red-600'
-                            : 'bg-green-500 hover:bg-green-600'
+                                ? 'bg-red-500 hover:bg-red-600'
+                                : 'bg-green-500 hover:bg-green-600'
                             }`}
                     >
                         {isFarming ? 'Stop Farming' : 'Start Farming'}
+                    </button>
+                    <button
+                        onClick={() => setIsDepositModalOpen(true)}
+                        className="rounded-lg bg-blue-500 px-6 py-3 text-lg font-bold text-white transition-colors hover:bg-blue-600"
+                    >
+                        💰 Deposit
                     </button>
                 </div>
 
@@ -157,6 +168,9 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </main>
+
+            {/* Deposit Modal */}
+            <DepositModal isOpen={isDepositModalOpen} onClose={() => setIsDepositModalOpen(false)} />
         </div>
     );
 }

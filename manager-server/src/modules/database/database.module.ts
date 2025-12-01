@@ -12,7 +12,18 @@ const repositories = [AdminConfigRepository];
 
 const services = [];
 
-const entities = [AdminConfigEntity, DepositTransactionEntity, WebhookLogEntity];
+import { UserEntity } from './entities/user.entity';
+import { UserWalletEntity } from './entities/user-wallet.entity';
+import { WalletTransferHistoryEntity } from './entities/wallet-transfer-history.entity';
+
+const entities = [
+  AdminConfigEntity,
+  DepositTransactionEntity,
+  WebhookLogEntity,
+  UserEntity,
+  UserWalletEntity,
+  WalletTransferHistoryEntity
+];
 
 @Module({
   imports: [

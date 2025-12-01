@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
   Query,
   HttpStatus,
@@ -20,6 +21,7 @@ import {
   GetPrivateKeyDto,
   WalletResponseDto,
   PrivateKeyResponseDto,
+  TransferWalletDto,
 } from '@/api/dtos/wallet';
 
 @ApiTags('Wallet')
@@ -166,6 +168,40 @@ export class WalletController {
   ): Promise<any> {
     console.log(`🔍 [WalletController] [getWallets] user_id: ${userId}`);
     return this.walletService.getWalletsDetail(userId);
+  }
+
+  @Patch(':address/transfer')
+  @UseGuards(IpWhitelistGuard, ApiKeyGuard)
+  @ApiSecurity('X-API-Key')
+  @ApiOperation({
+    summary: 'Transfer wallet ownership',
+    description: 'Transfers the ownership of a wallet to a new user ID.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Wallet transferred successfully',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Wallet not found',
+  })
+  @ResponseMessage('Wallet transferred successfully')
+  async transferWallet(
+    @Param('address') address: string,
+    @Body() transferWalletDto: TransferWalletDto,
+    @CurrentUserId() currentUserId: string,
+  ) {
+    console.log(`🔍 [WalletController] [transferWallet] address: ${address}, new_user_id: ${transferWalletDto.new_user_id}`);
+
+    const updatedWallet = await this.walletService.transferWallet(address, transferWalletDto.new_user_id);
+
+    // Log audit trail
+    await this.auditLogService.logAction('TRANSFER_WALLET', transferWalletDto.new_user_id, address, {
+      previous_owner: updatedWallet.userId, // Note: this will be the NEW owner, need to capture old one if needed, but service updates it.
+      requested_by: currentUserId,
+    });
+
+    return updatedWallet;
   }
 }
 

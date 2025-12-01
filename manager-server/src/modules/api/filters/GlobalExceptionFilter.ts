@@ -44,7 +44,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     private readonly sendClientInternalServerErrorCause: boolean = false,
     private readonly logAllErrors: boolean = false,
     private readonly logErrorsWithStatusCode: number[] = [],
-  ) {}
+  ) { }
 
   public catch(exception: any, host: ArgumentsHost): any {
     const ctx = host.switchToHttp();
@@ -66,16 +66,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       integrationErrorDetails =
         GlobalExceptionFilter.extractIntegrationErrorDetails(exception);
 
-      console.error(
-        {
-          errorId: errorId,
-          route: request.url,
-          integrationErrorDetails,
-          stack:
-            exception.stack && JSON.stringify(exception.stack, ['stack'], 4),
-        },
-        messageObject,
-      );
+      console.error('========== INTERNAL SERVER ERROR ==========');
+      console.error(`Error ID: ${errorId}`);
+      console.error(`Route: ${request.url}`);
+      console.error(`Method: ${request.method}`);
+      console.error(`Message: ${exception.message}`);
+      console.error(`Stack:`, exception.stack);
+      console.error(`Integration Details:`, integrationErrorDetails);
+      console.error('==========================================');
     } else if (
       this.logAllErrors ||
       this.logErrorsWithStatusCode.indexOf(responseStatus) !== -1
@@ -94,7 +92,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       ...this.getClientResponseMessage(responseStatus, exception),
       integrationErrorDetails:
         responseStatus === HttpStatus.INTERNAL_SERVER_ERROR &&
-        this.sendClientInternalServerErrorCause
+          this.sendClientInternalServerErrorCause
           ? integrationErrorDetails
           : undefined,
     });

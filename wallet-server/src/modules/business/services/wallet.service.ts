@@ -298,5 +298,20 @@ export class WalletService {
 
     return result;
   }
+
+  /**
+   * Transfer wallet ownership to another user
+   */
+  async transferWallet(address: string, newUserId: string): Promise<UserWalletEntity> {
+    console.log(`🔍 [WalletService] [transferWallet] Transferring wallet ${address} to newUserId: ${newUserId}`);
+
+    const wallet = await this.getWalletByAddress(address);
+
+    wallet.userId = newUserId;
+    const updatedWallet = await this.userWalletRepository.save(wallet);
+
+    console.log(`✅ [WalletService] [transferWallet] Wallet transferred successfully`);
+    return updatedWallet;
+  }
 }
 

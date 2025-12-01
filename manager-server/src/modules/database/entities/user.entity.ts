@@ -21,4 +21,7 @@ export class UserEntity extends BaseEntity {
 
     @Column({ default: 'user' })
     role: string;
+
+    @Column({ type: 'decimal', precision: 20, scale: 8, default: '0' })
+    balance: string;
 }
