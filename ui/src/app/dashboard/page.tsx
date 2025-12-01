@@ -69,8 +69,14 @@ export default function DashboardPage() {
                             {userInfo ? `@${userInfo.username}` : 'Loading...'}
                         </span>
                         <button
+                            onClick={() => setIsDepositModalOpen(true)}
+                            className="cursor-pointer rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-600"
+                        >
+                            💰 Deposit
+                        </button>
+                        <button
                             onClick={handleLogout}
-                            className="rounded-md bg-gray-700 px-3 py-2 text-sm font-medium text-white hover:bg-gray-600"
+                            className="cursor-pointer rounded-md bg-gray-700 px-3 py-2 text-sm font-medium text-white hover:bg-gray-600"
                         >
                             Logout
                         </button>
@@ -114,17 +120,11 @@ export default function DashboardPage() {
                     <button
                         onClick={toggleFarming}
                         className={`rounded-lg px-6 py-3 text-lg font-bold text-white transition-colors ${isFarming
-                                ? 'bg-red-500 hover:bg-red-600'
-                                : 'bg-green-500 hover:bg-green-600'
+                            ? 'bg-red-500 hover:bg-red-600'
+                            : 'bg-green-500 hover:bg-green-600'
                             }`}
                     >
                         {isFarming ? 'Stop Farming' : 'Start Farming'}
-                    </button>
-                    <button
-                        onClick={() => setIsDepositModalOpen(true)}
-                        className="rounded-lg bg-blue-500 px-6 py-3 text-lg font-bold text-white transition-colors hover:bg-blue-600"
-                    >
-                        💰 Deposit
                     </button>
                 </div>
 
