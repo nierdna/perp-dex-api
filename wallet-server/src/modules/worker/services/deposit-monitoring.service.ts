@@ -101,9 +101,9 @@ export class DepositMonitoringService {
     }
 
     /**
-     * Cron job - Scan MEDIUM priority wallets every 5 minutes
+     * Cron job - Scan MEDIUM priority wallets every 30 minutes
      */
-    @Cron('0 */5 * * * *')
+    @Cron('0 */30 * * * *')
     async scanMediumPriorityWallets() {
         const startTime = Date.now();
 
@@ -123,9 +123,9 @@ export class DepositMonitoringService {
     }
 
     /**
-     * Cron job - Scan LOW priority wallets every 15 minutes
+     * Cron job - Scan LOW priority wallets every 6 hours
      */
-    @Cron('0 */15 * * * *')
+    @Cron('0 0 */6 * * *')
     async scanLowPriorityWallets() {
         const startTime = Date.now();
 
