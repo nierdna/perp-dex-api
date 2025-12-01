@@ -30,9 +30,10 @@ const controllers = [HealthController, WalletController, WebhookController];
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
-        let urlRedis = `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}/${process.env.REDIS_DATABASE}?family=${process.env.REDIS_FAMILY}`;
+        const redisFamily = process.env.REDIS_FAMILY || 0;
+        let urlRedis = `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}/${process.env.REDIS_DATABASE}?family=${redisFamily}`;
         if (process.env.REDIS_PASSWORD) {
-          urlRedis = `redis://${process.env.REDIS_USERNAME}:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}/${process.env.REDIS_DATABASE}?family=${process.env.REDIS_FAMILY}`;
+          urlRedis = `redis://${process.env.REDIS_USERNAME}:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}/${process.env.REDIS_DATABASE}?family=${redisFamily}`;
         }
         return {
           ttl: configService.get('cache.api.cache_ttl'),

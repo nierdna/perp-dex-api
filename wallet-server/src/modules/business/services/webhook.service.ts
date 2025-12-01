@@ -1,8 +1,10 @@
-import { Injectable, Logger, ConflictException } from '@nestjs/common';
-import { WebhookRepository } from '@/database/repositories';
+import { Injectable, Logger, ConflictException, NotFoundException } from '@nestjs/common';
+import { WebhookRepository, UserWalletRepository, SupportedTokenRepository } from '@/database/repositories';
 import { EncryptionService } from './encryption.service';
+import { WalletType } from '@/database/entities/user-wallet.entity';
 import axios from 'axios';
 import * as crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class WebhookService {
@@ -11,6 +13,8 @@ export class WebhookService {
     constructor(
         private webhookRepository: WebhookRepository,
         private encryptionService: EncryptionService,
+        private userWalletRepository: UserWalletRepository,
+        private supportedTokenRepository: SupportedTokenRepository,
     ) { }
 
     /**
@@ -157,6 +161,124 @@ export class WebhookService {
                 // Wait before retry: 2^attempt seconds (exponential backoff)
                 await this.sleep(Math.pow(2, attempt) * 1000);
             }
+        }
+    }
+
+    /**
+     * Test/Mock webhook - Send test webhook payload to provided URL
+     * Payload format is 100% identical to real webhook
+     */
+    async testWebhook(
+        url: string,
+        secret: string,
+        amountUsdc: number,
+        chainName: string,
+        userId: string,
+    ) {
+        this.logger.log(`🎭 [WebhookService] [testWebhook] Testing webhook for user: ${userId}, chain: ${chainName}, amount: ${amountUsdc}`);
+
+        // Map chain name to chain ID
+        const chainMap: Record<string, { chainId: number; chainName: string }> = {
+            'Solana Mainnet': { chainId: 901, chainName: 'Solana Mainnet' },
+            'Base': { chainId: 8453, chainName: 'Base' },
+            'Arbitrum One': { chainId: 42161, chainName: 'Arbitrum One' },
+        };
+
+        const chainInfo = chainMap[chainName];
+        if (!chainInfo) {
+            throw new NotFoundException(`Invalid chain name: ${chainName}. Supported: Solana Mainnet, Base, Arbitrum One`);
+        }
+
+        // Get wallet for user
+        const walletType = chainInfo.chainId === 901 ? WalletType.SOLANA : WalletType.EVM;
+        const wallet = await this.userWalletRepository.findOne({
+            where: { userId, walletType },
+        });
+
+        if (!wallet) {
+            throw new NotFoundException(`Wallet not found for user: ${userId} on chain: ${chainName}`);
+        }
+
+        // Get USDC token info for chain
+        const token = await this.supportedTokenRepository.findOne({
+            where: { chainId: chainInfo.chainId, symbol: 'USDC' },
+        });
+
+        if (!token) {
+            throw new NotFoundException(`USDC token not found for chain: ${chainName}`);
+        }
+
+        // Generate mock deposit data (100% same format as real webhook)
+        const depositId = uuidv4();
+        const previousBalance = 0; // Mock previous balance
+        const newBalance = previousBalance + amountUsdc;
+        const detectedAt = new Date();
+
+        const depositData = {
+            deposit_id: depositId,
+            user_id: userId,
+            wallet_id: wallet.id,
+            wallet_address: wallet.address,
+            chain: chainInfo.chainName,
+            chain_id: chainInfo.chainId,
+            token: {
+                symbol: token.symbol,
+                address: token.address,
+                name: token.name,
+                decimals: token.decimals,
+                icon: token.icon || undefined,
+            },
+            amount: amountUsdc.toFixed(6),
+            previous_balance: previousBalance.toFixed(6),
+            new_balance: newBalance.toFixed(6),
+            tx_hash: null,
+            detected_at: detectedAt.toISOString(),
+        };
+
+        // Create webhook payload (100% same format as real webhook)
+        const payload = {
+            event: 'deposit',
+            webhook_id: 'mock_webhook_test',
+            timestamp: new Date().toISOString(),
+            data: depositData,
+        };
+
+        // Generate HMAC signature (same as real webhook)
+        const signature = crypto
+            .createHmac('sha256', secret)
+            .update(JSON.stringify(payload))
+            .digest('hex');
+
+        payload['signature'] = signature;
+
+        // Send webhook to provided URL
+        try {
+            this.logger.log(`📡 [WebhookService] [testWebhook] Sending test webhook to ${url}`);
+
+            const response = await axios.post(url, payload, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Webhook-Signature': `sha256=${signature}`,
+                },
+                timeout: 10000, // 10s timeout for test
+            });
+
+            this.logger.log(`✅ [WebhookService] [testWebhook] Test webhook delivered successfully to ${url}`);
+
+            return {
+                success: true,
+                status_code: response.status,
+                payload,
+                response: response.data,
+            };
+        } catch (error) {
+            this.logger.error(`❌ [WebhookService] [testWebhook] Test webhook failed: ${error.message}`);
+
+            return {
+                success: false,
+                error: error.message,
+                payload, // Return payload even if delivery failed
+            };
         }
     }
 
