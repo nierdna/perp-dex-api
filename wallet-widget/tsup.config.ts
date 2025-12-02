@@ -3,7 +3,7 @@ import { defineConfig } from 'tsup';
 export default defineConfig({
     entry: ['lib/widget.tsx'],
     format: ['iife'], // Immediately Invoked Function Expression for browser script
-    globalName: 'LynxPay', // Global variable name
+    // globalName: 'LynxPay', // Removed to avoid conflict with manual window assignment
     minify: true,
     clean: true,
     dts: false,

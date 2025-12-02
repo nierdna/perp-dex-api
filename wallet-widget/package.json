@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "build:widget": "tsup",
+    "build:css": "tailwindcss -i ./lib/widget.css -o ./lib/widget.generated.css",
+    "build:widget": "pnpm build:css && tsup",
     "start": "next start",
     "lint": "eslint"
   },

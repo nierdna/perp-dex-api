@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DepositModal from './DepositModal';
-
 interface UserInfo {
     id: string;
     username: string;
@@ -16,7 +14,6 @@ export default function DashboardPage() {
     const router = useRouter();
     const [isFarming, setIsFarming] = useState(false);
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-    const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
@@ -40,6 +37,35 @@ export default function DashboardPage() {
                 router.push('/login');
             });
     }, [router]);
+
+    // Initialize LynxPay widget when userInfo is loaded
+    useEffect(() => {
+        if (userInfo && typeof window !== 'undefined') {
+            console.log('🔄 [Dashboard] User info loaded, attempting to init LynxPay...');
+            const initWidget = () => {
+                if ((window as any).LynxPay) {
+                    console.log('✅ [Dashboard] Found window.LynxPay, initializing...');
+                    (window as any).LynxPay.init({
+                        apiUrl: 'http://localhost:1999'
+                    });
+                } else {
+                    console.log('⏳ [Dashboard] window.LynxPay not found yet...');
+                }
+            };
+
+            // Try immediately
+            initWidget();
+
+            // Retry a few times in case script is loading
+            const interval = setInterval(initWidget, 500);
+            setTimeout(() => {
+                clearInterval(interval);
+                console.log('🛑 [Dashboard] Stopped retrying init.');
+            }, 5000);
+
+            return () => clearInterval(interval);
+        }
+    }, [userInfo]);
 
     const handleLogout = () => {
         localStorage.removeItem('accessToken');
@@ -68,12 +94,13 @@ export default function DashboardPage() {
                         <span className="text-sm text-gray-400">
                             {userInfo ? `@${userInfo.username}` : 'Loading...'}
                         </span>
-                        <button
-                            onClick={() => setIsDepositModalOpen(true)}
-                            className="cursor-pointer rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-600"
-                        >
-                            💰 Deposit
-                        </button>
+                        {userInfo ? (
+                            <div id={`lynxpay-${userInfo.id}`} className="cursor-pointer rounded-lg bg-blue-500 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-600">
+                                💰 Deposit
+                            </div>
+                        ) : (
+                            <div className="h-9 w-24 animate-pulse rounded-lg bg-gray-700"></div>
+                        )}
                         <button
                             onClick={handleLogout}
                             className="cursor-pointer rounded-md bg-gray-700 px-3 py-2 text-sm font-medium text-white hover:bg-gray-600"
@@ -168,9 +195,6 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </main>
-
-            {/* Deposit Modal */}
-            <DepositModal isOpen={isDepositModalOpen} onClose={() => setIsDepositModalOpen(false)} />
         </div>
     );
 }

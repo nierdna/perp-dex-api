@@ -28,6 +28,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <script src="http://localhost:3001/widget.global.js"></script>
       </body>
     </html>
   );
