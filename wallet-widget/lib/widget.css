@@ -1,4 +1,4 @@
-@tailwind base;
+/* @tailwind base; - Removed to prevent global reset conflict */
 @tailwind components;
 @tailwind utilities;
 

@@ -1,10 +1,9 @@
-// Widget initialization script
-// This will be the CDN script that clients include
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import DepositModal from '../components/DepositModal';
 import './widget.generated.css'; // Import generated Tailwind CSS
+
+console.log('🚀 [LynxPay] Widget script loaded!');
 
 interface LynxPayConfig {
     apiUrl: string;

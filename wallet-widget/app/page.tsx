@@ -1,20 +1,27 @@
 'use client';
 
 import { useEffect } from 'react';
-import '../lib/widget'; // Import widget logic to register window.LynxPay
+// import '../lib/widget'; // REMOVED: Test bundle instead
 
 export default function DemoPage() {
   useEffect(() => {
     // Initialize LynxPay widget
-    if (typeof window !== 'undefined' && (window as any).LynxPay) {
-      (window as any).LynxPay.init({
-        apiUrl: 'http://localhost:1999', // wallet-server URL
-      });
-    }
+    // Wait for script to load
+    const checkAndInit = () => {
+      if (typeof window !== 'undefined' && (window as any).LynxPay) {
+        (window as any).LynxPay.init({
+          apiUrl: 'http://localhost:1999', // wallet-server URL
+        });
+      } else {
+        setTimeout(checkAndInit, 100);
+      }
+    };
+    checkAndInit();
   }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <script src="/widget.global.js"></script>
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -inset-[10px] opacity-50">

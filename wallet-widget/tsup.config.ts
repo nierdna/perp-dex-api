@@ -14,5 +14,8 @@ export default defineConfig({
     loader: {
         '.css': 'css',
     },
+    define: {
+        'process.env.NODE_ENV': '"production"',
+    },
     noExternal: ['react', 'react-dom', 'qrcode.react'], // Bundle dependencies
 });
