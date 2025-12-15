@@ -81,6 +81,7 @@ function connect() {
         return;
       }
 
+      const fills = data.data.fills;
       // Group các lệnh cùng thời điểm, cùng mã, cùng kiểu lại thành 1
       const groupedFills = {};
 
@@ -133,8 +134,8 @@ function connect() {
 
         // Type Icon
         let typeIcon = "🔥";
-        if (group.dir.includes("Long")) typeIcon = "🟢";
-        if (group.dir.includes("Short")) typeIcon = "🔴";
+        if (group.dir && group.dir.includes("Long")) typeIcon = "🟢";
+        if (group.dir && group.dir.includes("Short")) typeIcon = "🔴";
 
         // Wallet Name
         const walletName = WALLET_NAMES[group.addr] ? `(${WALLET_NAMES[group.addr]})` : "";
