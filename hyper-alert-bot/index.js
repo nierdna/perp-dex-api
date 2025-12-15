@@ -102,6 +102,16 @@ function connect() {
 
         const value = (parseFloat(price) * parseFloat(size)).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
+        // PnL (chỉ hiện khi đóng vị thế và có PnL thực tế)
+        let pnlRow = "";
+        const rawPnl = parseFloat(fill.closedPnl || "0");
+        if (rawPnl !== 0) {
+          const pnlIcon = rawPnl >= 0 ? "🟢" : "🔴";
+          const pnlSign = rawPnl >= 0 ? "+" : "";
+          const pnlFormatted = rawPnl.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+          pnlRow = `\n${pnlIcon} *PnL:*    ${pnlSign}${pnlFormatted}`;
+        }
+
         // Icon cho Type
         let typeIcon = "🔥";
         if (dir.includes("Long")) typeIcon = "🟢";
@@ -119,7 +129,7 @@ ${typeIcon} *Type:*   ${dir}
 📊 *Side:*   ${side}
 💰 *Size:*   ${size}
 💵 *Price:*  ${price}
-💸 *Value:*  ${value}
+💸 *Value:*  ${value}${pnlRow}
 ⏰ *Time:*   ${time}
 ───────────────────
 `;
