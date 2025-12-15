@@ -81,56 +81,81 @@ function connect() {
         return;
       }
 
-      const fills = data.data.fills;
-      // API Hyperliquid thường trả về 'user' thay vì 'address' trong channel userFills
-      const addr = (data.data.user || data.data.address)?.toLowerCase();
-
-      if (!addr) return;
-
-      if (!WATCH_LIST.includes(addr)) {
-        // console.log(`ℹ️ Ignored update for ${addr} (not in watch list)`);
-        return;
-      }
+      // Group các lệnh cùng thời điểm, cùng mã, cùng kiểu lại thành 1
+      const groupedFills = {};
 
       fills.forEach(fill => {
-        const side = fill.side === 'B' ? 'BUY 🟢' : 'SELL 🔴';
-        const dir = fill.dir; // VD: Open Long, Close Short, Open Short, Close Long
-        const price = fill.px;
-        const size = fill.sz;
-        const coin = fill.coin;
-        const time = new Date(fill.time).toLocaleString();
+        const addr = (data.data.user || data.data.address)?.toLowerCase();
+        if (!addr || !WATCH_LIST.includes(addr)) return;
 
-        const value = (parseFloat(price) * parseFloat(size)).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+        // Key để gom nhóm: cùng ví + token + chiều (Buy/Sell) + Type (Open/Close) + Thời gian (đến phút hoặc giây)
+        // Ở đây dùng chính xác time trả về vì Hyperliquid khớp lệnh cùng lúc sẽ có time giống hệt nhau
+        const key = `${addr}_${fill.coin}_${fill.side}_${fill.dir}_${fill.time}`;
 
-        // PnL (chỉ hiện khi đóng vị thế và có PnL thực tế)
+        if (!groupedFills[key]) {
+          groupedFills[key] = {
+            addr: addr,
+            coin: fill.coin,
+            side: fill.side,
+            dir: fill.dir,
+            time: fill.time,
+            totalSize: 0,
+            totalValue: 0,
+            totalPnl: 0,
+            weightedPriceSum: 0 // Dùng để tính giá trung bình
+          };
+        }
+
+        const size = parseFloat(fill.sz);
+        const price = parseFloat(fill.px);
+        const pnl = parseFloat(fill.closedPnl || "0");
+
+        groupedFills[key].totalSize += size;
+        groupedFills[key].totalValue += (size * price);
+        groupedFills[key].weightedPriceSum += (size * price);
+        groupedFills[key].totalPnl += pnl;
+      });
+
+      // Duyệt qua các nhóm đã gộp và gửi tin nhắn
+      Object.values(groupedFills).forEach(group => {
+        const avgPrice = group.weightedPriceSum / group.totalSize;
+        const sideLabel = group.side === 'B' ? 'BUY 🟢' : 'SELL 🔴';
+        const timeStr = new Date(group.time).toLocaleString();
+
+        // PnL Row
         let pnlRow = "";
-        const rawPnl = parseFloat(fill.closedPnl || "0");
-        if (rawPnl !== 0) {
-          const pnlIcon = rawPnl >= 0 ? "🟢" : "🔴";
-          const pnlSign = rawPnl >= 0 ? "+" : "";
-          const pnlFormatted = rawPnl.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+        if (group.totalPnl !== 0) {
+          const pnlIcon = group.totalPnl >= 0 ? "🟢" : "🔴";
+          const pnlSign = group.totalPnl >= 0 ? "+" : "";
+          const pnlFormatted = group.totalPnl.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
           pnlRow = `\n${pnlIcon} *PnL:*    ${pnlSign}${pnlFormatted}`;
         }
 
-        // Icon cho Type
+        // Type Icon
         let typeIcon = "🔥";
-        if (dir.includes("Long")) typeIcon = "🟢";
-        if (dir.includes("Short")) typeIcon = "🔴";
+        if (group.dir.includes("Long")) typeIcon = "🟢";
+        if (group.dir.includes("Short")) typeIcon = "🔴";
 
-        // Tên ví (nếu có)
-        const walletName = WALLET_NAMES[addr] ? `(${WALLET_NAMES[addr]})` : "";
+        // Wallet Name
+        const walletName = WALLET_NAMES[group.addr] ? `(${WALLET_NAMES[group.addr]})` : "";
+
+        // Format Value & Size
+        const valueStr = group.totalValue.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+        // Làm tròn Size gọn gàng (vd: 100.00 thay vì 100.00000)
+        const sizeStr = parseFloat(group.totalSize.toFixed(4)).toString();
+        const priceStr = parseFloat(avgPrice.toFixed(5)).toString();
 
         const message = `
 🔔 *HYPERLIQUID ALERT*
 ───────────────────
-👤 *Wallet:* \`${addr.slice(0, 6)}...${addr.slice(-4)}\` ${walletName}
-💎 *Token:* #${coin}
-${typeIcon} *Type:*   ${dir}
-📊 *Side:*   ${side}
-💰 *Size:*   ${size}
-💵 *Price:*  ${price}
-💸 *Value:*  ${value}${pnlRow}
-⏰ *Time:*   ${time}
+👤 *Wallet:* \`${group.addr.slice(0, 6)}...${group.addr.slice(-4)}\` ${walletName}
+💎 *Token:* #${group.coin}
+${typeIcon} *Type:*   ${group.dir}
+📊 *Side:*   ${sideLabel}
+💰 *Size:*   ${sizeStr}
+💵 *Price:*  ${priceStr} (Avg)
+💸 *Value:*  ${valueStr}${pnlRow}
+⏰ *Time:*   ${timeStr}
 ───────────────────
 `;
 
@@ -140,7 +165,7 @@ ${typeIcon} *Type:*   ${dir}
           { parse_mode: "Markdown", message_thread_id: TOPIC_ID }
         );
 
-        console.log(`📤 Sent alert for ${addr} → ${side} ${size} ${coin}`);
+        console.log(`📤 Sent consolidated alert for ${group.addr} → ${group.coin} (x${group.totalSize})`);
       });
 
     } catch (err) {
