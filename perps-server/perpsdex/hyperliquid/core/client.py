@@ -42,7 +42,7 @@ class HyperliquidClient:
         # Initialize Exchange API (trading, cần private key)
         # account_address sẽ là address của wallet
         self.exchange = Exchange(
-            account=self.account,
+            wallet=self.account,
             base_url=self.base_url,
             account_address=self.address
         )

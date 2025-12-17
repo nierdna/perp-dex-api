@@ -102,7 +102,7 @@ class HyperliquidOrderExecutor:
             # Đặt lệnh Market qua SDK
             # Hyperliquid không có market order trực tiếp, dùng limit với IOC (Immediate or Cancel)
             order_result = self.exchange.market_open(
-                coin=symbol,
+                name=symbol,
                 is_buy=is_buy,
                 sz=size,
                 px=limit_price,  # Limit price cho slippage control
@@ -213,13 +213,16 @@ class HyperliquidOrderExecutor:
             print(f"[Hyperliquid Limit] {symbol} {side.upper()} size={size:.6f} @ {limit_price:.2f}")
             
             # Đặt lệnh Limit
-            order_result = self.exchange.limit_order(
-                coin=symbol,
+            # Đặt lệnh Limit
+            order_type = {"limit": {"tif": "Alo"}} if post_only else {"limit": {"tif": "Gtc"}}
+            
+            order_result = self.exchange.order(
+                name=symbol,
                 is_buy=is_buy,
                 sz=size,
                 limit_px=limit_price,
-                reduce_only=reduce_only,
-                post_only=post_only
+                order_type=order_type,
+                reduce_only=reduce_only
             )
             
             print(f"[Hyperliquid] Limit order result: {order_result}")

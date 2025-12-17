@@ -3,37 +3,63 @@ import { sendAlert } from './telegram.js';
 const last = {};
 
 export function detectConfirmed(token, tf, candles) {
-  if (!candles || !candles.data || candles.data.length < 26) return; // Need at least 26 candles for EMA26
+  // Need at least 26 candles + 1 open candle = 27 data points to be safe, 
+  // but let's stick to safe length
+  if (!candles || !candles.data || candles.data.length < 30) return;
 
-  const closes = candles.data.map(i => parseFloat(i.c));
-  if (closes.some(isNaN)) return; // Safety check
+  // We want the LAST CLOSED candle. 
+  // candles.data[length-1] is the current OPEN candle (fluctuating).
+  // candles.data[length-2] is the last CLOSED candle (fixed).
+
+  const lastClosedIndex = candles.data.length - 2;
+  const candle = candles.data[lastClosedIndex];
+  const candleTime = candle.t; // Epoch time of the closed candle
+
+  // Key for storing state per token+timeframe
+  const k = token + "_" + tf;
+
+  // 🔒 DUPLICATE PROTECTION: If we already processed this candle time, skip.
+  if (last[k] && last[k].lastTime === candleTime) {
+    return;
+  }
+
+  // Calculate EMA on the closed historical data
+  // We use data up to lastClosedIndex inclusive
+  const closes = candles.data.slice(0, lastClosedIndex + 1).map(i => parseFloat(i.c));
+
+  if (closes.some(isNaN)) return;
 
   const ema9 = ema(closes, 9);
   const ema26 = ema(closes, 26);
+  const price = closes[closes.length - 1];
 
-  // Debug log: Show all tokens/timeframes to verify Multi-token logic
-  const e9 = typeof ema9 === 'number' ? ema9.toFixed(2) : 'NaN';
-  const e26 = typeof ema26 === 'number' ? ema26.toFixed(2) : 'NaN';
-  console.log(`[DEBUG] ${token} ${tf} -> Price: ${closes[closes.length - 1]} | EMA9: ${e9} | EMA26: ${e26}`);
+  // Debug log (Only once per new candle ideally, or debug mode)
+  // const e9 = ema9.toFixed(2);
+  // const e26 = ema26.toFixed(2);
+  // console.log(`[DEBUG] ${token} ${tf} -> Price: ${price} | EMA9: ${e9} | EMA26: ${e26}`);
 
-  const k = token + "_" + tf;
-
-  // 🔒 PROTECT AGAINST FALSE POSITIVE ON FIRST RUN
+  // 🔒 INIT STATE ON FIRST RUN
   if (!last[k]) {
-    last[k] = { ema9, ema26, initialized: true };
-    console.log(`[INIT] ${token} ${tf} - First run, skipping alert`);
-    return; // Skip alert on first calculation
+    last[k] = { ema9, ema26, lastTime: candleTime, initialized: true };
+    console.log(`[INIT] ${token} ${tf} - First run on candle ${new Date(candleTime).toLocaleTimeString()}, skipping alert`);
+    return;
   }
 
   const prev = last[k];
 
   // 🚨 DETECT CROSSOVER
-  if (prev.ema9 < prev.ema26 && ema9 > ema26)
-    sendAlert(token, `Confirmed Bull Cross (A)`, { tf, price: closes[closes.length - 1], side: "LONG 🟢" });
-  if (prev.ema9 > prev.ema26 && ema9 < ema26)
-    sendAlert(token, `Confirmed Bear Cross (A)`, { tf, price: closes[closes.length - 1], side: "SHORT 🔴" });
+  // Note: We compare current EMA of closed candle vs EMA of PREVIOUS closed candle (stored in last[k])
+  // Wait, last[k] stores the EMAs calculated from the *previous* unique candle we processed.
+  // So if we process candle T-1 now, last[k] holds T-2. This is correct for detecting the crossover EVENT that just finalized.
 
-  last[k] = { ema9, ema26 };
+  if (prev.ema9 < prev.ema26 && ema9 > ema26)
+    sendAlert(token, `Confirmed Bull Cross (A)`, { tf, price, side: "LONG 🟢" });
+
+  if (prev.ema9 > prev.ema26 && ema9 < ema26)
+    sendAlert(token, `Confirmed Bear Cross (A)`, { tf, price, side: "SHORT 🔴" });
+
+  // Update state to current candle
+  last[k] = { ema9, ema26, lastTime: candleTime, initialized: true };
 }
 
 function ema(values, length) {
