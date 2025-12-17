@@ -55,3 +55,35 @@ ${coinStr || "No trades found."}`;
     console.log(`Telegram report sent for ${rep.wallet}`);
   }
 }
+
+export async function sendHappyAlert(rep, threshold) {
+  const { token, chatId } = config.telegram;
+  const pnl = Number(rep.net) || 0;
+
+  if (pnl <= threshold) return;
+
+  const text =
+    `🚀 <b>BIG WIN ALERT!</b> 🚀
+<code>${rep.wallet}</code>
+
+🎉 PnL (24h): <b>${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)} USDC</b>
+✅ Target: > ${threshold} USDC
+
+Keep it up! 💰💰💰`;
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: "HTML"
+      })
+    });
+
+    if (res.ok) console.log(`Happy Alert sent for ${rep.wallet} (+${pnl} USDC)`);
+  } catch (e) {
+    console.error("Failed to send Happy Alert:", e);
+  }
+}

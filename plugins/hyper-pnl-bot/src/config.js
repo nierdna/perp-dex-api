@@ -20,6 +20,7 @@ const config = {
         windowMs: parseInterval(process.env.PNL_WINDOW || "24h"),
         scheduleTime: process.env.PNL_INTERVAL_TIME || "00:00",
         alertInit: process.env.ALERT_INIT === "1" || process.env.ALERT_INIT === "true",
+        happyPnl: parseFloat(process.env.HAPPY_PNL || "0"),
         windowRaw: process.env.PNL_WINDOW || "24h"
     }
 };

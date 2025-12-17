@@ -1,6 +1,6 @@
 import { fetchFills } from './hyperApi.js';
 import { computePnL } from './pnlEngine.js';
-import { sendReport } from './telegram.js';
+import { sendReport, sendHappyAlert } from './telegram.js';
 import config from './config.js';
 
 const { wallets, intervalMs, windowMs } = config.pnl;
@@ -9,8 +9,13 @@ const { wallets, intervalMs, windowMs } = config.pnl;
 let lastCheckTokens = {};
 
 export function startScheduler() {
-  const { scheduleTime, alertInit } = config.pnl;
+  const { scheduleTime, alertInit, happyPnl } = config.pnl;
   console.log(`Scheduler started. Target Time: ${scheduleTime}, Run on Start: ${alertInit}`);
+
+  // Start the Happy Monitor if configured
+  if (happyPnl !== 0) {
+    startHappyMonitor(happyPnl);
+  }
 
   // 1. Check ALERT_INIT to decide whether to run immediately
   if (alertInit) {
@@ -23,6 +28,7 @@ export function startScheduler() {
     const now = Date.now();
     config.pnl.wallets.forEach(w => {
       // Initialize lastCheckTokens to (NOW - 24h) so the first scheduled run covers the last day
+      // Standard report still uses windowMs from config
       lastCheckTokens[w] = now - config.pnl.windowMs;
     });
   }
@@ -49,6 +55,36 @@ export function startScheduler() {
     // 5. After hitting the target time, run every 24h fixed
     setInterval(run, 24 * 60 * 60 * 1000);
   }, delayMs);
+}
+
+function startHappyMonitor(threshold) {
+  console.log(`🚀 Happy Monitor started! Checking every 1h if PnL (24h) > ${threshold} USDC`);
+
+  const check = async () => {
+    const now = Date.now();
+    const window24h = 24 * 3600000;
+    const from = now - window24h;
+
+    for (const w of wallets) {
+      if (!w) continue;
+      try {
+        const fills = await fetchFills(w);
+        // Filter specifically for the rolling 24h window
+        const filtered = fills.filter(f => f.time >= from);
+
+        if (filtered.length > 0) {
+          const report = computePnL(w, filtered, window24h);
+          await sendHappyAlert(report, threshold);
+        }
+      } catch (e) {
+        console.error(`Happy Monitor Error for ${w}:`, e);
+      }
+    }
+  };
+
+  // Run immediately then interval
+  check();
+  setInterval(check, 3600000); // Check every 1 hour
 }
 
 async function run() {
