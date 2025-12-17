@@ -9,23 +9,44 @@ const { wallets, intervalMs, windowMs } = config.pnl;
 let lastCheckTokens = {};
 
 export function startScheduler() {
-  console.log(`Scheduler started. Logic: Run immediately, then align to next 00:00 daily.`);
+  const { scheduleTime, alertInit } = config.pnl;
+  console.log(`Scheduler started. Target Time: ${scheduleTime}, Run on Start: ${alertInit}`);
 
-  // 1. Run immediately (Startup)
-  run();
+  // 1. Check ALERT_INIT to decide whether to run immediately
+  if (alertInit) {
+    console.log("ALERT_INIT=1: Executing immediate startup scan...");
+    run();
+  } else {
+    console.log("ALERT_INIT=0: Skipping immediate startup scan. Waiting for scheduled time.");
+    // If skipping startup, secure the lastCheckTime mostly to avoid scanning years of history if it runs first time
+    // We assume the user wants to start tracking from NOW or standard window
+    const now = Date.now();
+    config.pnl.wallets.forEach(w => {
+      // Initialize lastCheckTokens to (NOW - 24h) so the first scheduled run covers the last day
+      lastCheckTokens[w] = now - config.pnl.windowMs;
+    });
+  }
 
-  // 2. Calculate time to next midnight
+  // 2. Parse fixed schedule time (HH:MM) treated as UTC
+  const [hh, mm] = scheduleTime.split(':').map(Number);
+
+  // 3. Calculate time to next schedule (UTC)
   const now = new Date();
-  const nextMidnight = new Date(now);
-  nextMidnight.setHours(24, 0, 0, 0); // Jump to next 00:00:00
+  const nextRun = new Date(now);
+  nextRun.setUTCHours(hh, mm, 0, 0);
 
-  const delayMs = nextMidnight.getTime() - now.getTime();
-  console.log(`Next daily scan scheduled at: ${nextMidnight.toLocaleString()} (in ${(delayMs / 3600000).toFixed(2)} hours)`);
+  // If time has passed for today (in UTC), schedule for tomorrow
+  if (nextRun.getTime() <= now.getTime()) {
+    nextRun.setDate(nextRun.getDate() + 1);
+  }
 
-  // 3. Schedule the alignment run
+  const delayMs = nextRun.getTime() - now.getTime();
+  console.log(`Next daily scan scheduled at: ${nextRun.toISOString()} (UTC) (in ${(delayMs / 3600000).toFixed(2)} hours)`);
+
+  // 4. Schedule the alignment run
   setTimeout(() => {
     run();
-    // 4. After hitting midnight, run every 24h fixed
+    // 5. After hitting the target time, run every 24h fixed
     setInterval(run, 24 * 60 * 60 * 1000);
   }, delayMs);
 }

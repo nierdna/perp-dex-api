@@ -15,10 +15,12 @@ const config = {
     },
     pnl: {
         wallets: (process.env.WALLETS || "").split(",").map(x => x.trim()).filter(Boolean),
-        intervalMs: parseInterval(process.env.PNL_INTERVAL || "1h"),
-        windowMs: parseInterval(process.env.PNL_WINDOW || "1h"),
-        intervalRaw: process.env.PNL_INTERVAL || "1h",
-        windowRaw: process.env.PNL_WINDOW || "1h"
+        // PNL_INTERVAL is now implicitly 24h if using fixed time scheduling
+        intervalMs: parseInterval(process.env.PNL_INTERVAL || "24h"),
+        windowMs: parseInterval(process.env.PNL_WINDOW || "24h"),
+        scheduleTime: process.env.PNL_INTERVAL_TIME || "00:00",
+        alertInit: process.env.ALERT_INIT === "1" || process.env.ALERT_INIT === "true",
+        windowRaw: process.env.PNL_WINDOW || "24h"
     }
 };
 
