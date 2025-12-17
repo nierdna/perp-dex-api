@@ -148,7 +148,6 @@ function connect() {
 
         const message = `
 🔔 *HYPERLIQUID ALERT*
-───────────────────
 👤 *Wallet:* \`${group.addr.slice(0, 6)}...${group.addr.slice(-4)}\` ${walletName}
 💎 *Token:* #${group.coin}
 ${typeIcon} *Type:*   ${group.dir}
@@ -157,7 +156,6 @@ ${typeIcon} *Type:*   ${group.dir}
 💵 *Price:*  ${priceStr} (Avg)
 💸 *Value:*  ${valueStr}${pnlRow}
 ⏰ *Time:*   ${timeStr}
-───────────────────
 `;
 
         bot.sendMessage(
