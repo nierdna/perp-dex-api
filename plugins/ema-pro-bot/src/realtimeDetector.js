@@ -11,13 +11,15 @@ export function detectRealtimeSignals(token, d) {
 
   // Strict Volume Spike: Current volume must be significantly higher than average
   // Since it's realtime (partial candle), hitting 1.5x average of FULL candles is a strong signal
-  const isHighVolume = currentVol > avgVol * 1.5;
+  // RELAXED: 1.2x average (easier to trigger for testing)
+  const isHighVolume = currentVol > avgVol * 1.2;
 
   // 2. SIMPLIFIED CROSS DETECTION
   const dist = Math.abs(ema9 - ema26) / price;
 
   // If lines are pinched together
-  if (dist < 0.0008) {
+  // RELAXED: < 0.2% distance (easier to trigger)
+  if (dist < 0.002) {
     let side = "";
 
     // Determine Bias purely on Price Action relative to EMAs
@@ -59,8 +61,8 @@ const lastAlert = {};
 function debounce(token, type, fn) {
   const key = token + "_" + type;
   const now = Date.now();
-  // Don't spam: Only alert once every 5 minutes per token/type for Realtime signals
-  if (lastAlert[key] && now - lastAlert[key] < 300000) return;
+  // Don't spam: Only alert once every 1 minute (Test mode) per token/type for Realtime signals
+  if (lastAlert[key] && now - lastAlert[key] < 60000) return;
   lastAlert[key] = now;
   fn();
 }

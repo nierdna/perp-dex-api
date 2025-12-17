@@ -1,5 +1,9 @@
 import { sendAlert } from './telegram.js';
 
+// Memory cache to store processed candle times per token_tf
+// Format: { "BTC_5m": 1700000300000 }
+const processedCandles = {};
+
 const last = {};
 
 export function detectConfirmed(token, tf, candles) {
@@ -18,8 +22,9 @@ export function detectConfirmed(token, tf, candles) {
   // Key for storing state per token+timeframe
   const k = token + "_" + tf;
 
-  // 🔒 DUPLICATE PROTECTION: If we already processed this candle time, skip.
-  if (last[k] && last[k].lastTime === candleTime) {
+  // 🔒 STRICT DUPLICATE PROTECTION
+  // If we already processed this exact candle timestamp, EXIT IMMEDIATELY.
+  if (processedCandles[k] === candleTime) {
     return;
   }
 
@@ -40,7 +45,8 @@ export function detectConfirmed(token, tf, candles) {
 
   // 🔒 INIT STATE ON FIRST RUN
   if (!last[k]) {
-    last[k] = { ema9, ema26, lastTime: candleTime, initialized: true };
+    last[k] = { ema9, ema26, initialized: true };
+    processedCandles[k] = candleTime; // Mark as processed so we don't alert on existing history
     console.log(`[INIT] ${token} ${tf} - First run on candle ${new Date(candleTime).toLocaleTimeString()}, skipping alert`);
     return;
   }
@@ -52,14 +58,20 @@ export function detectConfirmed(token, tf, candles) {
   // Wait, last[k] stores the EMAs calculated from the *previous* unique candle we processed.
   // So if we process candle T-1 now, last[k] holds T-2. This is correct for detecting the crossover EVENT that just finalized.
 
-  if (prev.ema9 < prev.ema26 && ema9 > ema26)
+  let alerted = false;
+  if (prev.ema9 < prev.ema26 && ema9 > ema26) {
     sendAlert(token, `Confirmed Bull Cross (A)`, { tf, price, side: "LONG 🟢" });
+    alerted = true;
+  }
 
-  if (prev.ema9 > prev.ema26 && ema9 < ema26)
+  if (prev.ema9 > prev.ema26 && ema9 < ema26) {
     sendAlert(token, `Confirmed Bear Cross (A)`, { tf, price, side: "SHORT 🔴" });
+    alerted = true;
+  }
 
-  // Update state to current candle
-  last[k] = { ema9, ema26, lastTime: candleTime, initialized: true };
+  // Update state to current candle AND mark this candleTime as processed
+  last[k] = { ema9, ema26, initialized: true };
+  processedCandles[k] = candleTime; // ✅ Critical Fix
 }
 
 function ema(values, length) {

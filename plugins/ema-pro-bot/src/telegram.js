@@ -25,6 +25,8 @@ ${tf ? `Timeframe: *${tf}*` : ""}
 ${price ? price : ""}
 `;
 
+  console.log(`\n🔔 [TELEGRAM SENT] Token: ${tokenName} | Type: ${type} | Side: ${side || 'N/A'} | Price: ${price ? price.replace('Price: *', '').replace('*', '') : 'N/A'}`);
+
   fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
