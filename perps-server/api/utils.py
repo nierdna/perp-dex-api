@@ -25,7 +25,7 @@ def get_keys_or_env(keys_config: Optional[KeysConfig], exchange: str) -> dict:
             "api_key_index": (keys_config.lighter_api_key_index if keys_config else None)
             or int(os.getenv("LIGHTER_API_KEY_INDEX", 0)),
         }
-    else:  # aster
+    elif exchange == "aster":
         return {
             "api_key": (keys_config.aster_api_key if keys_config else None)
             or os.getenv("ASTER_API_KEY"),
@@ -33,6 +33,13 @@ def get_keys_or_env(keys_config: Optional[KeysConfig], exchange: str) -> dict:
             or os.getenv("ASTER_SECRET_KEY"),
             "api_url": (keys_config.aster_api_url if keys_config else None)
             or os.getenv("ASTER_API_URL", "https://fapi.asterdex.com"),
+        }
+    else:  # hyperliquid
+        return {
+            "private_key": (keys_config.hyperliquid_private_key if keys_config else None)
+            or os.getenv("HYPERLIQUID_PRIVATE_KEY"),
+            "testnet": (keys_config.hyperliquid_testnet if keys_config else None)
+            or os.getenv("HYPERLIQUID_TESTNET", "false").lower() == "true",
         }
 
 
@@ -43,6 +50,7 @@ def normalize_symbol(exchange: str, base_symbol: str) -> dict:
     Returns:
         lighter: {base_symbol, pair, market_id}
         aster: {base_symbol, symbol_pair, symbol_api}
+        hyperliquid: {base_symbol, symbol}
     """
     symbol = base_symbol.upper()
 
@@ -61,14 +69,21 @@ def normalize_symbol(exchange: str, base_symbol: str) -> dict:
             "market_id": market_id,
         }
 
-    # aster
-    pair = f"{symbol}-USDT"
-    symbol_api = f"{symbol}USDT"
-    return {
-        "base_symbol": symbol,
-        "symbol_pair": pair,
-        "symbol_api": symbol_api,
-    }
+    elif exchange == "aster":
+        pair = f"{symbol}-USDT"
+        symbol_api = f"{symbol}USDT"
+        return {
+            "base_symbol": symbol,
+            "symbol_pair": pair,
+            "symbol_api": symbol_api,
+        }
+    
+    else:  # hyperliquid
+        # Hyperliquid dùng format đơn giản: BTC, ETH, SOL...
+        return {
+            "base_symbol": symbol,
+            "symbol": symbol,
+        }
 
 
 def validate_tp_sl(side: str, entry_price: float, tp_price: Optional[float], sl_price: Optional[float]):
@@ -140,6 +155,39 @@ async def initialize_lighter_client(keys: dict) -> LighterClient:
     return client
 
 
+async def initialize_hyperliquid_client(keys: dict):
+    """Khởi tạo HyperliquidClient với keys đã chuẩn hoá"""
+    from perpsdex.hyperliquid.core.client import HyperliquidClient
+    
+    pk = keys.get("private_key")
+    testnet = keys.get("testnet", False)
+    
+    if pk:
+        masked_pk = f"{pk[:6]}...{pk[-4:]}" if len(pk) > 10 else "****"
+    else:
+        masked_pk = None
+    
+    print(f"[HyperliquidKeys] testnet={testnet}, private_key={masked_pk}")
+    
+    if not pk:
+        raise HTTPException(
+            status_code=400,
+            detail="Hyperliquid private key không có (cần trong body hoặc ENV)",
+        )
+    
+    client = HyperliquidClient(
+        private_key=pk,
+        testnet=testnet
+    )
+    
+    result = await client.connect()
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=500,
+            detail=f"Hyperliquid: kết nối thất bại: {result.get('message')}",
+        )
+    
+    return client
 async def initialize_aster_client(keys: dict) -> AsterClient:
     """Khởi tạo AsterClient với keys đã chuẩn hoá"""
     if not keys.get("api_key") or not keys.get("secret_key"):

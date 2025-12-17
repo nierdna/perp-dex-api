@@ -1,0 +1,26 @@
+{
+    "supported_symbols": [
+        "BTC",
+        "ETH",
+        "SOL",
+        "ARB",
+        "AVAX",
+        "BNB",
+        "DOGE",
+        "MATIC",
+        "OP",
+        "PEPE",
+        "WIF",
+        "BONK",
+        "JUP",
+        "PYTH",
+        "TIA",
+        "SEI",
+        "INJ",
+        "SUI",
+        "APT",
+        "ORDI",
+        "MEME"
+    ],
+    "description": "Danh sách các symbol được hỗ trợ trên Hyperliquid. Hyperliquid dùng format đơn giản (BTC thay vì BTC-USDT)."
+}

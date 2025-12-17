@@ -384,9 +384,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
                 <select id="exchange">
                   <option value="lighter">lighter</option>
                   <option value="aster">aster</option>
+                  <option value="hyperliquid">hyperliquid</option>
                 </select>
                 <div class="muted">
-                  Chọn sàn giao dịch (lighter / aster).
+                  Chọn sàn giao dịch (lighter / aster / hyperliquid).
                 </div>
               </div>
               <div class="field">
@@ -668,6 +669,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
               <option value="">Tất cả</option>
               <option value="lighter">Lighter</option>
               <option value="aster">Aster</option>
+              <option value="hyperliquid">Hyperliquid</option>
             </select>
           </div>
 
@@ -1463,8 +1465,59 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         alert(message);
         
         // Reload positions
+        // Reload positions
         loadPositions();
       }
+
+      // Check config status on load
+      async function checkConfigStatus() {
+        try {
+          const response = await fetch("/api/config-status");
+          const status = await response.json();
+          
+          console.log("Exchange config status:", status);
+          
+          // Các ID của select box cần filter
+          const selectIds = ["exchange", "filter-exchange", "filter-exchange-orders", "filter-exchange-balance"];
+          
+          selectIds.forEach(id => {
+            const select = document.getElementById(id);
+            if (!select) return;
+            
+            Array.from(select.options).forEach(option => {
+               const value = option.value; // lighter, aster, hyperliquid
+               // Chỉ check nếu value là key trong status
+               if (value && status.hasOwnProperty(value) && status[value] === false) {
+                   // Không xóa option khỏi DOM để giữ index, chỉ ẩn
+                   // Nhưng Safari/Mobile có thể không support display:none option.
+                   // Tốt nhất là remove hoặc disable.
+                   option.disabled = true;
+                   option.textContent += " (Not Configured)";
+                   // move to end/hidden logic if needed, but disabled is good enough.
+                   
+                   // Nếu đang chọn option bị disable -> đổi sang cái khác
+                   if (select.value === value) {
+                       // Tìm option nào chưa bị disable
+                        const available = Array.from(select.options).find(o => {
+                            const val = o.value;
+                            // Check if configured (or is empty/all)
+                            return (!val || (status[val] !== false));
+                        });
+                        if (available) select.value = available.value;
+                   }
+               }
+            });
+          });
+          
+        } catch (err) {
+          console.error("Failed to check config status:", err);
+        }
+      }
+      
+      // Call config check on load
+      // document.addEventListener("DOMContentLoaded", checkConfigStatus); 
+      // Nhưng script ở cuối body nên chạy luôn cũng được
+      checkConfigStatus();
     </script>
   </body>
 </html>

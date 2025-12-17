@@ -7,20 +7,23 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 
 from api.models import UnifiedOrderRequest, ClosePositionRequest
-from api.handlers import (
+from api.orders import (
     handle_lighter_order,
     handle_aster_order,
     handle_lighter_close_position,
     handle_aster_close_position,
+    handle_hyperliquid_order,
+    handle_hyperliquid_close_position,
 )
-from api.utils import get_keys_or_env, initialize_lighter_client, initialize_aster_client
-from api.positions import (
+from api.utils import get_keys_or_env, initialize_lighter_client, initialize_aster_client, initialize_hyperliquid_client
+from api.data import (
     get_lighter_positions,
     get_aster_positions,
     get_lighter_open_orders,
     get_aster_open_orders,
-)
-from api.balance import (
+    get_hyperliquid_positions,
+    get_hyperliquid_open_orders,
+    get_hyperliquid_balance,
     get_lighter_balance,
     get_aster_balance,
 )
@@ -64,17 +67,19 @@ async def get_positions(exchange: Optional[str] = None):
         if exchange is None or exchange == "lighter":
             client = None
             try:
-                print("[Positions] Fetching Lighter positions...")
                 keys = get_keys_or_env(None, "lighter")
-                client = await initialize_lighter_client(keys)
-                account_index = keys.get("account_index", 0)
-                lighter_positions = await get_lighter_positions(client, account_index)
-                print(f"[Positions] Lighter: found {len(lighter_positions)} positions")
-                all_positions.extend(lighter_positions)
+                if not keys.get("private_key"):
+                    if exchange == "lighter":
+                        print("[Positions] ⚠️ Lighter skipped: No private key found")
+                else:
+                    print("[Positions] Fetching Lighter positions...")
+                    client = await initialize_lighter_client(keys)
+                    account_index = keys.get("account_index", 0)
+                    lighter_positions = await get_lighter_positions(client, account_index)
+                    print(f"[Positions] Lighter: found {len(lighter_positions)} positions")
+                    all_positions.extend(lighter_positions)
             except Exception as e:
-                import traceback
                 print(f"[Positions] Lighter error: {e}")
-                traceback.print_exc()
             finally:
                 # Đóng client để tránh "Unclosed client session"
                 if client and hasattr(client, 'close'):
@@ -87,15 +92,19 @@ async def get_positions(exchange: Optional[str] = None):
         if exchange is None or exchange == "aster":
             client = None
             try:
-                print("[Positions] Fetching Aster positions...")
                 keys = get_keys_or_env(None, "aster")
-                client = await initialize_aster_client(keys)
-                aster_positions = await get_aster_positions(client)
-                print(f"[Positions] Aster: found {len(aster_positions)} positions")
-                all_positions.extend(aster_positions)
+                if not keys.get("api_key") or not keys.get("api_secret"):
+                    if exchange == "aster":
+                         print("[Positions] ⚠️ Aster skipped: No keys found")
+                else:
+                    print("[Positions] Fetching Aster positions...")
+                    client = await initialize_aster_client(keys)
+                    aster_positions = await get_aster_positions(client)
+                    print(f"[Positions] Aster: found {len(aster_positions)} positions")
+                    all_positions.extend(aster_positions)
             except Exception as e:
-                import traceback
                 print(f"[Positions] Aster error: {e}")
+                import traceback
                 traceback.print_exc()
             finally:
                 # Đóng client để tránh "Unclosed client session"
@@ -104,6 +113,25 @@ async def get_positions(exchange: Optional[str] = None):
                         await client.close()
                     except:
                         pass
+        
+        # Hyperliquid
+        if exchange is None or exchange == "hyperliquid":
+            client = None
+            try:
+                keys = get_keys_or_env(None, "hyperliquid")
+                if not keys.get("private_key"):
+                    if exchange == "hyperliquid":
+                        print("[Positions] ⚠️ Hyperliquid skipped: No private key found")
+                else:
+                    print("[Positions] Fetching Hyperliquid positions...")
+                    client = await initialize_hyperliquid_client(keys)
+                    hyperliquid_positions = await get_hyperliquid_positions(client)
+                    print(f"[Positions] Hyperliquid: found {len(hyperliquid_positions)} positions")
+                    all_positions.extend(hyperliquid_positions)
+            except Exception as e:
+                import traceback
+                print(f"[Positions] Hyperliquid error: {e}")
+                # traceback.print_exc() # Giảm spam log
         
         print(f"[Positions] Total: {len(all_positions)} positions")
         
@@ -140,10 +168,16 @@ async def get_open_orders(exchange: Optional[str] = None):
             client = None
             try:
                 keys = get_keys_or_env(None, "lighter")
-                client = await initialize_lighter_client(keys)
-                account_index = keys.get("account_index", 0)
-                lighter_orders = await get_lighter_open_orders(client, account_index)
-                all_open_orders.extend(lighter_orders)
+                if not keys.get("private_key"):
+                    if exchange == "lighter":
+                        print("[Open Orders] ⚠️ Lighter skipped: No private key found")
+                else:
+                    print("[Open Orders] Fetching Lighter open orders...")
+                    client = await initialize_lighter_client(keys)
+                    account_index = keys.get("account_index", 0)
+                    lighter_orders = await get_lighter_open_orders(client, account_index)
+                    print(f"[Open Orders] Lighter: found {len(lighter_orders)} open orders")
+                    all_open_orders.extend(lighter_orders)
             except Exception as e:
                 print(f"[Open Orders] Lighter error: {e}")
             finally:
@@ -157,12 +191,16 @@ async def get_open_orders(exchange: Optional[str] = None):
         if exchange is None or exchange == "aster":
             client = None
             try:
-                print("[Open Orders] Fetching Aster open orders...")
                 keys = get_keys_or_env(None, "aster")
-                client = await initialize_aster_client(keys)
-                aster_orders = await get_aster_open_orders(client)
-                print(f"[Open Orders] Aster: found {len(aster_orders)} open orders")
-                all_open_orders.extend(aster_orders)
+                if not keys.get("api_key") or not keys.get("api_secret"):
+                    if exchange == "aster":
+                         print("[Open Orders] ⚠️ Aster skipped: No keys found")
+                else:
+                    print("[Open Orders] Fetching Aster open orders...")
+                    client = await initialize_aster_client(keys)
+                    aster_orders = await get_aster_open_orders(client)
+                    print(f"[Open Orders] Aster: found {len(aster_orders)} open orders")
+                    all_open_orders.extend(aster_orders)
             except Exception as e:
                 import traceback
                 print(f"[Open Orders] Aster error: {e}")
@@ -173,6 +211,25 @@ async def get_open_orders(exchange: Optional[str] = None):
                         await client.close()
                     except:
                         pass
+        
+        # Hyperliquid
+        if exchange is None or exchange == "hyperliquid":
+            client = None
+            try:
+                keys = get_keys_or_env(None, "hyperliquid")
+                if not keys.get("private_key"):
+                    if exchange == "hyperliquid":
+                         print("[Open Orders] ⚠️ Hyperliquid skipped: No private key found")
+                else:
+                    print("[Open Orders] Fetching Hyperliquid open orders...")
+                    client = await initialize_hyperliquid_client(keys)
+                    hyperliquid_orders = await get_hyperliquid_open_orders(client)
+                    print(f"[Open Orders] Hyperliquid: found {len(hyperliquid_orders)} open orders")
+                    all_open_orders.extend(hyperliquid_orders)
+            except Exception as e:
+                import traceback
+                print(f"[Open Orders] Hyperliquid error: {e}")
+                # traceback.print_exc()
         
         return {
             "open_orders": all_open_orders,
@@ -219,13 +276,23 @@ async def get_balance(exchange: Optional[str] = None):
         if exchange is None or exchange == "lighter":
             client = None
             try:
-                print("[Balance] Fetching Lighter balance...")
                 keys = get_keys_or_env(None, "lighter")
-                client = await initialize_lighter_client(keys)
-                account_index = keys.get("account_index", 0)
-                lighter_balance = await get_lighter_balance(client, account_index)
-                print(f"[Balance] Lighter: available=${lighter_balance.get('available', 0):.2f}, total=${lighter_balance.get('total', 0):.2f}")
-                all_balances.append(lighter_balance)
+                if not keys.get("private_key"):
+                    if exchange == "lighter":
+                         print("[Balance] ⚠️ Lighter skipped: No private key found")
+                    all_balances.append({
+                        'exchange': 'lighter',
+                        'success': False,
+                        'error': "No private key found",
+                        'available': 0, 'total': 0
+                    })
+                else:
+                    print("[Balance] Fetching Lighter balance...")
+                    client = await initialize_lighter_client(keys)
+                    account_index = keys.get("account_index", 0)
+                    lighter_balance = await get_lighter_balance(client, account_index)
+                    print(f"[Balance] Lighter: available=${lighter_balance.get('available', 0):.2f}, total=${lighter_balance.get('total', 0):.2f}")
+                    all_balances.append(lighter_balance)
             except Exception as e:
                 import traceback
                 print(f"[Balance] Lighter error: {e}")
@@ -249,12 +316,22 @@ async def get_balance(exchange: Optional[str] = None):
         if exchange is None or exchange == "aster":
             client = None
             try:
-                print("[Balance] Fetching Aster balance...")
                 keys = get_keys_or_env(None, "aster")
-                client = await initialize_aster_client(keys)
-                aster_balance = await get_aster_balance(client)
-                print(f"[Balance] Aster: available=${aster_balance.get('available', 0):.2f}, total=${aster_balance.get('total', 0):.2f}")
-                all_balances.append(aster_balance)
+                if not keys.get("api_key") or not keys.get("api_secret"):
+                    if exchange == "aster":
+                         print("[Balance] ⚠️ Aster skipped: No keys found")
+                    all_balances.append({
+                        'exchange': 'aster',
+                        'success': False,
+                        'error': "No API keys found",
+                        'available': 0, 'total': 0
+                    })
+                else:
+                    print("[Balance] Fetching Aster balance...")
+                    client = await initialize_aster_client(keys)
+                    aster_balance = await get_aster_balance(client)
+                    print(f"[Balance] Aster: available=${aster_balance.get('available', 0):.2f}, total=${aster_balance.get('total', 0):.2f}")
+                    all_balances.append(aster_balance)
             except Exception as e:
                 import traceback
                 print(f"[Balance] Aster error: {e}")
@@ -273,6 +350,34 @@ async def get_balance(exchange: Optional[str] = None):
                         await client.close()
                     except:
                         pass
+        
+        # Hyperliquid
+        if exchange is None or exchange == "hyperliquid":
+            client = None
+            try:
+                keys = get_keys_or_env(None, "hyperliquid")
+                if not keys.get("private_key"):
+                    if exchange == "hyperliquid":
+                         print("[Balance] ⚠️ Hyperliquid skipped: No private key found")
+                else:
+                    print("[Balance] Fetching Hyperliquid balance...")
+                    client = await initialize_hyperliquid_client(keys)
+                    hyperliquid_balance = await get_hyperliquid_balance(client)
+                    print(f"[Balance] Hyperliquid: available=${hyperliquid_balance.get('available', 0):.2f}, total=${hyperliquid_balance.get('total', 0):.2f}")
+                    all_balances.append(hyperliquid_balance)
+            except Exception as e:
+                import traceback
+                print(f"[Balance] Hyperliquid error: {e}")
+                # traceback.print_exc()
+                if exchange == "hyperliquid": # Chỉ trả về error object nếu user thực sự request sàn này
+                    all_balances.append({
+                        'exchange': 'hyperliquid',
+                        'available': 0,
+                        'total': 0,
+                        'account_value': 0,
+                        'success': False,
+                        'error': str(e)
+                    })
         
         # Tính tổng
         total_available = sum(b.get('available', 0) for b in all_balances if b.get('success'))
@@ -396,8 +501,10 @@ async def place_unified_order(order: UnifiedOrderRequest):
         # Dispatch theo sàn
         if order.exchange == "lighter":
             result = await handle_lighter_order(order, keys)
-        else:
+        elif order.exchange == "aster":
             result = await handle_aster_order(order, keys)
+        else:  # hyperliquid
+            result = await handle_hyperliquid_order(order, keys)
 
         print("\n✅ ORDER PLACED SUCCESSFULLY")
         print(f"Order ID     : {result.get('order_id')}")
@@ -506,8 +613,17 @@ async def close_position(request: ClosePositionRequest):
                 entry_price=request.entry_price,
                 side=request.side
             )
-        else:
+        elif request.exchange == "aster":
             result = await handle_aster_close_position(
+                symbol=request.symbol,
+                percentage=request.percentage,
+                keys=keys,
+                position_id=request.position_id,
+                entry_price=request.entry_price,
+                side=request.side
+            )
+        else:  # hyperliquid
+            result = await handle_hyperliquid_close_position(
                 symbol=request.symbol,
                 percentage=request.percentage,
                 keys=keys,
@@ -530,4 +646,23 @@ async def close_position(request: ClosePositionRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/config-status")
+async def get_config_status():
+    """Trả về trạng thái cấu hình của các sàn"""
+    lighter_keys = get_keys_or_env(None, "lighter")
+    lighter = bool(lighter_keys.get("private_key"))
+    
+    aster_keys = get_keys_or_env(None, "aster")
+    aster = bool(aster_keys.get("api_key") and aster_keys.get("api_secret"))
+    
+    hyperliquid_keys = get_keys_or_env(None, "hyperliquid")
+    hyperliquid = bool(hyperliquid_keys.get("private_key"))
+    
+    return {
+        "lighter": lighter,
+        "aster": aster,
+        "hyperliquid": hyperliquid
+    }
 

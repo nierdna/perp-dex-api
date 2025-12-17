@@ -63,10 +63,14 @@ class LighterClient:
             print("\n🔗 Đang kết nối đến Lighter DEX...")
             
             # Create SignerClient
+            # Prepare keys dict for SDK
+            api_private_keys = {}
+            if self.private_key:
+                api_private_keys[self.api_key_index] = self.private_key
+
             self.signer_client = SignerClient(
                 url=self.url,
-                private_key=self.private_key,
-                api_key_index=self.api_key_index,
+                api_private_keys=api_private_keys,
                 account_index=self.account_index
             )
             

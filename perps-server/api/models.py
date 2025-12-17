@@ -14,12 +14,14 @@ class KeysConfig(BaseModel):
     aster_api_key: Optional[str] = None
     aster_secret_key: Optional[str] = None
     aster_api_url: Optional[str] = None
+    hyperliquid_private_key: Optional[str] = None
+    hyperliquid_testnet: Optional[bool] = False
 
 
 class MarketOrderRequest(BaseModel):
     """Market order request"""
     keys: Optional[KeysConfig] = Field(None, description="API keys (optional if configured in ENV)")
-    exchange: Literal["lighter", "aster"] = Field(..., description="lighter or aster")
+    exchange: Literal["lighter", "aster", "hyperliquid"] = Field(..., description="lighter, aster, or hyperliquid")
     symbol: str = Field(..., description="BTC, ETH, SOL, etc")
     side: Literal["long", "short"] = Field(..., description="long or short")
     size_usd: float = Field(..., gt=0, description="Position size in USD")
@@ -60,7 +62,7 @@ class UnifiedOrderRequest(BaseModel):
     keys: Optional[KeysConfig] = Field(
         None, description="API keys (optional, nếu không gửi sẽ dùng ENV trên server)"
     )
-    exchange: Literal["lighter", "aster"] = Field(..., description="lighter hoặc aster")
+    exchange: Literal["lighter", "aster", "hyperliquid"] = Field(..., description="lighter, aster, hoặc hyperliquid")
     symbol: str = Field(..., description="Base token, ví dụ: BTC, ETH, SOL")
     side: Literal["long", "short"] = Field(..., description="Hướng lệnh: long hoặc short")
     order_type: Literal["market", "limit"] = Field(..., description="Loại lệnh: market hoặc limit")

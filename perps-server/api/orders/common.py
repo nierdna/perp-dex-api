@@ -1,5 +1,5 @@
 """
-Order handlers for Lighter and Aster exchanges
+Order handlers for Lighter, Aster, and Hyperliquid exchanges
 """
 
 from typing import Optional
@@ -11,14 +11,25 @@ from perpsdex.lighter.core.risk import RiskManager as LighterRiskManager
 from perpsdex.aster.core.market import MarketData as AsterMarketData
 from perpsdex.aster.core.order import OrderExecutor as AsterOrderExecutor
 from perpsdex.aster.core.risk import RiskManager as AsterRiskManager
+from perpsdex.hyperliquid.core.market import HyperliquidMarketData
+from perpsdex.hyperliquid.core.order import HyperliquidOrderExecutor
+from perpsdex.hyperliquid.core.risk import HyperliquidRiskManager
 
 from api.models import UnifiedOrderRequest
 from api.utils import (
     initialize_lighter_client,
     initialize_aster_client,
+    initialize_hyperliquid_client,
     normalize_symbol,
     validate_tp_sl,
 )
+
+# Import Hyperliquid handlers
+from .hyperliquid import (
+    handle_hyperliquid_order,
+    handle_hyperliquid_close_position,
+)
+
 
 
 async def handle_lighter_order(order: UnifiedOrderRequest, keys: dict) -> dict:
