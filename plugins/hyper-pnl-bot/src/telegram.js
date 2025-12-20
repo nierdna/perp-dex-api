@@ -29,6 +29,7 @@ export async function sendReport(rep) {
 <b>💰 PnL Summary</b>
 • Realized: <b>${fmt(rep.realized)} USDC</b> ${realizedEmoji}
 • Fees: <code>-${feeVal.toFixed(2)} USDC</code>
+• Volume: <code>${Number(rep.volume).toLocaleString()} USDC</code>
 • <b>Net PnL: ${fmt(rep.net)} USDC</b> ${pnlEmoji}
 
 <b>💎 By Coin</b>

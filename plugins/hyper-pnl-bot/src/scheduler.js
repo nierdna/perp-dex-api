@@ -10,6 +10,8 @@ let lastCheckTokens = {};
 
 export function startScheduler() {
   const { scheduleTime, alertInit, happyPnl } = config.pnl;
+  const instanceId = Math.floor(Math.random() * 10000);
+  console.log(`🤖 Bot Instance ID: #${instanceId}`);
   console.log(`Scheduler started. Target Time: ${scheduleTime}, Run on Start: ${alertInit}`);
 
   // Start the Happy Monitor if configured
@@ -87,42 +89,43 @@ function startHappyMonitor(threshold) {
   setInterval(check, 3600000); // Check every 1 hour
 }
 
+let isScanning = false;
+
 async function run() {
+  if (isScanning) {
+    console.log("⚠️ Skipping scan: Another scan is currently in progress.");
+    return;
+  }
+  isScanning = true;
+
   const now = Date.now();
   console.log(`Running PnL check at ${new Date(now).toISOString()}...`);
 
   for (const w of wallets) {
     if (!w) continue;
 
-    // Determine start time:
-    // 1. If we have a last check time, continue from there (covers gaps/lag)
-    // 2. Otherwise (first run), look back by PNL_WINDOW
-    const from = lastCheckTokens[w] || (now - windowMs);
-
-    // Safety: Don't let the window be absurdly large if bot was off for days
-    // Max lookback is constrained to 3x interval or window to prevent fetching too much history on long downtime, 
-    // but ensures short lags are covered.
-    const effectiveFrom = Math.max(from, now - (Math.max(windowMs, intervalMs) * 3));
+    // ALWAYS look back by windowMs (Standard 24h or per config)
+    // This ensures reports are consistent "Daily Snapshots" regardless of restart times
+    const from = now - windowMs;
 
     try {
-      console.log(`Fetching data for ${w} from ${new Date(effectiveFrom).toISOString()}...`);
+      console.log(`Fetching data for ${w} from ${new Date(from).toISOString()}...`);
       const fills = await fetchFills(w);
-      const filtered = fills.filter(f => f.time >= effectiveFrom && f.time < now); // Strict inequality for end time to avoid overlaps if we user ranges carefully
+      // Filter for the exact window [now - 24h, now]
+      const filtered = fills.filter(f => f.time >= from && f.time <= now);
 
       if (filtered.length > 0) {
         console.log(`Found ${filtered.length} trades. Computing PnL...`);
-        const report = computePnL(w, filtered, now - effectiveFrom);
+        const report = computePnL(w, filtered, windowMs);
         await sendReport(report);
       } else {
         console.log(`No trades found for ${w} in this period.`);
       }
 
-      // Update check time ONLY after successful execution
-      lastCheckTokens[w] = now;
-
     } catch (e) {
       console.error(`Error processing wallet ${w}:`, e);
-      // Do NOT update lastCheckTokens[w], so retry will cover this period
     }
   }
+
+  isScanning = false;
 }

@@ -1,15 +1,18 @@
 export function computePnL(wallet, fills, windowMs) {
   let wins = 0, losses = 0, breakeven = 0;
-  let realized = 0, fee = 0;
+  let realized = 0, fee = 0, volume = 0;
   let relevantTrades = 0; // Only counts fills with non-zero PnL (usually closing fills)
   const byCoin = {};
 
   for (const f of fills) {
     const pnl = parseFloat(f.closedPnl || 0);
     const fe = parseFloat(f.fee || 0);
+    const sz = parseFloat(f.sz || 0);
+    const px = parseFloat(f.px || 0);
 
     realized += pnl;
     fee += fe;
+    volume += sz * px;
 
     // Only count as a "Trade" for Winrate stats if it realized PnL
     // (Opening fills usually have 0 PnL)
@@ -41,6 +44,7 @@ export function computePnL(wallet, fills, windowMs) {
     realized: realized.toFixed(4),
     fee: fee.toFixed(4),
     net: net.toFixed(4),
+    volume: volume.toFixed(2),
     byCoin,
     windowMs
   };
