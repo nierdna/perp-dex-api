@@ -1,6 +1,13 @@
 import fetch from 'node-fetch';
+import { getCachedFills, cacheFills } from './redis.js';
 
 export async function fetchFills(wallet) {
+  // Check Redis cache first
+  const cached = await getCachedFills(wallet);
+  if (cached) {
+    return cached;
+  }
+
   const url = "https://api-ui.hyperliquid.xyz/info";
   const body = {
     aggregateByTime: true,
@@ -23,5 +30,11 @@ export async function fetchFills(wallet) {
   }
 
   const data = await res.json();
-  return Array.isArray(data) ? data : [];
+  const fills = Array.isArray(data) ? data : [];
+
+  // Cache the result for 10 seconds
+  await cacheFills(wallet, fills);
+
+  return fills;
 }
+

@@ -61,12 +61,18 @@ export function startScheduler() {
 
 function startPnlMonitor(happyThreshold, stopLossThreshold) {
   // Import Redis helpers dynamically to avoid circular deps
-  import('./redis.js').then(({ wasStopLossAlertSent, markStopLossAlertSent, wasHappyAlertSent, markHappyAlertSent, getRedis }) => {
+  import('./redis.js').then(({
+    wasStopLossAlertSent, markStopLossAlertSent,
+    wasHappyAlertSent, markHappyAlertSent,
+    getRedis, savePnlSnapshot, registerActiveWallet
+  }) => {
 
-    // Test Redis connection
-    const redis = getRedis();
-    redis.connect().catch(err => {
-      console.error('❌ Redis connection failed:', err.message);
+    // Initialize Redis (auto-connects)
+    getRedis();
+
+    // Register all wallets as active
+    wallets.forEach(w => {
+      if (w) registerActiveWallet(w);
     });
 
     console.log(`🚀 PnL Monitor started! Checking every 30 seconds.`);
@@ -87,6 +93,9 @@ function startPnlMonitor(happyThreshold, stopLossThreshold) {
           if (filtered.length > 0) {
             const report = computePnL(w, filtered, window24h);
             const pnl = Number(report.net) || 0;
+
+            // Save PnL snapshot to Redis for other projects
+            await savePnlSnapshot(report);
 
             // Check Stop Loss
             if (stopLossThreshold !== 0 && pnl < stopLossThreshold) {
@@ -147,6 +156,10 @@ async function run() {
         console.log(`Found ${filtered.length} trades. Computing PnL...`);
         const report = computePnL(w, filtered, windowMs);
         await sendReport(report);
+
+        // Save daily report to Redis for historical tracking
+        const { saveDailyReport } = await import('./redis.js');
+        await saveDailyReport(report);
       } else {
         console.log(`No trades found for ${w} in this period.`);
       }
