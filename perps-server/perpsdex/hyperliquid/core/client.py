@@ -15,20 +15,25 @@ class HyperliquidClient:
     Sử dụng hyperliquid-python-sdk official
     """
     
-    def __init__(self, private_key: str, testnet: bool = False):
+    def __init__(self, private_key: str, testnet: bool = False, account_address: Optional[str] = None):
         """
         Khởi tạo Hyperliquid client
         
         Args:
             private_key: Private key (0x...)
             testnet: Sử dụng testnet hay mainnet (default: mainnet)
+            account_address: Địa chỉ ví chính (Master/Vault) để query/trade. 
+                           Nếu không có, sẽ dùng chính address của private_key.
         """
         self.private_key = private_key
         self.testnet = testnet
         
-        # Tạo account từ private key
+        # Tạo account từ private key (đây là Agent)
         self.account = Account.from_key(private_key)
-        self.address = self.account.address
+        self.agent_address = self.account.address
+        
+        # Nếu có account_address (Master), dùng nó. Nếu không, Agent tự trade cho mình.
+        self.address = account_address if account_address else self.agent_address
         
         # Xác định base URL
         if testnet:
@@ -40,7 +45,8 @@ class HyperliquidClient:
         self.info = Info(self.base_url, skip_ws=True)
         
         # Initialize Exchange API (trading, cần private key)
-        # account_address sẽ là address của wallet
+        # wallet: Account dùng để ký (Agent)
+        # account_address: Account chịu trách nhiệm về tiền và vị thế (Master)
         self.exchange = Exchange(
             wallet=self.account,
             base_url=self.base_url,
@@ -71,6 +77,7 @@ class HyperliquidClient:
                     "success": True,
                     "message": f"Kết nối Hyperliquid thành công",
                     "address": self.address,
+                    "agent_address": self.agent_address,
                     "account_value": account_value,
                     "testnet": self.testnet
                 }

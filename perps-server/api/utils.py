@@ -40,6 +40,8 @@ def get_keys_or_env(keys_config: Optional[KeysConfig], exchange: str) -> dict:
             or os.getenv("HYPERLIQUID_PRIVATE_KEY"),
             "testnet": (keys_config.hyperliquid_testnet if keys_config else None)
             or os.getenv("HYPERLIQUID_TESTNET", "false").lower() == "true",
+            "account_address": (keys_config.hyperliquid_account_address if keys_config else None)
+            or os.getenv("HYPERLIQUID_ACCOUNT_ADDRESS"),
         }
 
 
@@ -177,7 +179,8 @@ async def initialize_hyperliquid_client(keys: dict):
     
     client = HyperliquidClient(
         private_key=pk,
-        testnet=testnet
+        testnet=testnet,
+        account_address=keys.get("account_address")
     )
     
     result = await client.connect()

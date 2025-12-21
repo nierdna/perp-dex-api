@@ -99,14 +99,23 @@ class HyperliquidOrderExecutor:
             
             print(f"[Hyperliquid Market] {symbol} {side.upper()} size={size:.6f} @ ~{current_price:.2f} (limit={limit_price:.2f})")
             
-            # Đặt lệnh Market qua SDK
+            # ✅ Round size/price to avoid rounding errors in SDK
+            # Get szDecimals from meta
+            meta = self.info.meta()
+            sz_decimals = 0
+            for asset in meta.get("universe", []):
+                if asset.get("name") == symbol:
+                    sz_decimals = asset.get("szDecimals", 5)
+                    break
+            
+            size = round(size, sz_decimals)
+            limit_price = round(limit_price, 6) # Price usually 6 decimals max
             # Hyperliquid không có market order trực tiếp, dùng limit với IOC (Immediate or Cancel)
             order_result = self.exchange.market_open(
                 name=symbol,
                 is_buy=is_buy,
                 sz=size,
                 px=limit_price,  # Limit price cho slippage control
-                reduce_only=reduce_only
             )
             
             print(f"[Hyperliquid] Market order result: {order_result}")
@@ -212,7 +221,16 @@ class HyperliquidOrderExecutor:
             
             print(f"[Hyperliquid Limit] {symbol} {side.upper()} size={size:.6f} @ {limit_price:.2f}")
             
-            # Đặt lệnh Limit
+            # ✅ Round size/price to avoid rounding errors in SDK
+            meta = self.info.meta()
+            sz_decimals = 0
+            for asset in meta.get("universe", []):
+                if asset.get("name") == symbol:
+                    sz_decimals = asset.get("szDecimals", 5)
+                    break
+            
+            size = round(size, sz_decimals)
+            limit_price = round(limit_price, 6)
             # Đặt lệnh Limit
             order_type = {"limit": {"tif": "Alo"}} if post_only else {"limit": {"tif": "Gtc"}}
             
@@ -362,7 +380,16 @@ class HyperliquidOrderExecutor:
             
             print(f"[Hyperliquid Close] {symbol} close_size={close_size:.6f} @ ~{current_price:.2f}")
             
-            # Close position với market order (reduce_only=True)
+            # ✅ Round size/price to avoid rounding errors in SDK
+            meta = self.info.meta()
+            sz_decimals = 0
+            for asset in meta.get("universe", []):
+                if asset.get("name") == symbol:
+                    sz_decimals = asset.get("szDecimals", 5)
+                    break
+            
+            close_size = round(close_size, sz_decimals)
+            limit_price = round(limit_price, 6)
             close_result = self.exchange.market_close(
                 coin=symbol,
                 sz=close_size,

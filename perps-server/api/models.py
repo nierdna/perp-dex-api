@@ -16,6 +16,7 @@ class KeysConfig(BaseModel):
     aster_api_url: Optional[str] = None
     hyperliquid_private_key: Optional[str] = None
     hyperliquid_testnet: Optional[bool] = False
+    hyperliquid_account_address: Optional[str] = None
 
 
 class MarketOrderRequest(BaseModel):
