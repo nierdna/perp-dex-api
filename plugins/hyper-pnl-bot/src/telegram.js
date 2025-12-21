@@ -88,3 +88,38 @@ Keep it up! 💰💰💰`;
     console.error("Failed to send Happy Alert:", e);
   }
 }
+
+export async function sendStopLossAlert(rep, threshold) {
+  const { token, chatId } = config.telegram;
+  const pnl = Number(rep.net) || 0;
+
+  // Only trigger if PnL is BELOW the threshold (e.g. pnl < -40)
+  if (pnl >= threshold) return;
+
+  const text =
+    `🛑 <b>STOP LOSS ALERT!</b> 🛑
+<code>${rep.wallet}</code>
+
+⚠️ PnL (24h): <b>${pnl.toFixed(2)} USDC</b>
+🚫 Ngưỡng dừng: ${threshold} USDC
+
+❌ <b>Nghỉ ngơi đi bạn ơi! Đừng trade nữa hôm nay.</b>
+💡 Hãy xem lại chiến thuật và quay lại ngày mai.`;
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: "HTML"
+      })
+    });
+
+    if (res.ok) console.log(`🛑 Stop Loss Alert sent for ${rep.wallet} (${pnl} USDC)`);
+  } catch (e) {
+    console.error("Failed to send Stop Loss Alert:", e);
+  }
+}
+

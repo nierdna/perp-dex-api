@@ -21,7 +21,16 @@ const config = {
         scheduleTime: process.env.PNL_INTERVAL_TIME || "00:00",
         alertInit: process.env.ALERT_INIT === "1" || process.env.ALERT_INIT === "true",
         happyPnl: parseFloat(process.env.HAPPY_PNL || "0"),
+        stopLossPnl: parseFloat(process.env.STOP_LOSS_PNL || "-40"),
         windowRaw: process.env.PNL_WINDOW || "24h"
+    },
+    redis: {
+        host: process.env.REDIS_HOST || "localhost",
+        port: parseInt(process.env.REDIS_PORT || "6379"),
+        password: process.env.REDIS_PASSWORD || "",
+        username: process.env.REDIS_USERNAME || "default",
+        database: parseInt(process.env.REDIS_DATABASE || "0"),
+        family: parseInt(process.env.REDIS_FAMILY || "0")
     }
 };
 

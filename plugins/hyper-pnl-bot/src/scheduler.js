@@ -1,6 +1,6 @@
 import { fetchFills } from './hyperApi.js';
 import { computePnL } from './pnlEngine.js';
-import { sendReport, sendHappyAlert } from './telegram.js';
+import { sendReport, sendHappyAlert, sendStopLossAlert } from './telegram.js';
 import config from './config.js';
 
 const { wallets, intervalMs, windowMs } = config.pnl;
@@ -9,14 +9,14 @@ const { wallets, intervalMs, windowMs } = config.pnl;
 let lastCheckTokens = {};
 
 export function startScheduler() {
-  const { scheduleTime, alertInit, happyPnl } = config.pnl;
+  const { scheduleTime, alertInit, happyPnl, stopLossPnl } = config.pnl;
   const instanceId = Math.floor(Math.random() * 10000);
   console.log(`🤖 Bot Instance ID: #${instanceId}`);
   console.log(`Scheduler started. Target Time: ${scheduleTime}, Run on Start: ${alertInit}`);
 
-  // Start the Happy Monitor if configured
-  if (happyPnl !== 0) {
-    startHappyMonitor(happyPnl);
+  // Start the Happy/StopLoss Monitor if configured
+  if (happyPnl !== 0 || stopLossPnl !== 0) {
+    startPnlMonitor(happyPnl, stopLossPnl);
   }
 
   // 1. Check ALERT_INIT to decide whether to run immediately
@@ -59,34 +59,63 @@ export function startScheduler() {
   }, delayMs);
 }
 
-function startHappyMonitor(threshold) {
-  console.log(`🚀 Happy Monitor started! Checking every 1h if PnL (24h) > ${threshold} USDC`);
+function startPnlMonitor(happyThreshold, stopLossThreshold) {
+  // Import Redis helpers dynamically to avoid circular deps
+  import('./redis.js').then(({ wasStopLossAlertSent, markStopLossAlertSent, wasHappyAlertSent, markHappyAlertSent, getRedis }) => {
 
-  const check = async () => {
-    const now = Date.now();
-    const window24h = 24 * 3600000;
-    const from = now - window24h;
+    // Test Redis connection
+    const redis = getRedis();
+    redis.connect().catch(err => {
+      console.error('❌ Redis connection failed:', err.message);
+    });
 
-    for (const w of wallets) {
-      if (!w) continue;
-      try {
-        const fills = await fetchFills(w);
-        // Filter specifically for the rolling 24h window
-        const filtered = fills.filter(f => f.time >= from);
+    console.log(`🚀 PnL Monitor started! Checking every 30 seconds.`);
+    if (happyThreshold !== 0) console.log(`   ✅ Happy Alert: PnL > ${happyThreshold} USDC`);
+    if (stopLossThreshold !== 0) console.log(`   🛑 Stop Loss Alert: PnL < ${stopLossThreshold} USDC`);
 
-        if (filtered.length > 0) {
-          const report = computePnL(w, filtered, window24h);
-          await sendHappyAlert(report, threshold);
+    const check = async () => {
+      const now = Date.now();
+      const window24h = 24 * 3600000;
+      const from = now - window24h;
+
+      for (const w of wallets) {
+        if (!w) continue;
+        try {
+          const fills = await fetchFills(w);
+          const filtered = fills.filter(f => f.time >= from);
+
+          if (filtered.length > 0) {
+            const report = computePnL(w, filtered, window24h);
+            const pnl = Number(report.net) || 0;
+
+            // Check Stop Loss
+            if (stopLossThreshold !== 0 && pnl < stopLossThreshold) {
+              const alreadySent = await wasStopLossAlertSent(w);
+              if (!alreadySent) {
+                await sendStopLossAlert(report, stopLossThreshold);
+                await markStopLossAlertSent(w);
+              }
+            }
+
+            // Check Happy Alert
+            if (happyThreshold !== 0 && pnl > happyThreshold) {
+              const alreadySent = await wasHappyAlertSent(w);
+              if (!alreadySent) {
+                await sendHappyAlert(report, happyThreshold);
+                await markHappyAlertSent(w);
+              }
+            }
+          }
+        } catch (e) {
+          console.error(`PnL Monitor Error for ${w}:`, e.message);
         }
-      } catch (e) {
-        console.error(`Happy Monitor Error for ${w}:`, e);
       }
-    }
-  };
+    };
 
-  // Run immediately then interval
-  check();
-  setInterval(check, 3600000); // Check every 1 hour
+    // Run immediately then every 30 seconds
+    check();
+    setInterval(check, 30000);
+  });
 }
 
 let isScanning = false;
