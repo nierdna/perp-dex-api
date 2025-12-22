@@ -4,6 +4,7 @@ Hyperliquid Risk Manager - Quản lý TP/SL
 
 from typing import Dict, Any, Optional
 from hyperliquid.exchange import Exchange
+import traceback
 
 
 class HyperliquidRiskManager:
@@ -116,12 +117,15 @@ class HyperliquidRiskManager:
             print(f"[Hyperliquid TP] {symbol} {side} TP @ {tp_price}, size={size}")
             
             # Hyperliquid: limit order với reduce_only
-            # Trigger price = tp_price
-            tp_result = self.exchange.limit_order(
-                coin=symbol,
+            # TP = limit order at tp_price that closes position
+            order_type = {"limit": {"tif": "Gtc"}}  # Good till cancel
+            
+            tp_result = self.exchange.order(
+                name=symbol,
                 is_buy=is_buy,
                 sz=size,
-                limit_px=tp_price,
+                limit_px=float(tp_price),  # Ensure float
+                order_type=order_type,
                 reduce_only=True  # Chỉ close, không mở position mới
             )
             
@@ -186,14 +190,16 @@ class HyperliquidRiskManager:
             print(f"[Hyperliquid SL] {symbol} {side} SL @ {sl_price}, size={size}")
             
             # Hyperliquid: trigger order với trigger_px
-            # Sử dụng stop market order
-            sl_result = self.exchange.limit_order(
-                coin=symbol,
+            # SL = stop market order that triggers at sl_price
+            order_type = {"trigger": {"triggerPx": float(sl_price), "isMarket": True, "tpsl": "sl"}}
+            
+            sl_result = self.exchange.order(
+                name=symbol,
                 is_buy=is_buy,
                 sz=size,
-                limit_px=sl_price,
-                reduce_only=True,
-                order_type={"trigger": {"triggerPx": sl_price, "isMarket": True, "tpsl": "sl"}}
+                limit_px=float(sl_price),  # Ensure float
+                order_type=order_type,
+                reduce_only=True
             )
             
             print(f"[Hyperliquid] SL order result: {sl_result}")
@@ -224,6 +230,8 @@ class HyperliquidRiskManager:
             }
             
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return {
                 "success": False,
                 "error": f"Lỗi khi đặt SL order: {str(e)}"

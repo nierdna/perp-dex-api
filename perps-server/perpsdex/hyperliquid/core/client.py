@@ -46,12 +46,18 @@ class HyperliquidClient:
         
         # Initialize Exchange API (trading, cần private key)
         # wallet: Account dùng để ký (Agent)
-        # account_address: Account chịu trách nhiệm về tiền và vị thế (Master)
+        # vault_address: Địa chỉ Vault/Subaccount nếu Agent trade cho Vault
+        # Nếu account_address khác agent_address -> đang trade cho Vault
+        vault_addr = self.address if self.address != self.agent_address else None
+        
+        print(f"[HyperliquidClient] agent_address={self.agent_address}, vault_address={vault_addr}, target_address={self.address}")
+        
         self.exchange = Exchange(
             wallet=self.account,
             base_url=self.base_url,
-            account_address=self.address
+            vault_address=vault_addr  # ✅ Dùng vault_address thay vì account_address
         )
+
         
         self._connected = False
     

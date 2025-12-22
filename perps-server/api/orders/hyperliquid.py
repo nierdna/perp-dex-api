@@ -64,13 +64,21 @@ async def handle_hyperliquid_order(order: UnifiedOrderRequest, keys: dict) -> di
             leverage=int(order.leverage),
         )
     
-    if not result or not result.get("success"):
+    if not result:
+        print("[Hyperliquid] ❌ No result returned from executor")
+        raise HTTPException(
+            status_code=500,
+            detail="Hyperliquid: không nhận được phản hồi từ place_order"
+        )
+
+    if not result.get("success"):
+        error_msg = result.get("error", "Hyperliquid: đặt lệnh thất bại")
+        print(f"[Hyperliquid] ❌ Order Failed: {error_msg}")
         raise HTTPException(
             status_code=400,
-            detail=result.get("error", "Hyperliquid: đặt lệnh thất bại")
-            if result
-            else "Hyperliquid: không nhận được phản hồi từ place_order",
+            detail=error_msg
         )
+
     
     # TP/SL nếu có
     tp_sl_info = None

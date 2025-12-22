@@ -118,7 +118,7 @@ class HyperliquidOrderExecutor:
                 px=limit_price,  # Limit price cho slippage control
             )
             
-            print(f"[Hyperliquid] Market order result: {order_result}")
+            print(f"[Hyperliquid] [V2.1] Raw order result: {order_result}")
             
             # Parse result
             if order_result and "status" in order_result:
@@ -131,15 +131,32 @@ class HyperliquidOrderExecutor:
                     
                     if statuses and len(statuses) > 0:
                         status_info = statuses[0]
+                        
+                        # ✅ Check for internal error inside status_info
+                        if "error" in status_info:
+                            error_msg = status_info.get("error")
+                            return {
+                                "success": False,
+                                "error": f"Sàn từ chối lệnh: {error_msg}",
+                                "raw": order_result
+                            }
+                        
                         filled = status_info.get("filled", {})
                         
-                        # Extract fill info
-                        total_sz = float(filled.get("totalSz", size))
-                        avg_px = float(filled.get("avgPx", current_price))
+                        # Extract fill info - No more defaults if missing
+                        if not filled or "totalSz" not in filled:
+                             return {
+                                "success": False,
+                                "error": "Lệnh không lỗi nhưng không có dữ liệu khớp lệnh (Fill data missing)",
+                                "raw": order_result
+                            }
+
+                        total_sz = float(filled.get("totalSz"))
+                        avg_px = float(filled.get("avgPx"))
                         
                         return {
                             "success": True,
-                            "order_id": str(time.time()),  # Hyperliquid không trả order_id cho market
+                            "order_id": str(time.time()),
                             "symbol": symbol,
                             "side": "long" if is_buy else "short",
                             "entry_price": avg_px,
@@ -151,20 +168,19 @@ class HyperliquidOrderExecutor:
                     else:
                         return {
                             "success": False,
-                            "error": "Order status OK nhưng không có fill data",
+                            "error": "Phản hồi từ sàn không có thông tin chi tiết (statuses empty)",
                             "raw": order_result
                         }
                 else:
-                    # Order failed
                     return {
                         "success": False,
-                        "error": f"Order failed with status: {status}",
+                        "error": f"Sàn báo lỗi: {status}",
                         "raw": order_result
                     }
             else:
                 return {
                     "success": False,
-                    "error": "Invalid order result format",
+                    "error": "Định dạng phản hồi từ sàn không hợp lệ",
                     "raw": order_result
                 }
                 

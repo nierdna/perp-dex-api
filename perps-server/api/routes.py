@@ -506,11 +506,18 @@ async def place_unified_order(order: UnifiedOrderRequest):
         else:  # hyperliquid
             result = await handle_hyperliquid_order(order, keys)
 
-        print("\n✅ ORDER PLACED SUCCESSFULLY")
-        print(f"Order ID     : {result.get('order_id')}")
-        print(f"Entry Price  : {result.get('entry_price')}")
-        print(f"Position Size: {result.get('position_size')}")
-        print(f"{'=' * 60}\n")
+        # Kiểm tra kết quả
+        if result.get("success"):
+            print("\n✅ ORDER PLACED SUCCESSFULLY")
+            print(f"Order ID     : {result.get('order_id')}")
+            print(f"Entry Price  : {result.get('entry_price')}")
+            print(f"Position Size: {result.get('position_size')}")
+            print(f"{'=' * 60}\n")
+        else:
+            print("\n❌ ORDER FAILED")
+            print(f"Error: {result.get('error')}")
+            print(f"{'=' * 60}\n")
+            raise HTTPException(status_code=400, detail=result.get("error"))
 
         # Cập nhật DB sau khi gọi sàn thành công
         if update_order_after_result is not None:
@@ -536,6 +543,7 @@ async def place_unified_order(order: UnifiedOrderRequest):
                 print(f"[DB] Warning: lỗi khi update order sau khi đặt lệnh: {db_err}")
 
         return result
+
         
     except HTTPException as http_exc:
         # Nếu đã có DB record thì cập nhật trạng thái rejected/error

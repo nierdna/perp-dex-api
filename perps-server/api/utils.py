@@ -169,7 +169,9 @@ async def initialize_hyperliquid_client(keys: dict):
     else:
         masked_pk = None
     
-    print(f"[HyperliquidKeys] testnet={testnet}, private_key={masked_pk}")
+    account_address = keys.get("account_address")
+    
+    print(f"[HyperliquidKeys] testnet={testnet}, private_key={masked_pk}, account_address={account_address}")
     
     if not pk:
         raise HTTPException(
