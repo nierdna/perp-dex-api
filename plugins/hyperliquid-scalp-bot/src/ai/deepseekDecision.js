@@ -10,15 +10,37 @@ export async function getDecision(signal) {
   }
 
   const prompt = `
-Đóng vai một chuyên gia giao dịch Crypto Scalping chuyên nghiệp. Hãy phân tích dữ liệu kỹ thuật dưới đây cho cặp ${signal.symbol}/USD (khung ${signal.interval || '15m'}) và đưa ra quyết định: LONG, SHORT, hay ĐỨNG NGOÀI (WAIT).
+Đóng vai một chuyên gia giao dịch Crypto Scalping chuyên nghiệp. Hãy phân tích dữ liệu kỹ thuật đa khung thời gian (Multi-Timeframe) dưới đây cho cặp ${signal.symbol}/USD và đưa ra quyết định: LONG, SHORT, hay ĐỨNG NGOÀI (WAIT).
 
-DỮ LIỆU THỊ TRƯỜNG:
-- Xu hướng (EMA): ${signal.trend || 'Không rõ'}
-- RSI: ${signal.rsi || 'Không rõ'} / Bias: ${signal.bias}
-- Động lượng (Momentum): ${signal.momentum}
-- Cấu trúc thị trường: ${signal.structure || 'Không rõ'}
-- Biến động (ATR): ${signal.atr || 'Không rõ'}
-- Funding Rate: ${signal.funding || 'Không rõ'}
+DỮ LIỆU THỊ TRƯỜNG (Multi-Timeframe Analysis):
+
+📊 15M - MARKET REGIME (Xu hướng tổng thể):
+- Regime: ${signal.regime_15m || 'unknown'}
+- Cross: ${signal.regime_cross || 'none'} ${signal.regime_cross === 'golden_cross' ? '🟢' : signal.regime_cross === 'death_cross' ? '🔴' : ''}
+- EMA 50: ${signal.regime_ema50} | EMA 200: ${signal.regime_ema200}
+- RSI (14): ${signal.regime_rsi14}
+
+📈 5M - BIAS & STRUCTURE (Xu hướng ngắn hạn):
+- Bias: ${signal.bias_5m || 'unknown'}
+- Cross: ${signal.bias_cross || 'none'} ${signal.bias_cross === 'golden_cross' ? '🟢 (Setup!)' : signal.bias_cross === 'death_cross' ? '🔴 (Setup!)' : ''}
+- EMA 9: ${signal.bias_ema9} | EMA 26: ${signal.bias_ema26}
+- RSI (7): ${signal.bias_rsi7}
+- ATR: ${signal.bias_atr}
+
+⚡ 1M - ENTRY TIMING (Điểm vào lệnh):
+- Status: ${signal.entry_1m || 'unknown'}
+- Cross: ${signal.entry_cross || 'none'} ${signal.entry_cross === 'golden_cross' ? '🟢 (ENTRY!)' : signal.entry_cross === 'death_cross' ? '🔴 (ENTRY!)' : ''}
+- EMA 9: ${signal.entry_ema9} | EMA 26: ${signal.entry_ema26}
+- RSI (7): ${signal.entry_rsi7}
+
+🔧 THÔNG TIN KHÁC:
+- Giá hiện tại: ${signal.price}
+- Funding Rate: ${signal.funding}
+
+LƯU Ý QUAN TRỌNG:
+- Chỉ vào lệnh khi CẢ 3 KHUNG ĐỒNG THUẬN (15m regime + 5m bias + 1m entry cùng hướng)
+- Ưu tiên NO_TRADE nếu có xung đột giữa các khung
+- Golden/Death Cross trên 1m là tín hiệu entry mạnh nhất
 
 ĐỊNH DẠNG OUTPUT (CHỈ TRẢ VỀ JSON):
 {

@@ -9,6 +9,8 @@ import { getDecision } from './ai/deepseekDecision.js'
 import { isValidSignal } from './risk/riskManager.js'
 import { notify } from './notify/telegram.js'
 
+import { saveLog } from './data/db.js'
+
 const app = express()
 app.use(cors())
 app.use(express.json())
@@ -35,7 +37,29 @@ app.post('/run-scalp', async (req, res) => {
         // 3. AI Analysis
         const decision = await getDecision(signal)
 
-        // 4. Notify if valid
+        // 4. Lưu Log vào DB (Manual Trigger)
+        saveLog({
+            strategy: 'SCALP_01_MANUAL',
+            symbol: signal.symbol,
+            timeframe: 'Multi-TF',
+            price: signal.price,
+            ai_action: decision.action,
+            ai_confidence: decision.confidence,
+            ai_reason: decision.reason,
+            ai_full_response: decision,
+            market_snapshot: {
+                regime: indicators.regime_15m,
+                bias: indicators.bias_5m,
+                entry: indicators.entry_1m,
+                ema_cross: {
+                    r: indicators.regime_cross,
+                    b: indicators.bias_cross,
+                    e: indicators.entry_cross
+                }
+            }
+        })
+
+        // 5. Notify if valid
         let notifStatus = 'Skipped (Low Confidence)'
         if (isValidSignal(decision)) {
             notify(decision)

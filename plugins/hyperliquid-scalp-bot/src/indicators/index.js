@@ -1,56 +1,138 @@
 import { RSI, EMA, ATR } from 'technicalindicators'
 
 export function calcIndicators(market) {
-  if (!market || !market.candles || market.candles.length < 50) {
+  if (!market || !market.candles_15m || !market.candles_5m || !market.candles_1m) {
     return {
-      trend: 'unknown',
-      rsi: 50,
-      atr: 0,
-      structure: 'unknown'
+      regime_15m: 'unknown',
+      bias_5m: 'unknown',
+      entry_1m: 'unknown'
     }
   }
 
-  // Hyperliquid candles: { t, o, h, l, c, v }
-  // technicalindicators cần mảng số
-  const closes = market.candles.map(c => parseFloat(c.c))
-  const highs = market.candles.map(c => parseFloat(c.h))
-  const lows = market.candles.map(c => parseFloat(c.l))
+  // Helper: Tính indicators cho 1 khung thời gian
+  function analyzeTimeframe(candles) {
+    if (candles.length < 50) return null
 
-  // 1. RSI (14)
-  const rsiValues = RSI.calculate({
-    values: closes,
-    period: 14
-  })
-  const currentRsi = rsiValues[rsiValues.length - 1]
+    const closes = candles.map(c => parseFloat(c.c))
+    const highs = candles.map(c => parseFloat(c.h))
+    const lows = candles.map(c => parseFloat(c.l))
 
-  // 2. EMA Trend (EMA 50 vs EMA 200)
-  const ema50 = EMA.calculate({ period: 50, values: closes })
-  const ema200 = EMA.calculate({ period: 200, values: closes })
+    // RSI
+    const rsi7 = RSI.calculate({ values: closes, period: 7 })
+    const rsi14 = RSI.calculate({ values: closes, period: 14 })
 
-  const lastEma50 = ema50[ema50.length - 1]
-  const lastEma200 = ema200[ema200.length - 1]
+    // EMA Short
+    const ema9 = EMA.calculate({ period: 9, values: closes })
+    const ema26 = EMA.calculate({ period: 26, values: closes })
 
-  let trend = 'sideways'
-  if (lastEma50 > lastEma200) trend = 'bullish'
-  else if (lastEma50 < lastEma200) trend = 'bearish'
+    // EMA Long
+    const ema50 = EMA.calculate({ period: 50, values: closes })
+    const ema200 = EMA.calculate({ period: 200, values: closes })
 
-  // 3. ATR (Volatility)
-  const atrValues = ATR.calculate({
-    high: highs,
-    low: lows,
-    close: closes,
-    period: 14
-  })
-  const currentAtr = atrValues[atrValues.length - 1]
+    // ATR
+    const atr = ATR.calculate({ high: highs, low: lows, close: closes, period: 14 })
+
+    return {
+      rsi7: rsi7[rsi7.length - 1],
+      rsi14: rsi14[rsi14.length - 1],
+      ema9: ema9[ema9.length - 1],
+      ema26: ema26[ema26.length - 1],
+      ema50: ema50[ema50.length - 1],
+      ema200: ema200[ema200.length - 1],
+      atr: atr[atr.length - 1],
+      prevEma9: ema9[ema9.length - 2],
+      prevEma26: ema26[ema26.length - 2],
+      prevEma50: ema50[ema50.length - 2],
+      prevEma200: ema200[ema200.length - 2]
+    }
+  }
+
+  // Phân tích 3 khung
+  const tf15m = analyzeTimeframe(market.candles_15m)
+  const tf5m = analyzeTimeframe(market.candles_5m)
+  const tf1m = analyzeTimeframe(market.candles_1m)
+
+  if (!tf15m || !tf5m || !tf1m) {
+    return { regime_15m: 'insufficient_data', bias_5m: 'insufficient_data', entry_1m: 'insufficient_data' }
+  }
+
+  // 15m: Market Regime
+  let regime15m = 'ranging'
+  let regimeCross = 'none'
+  if (tf15m.ema50 && tf15m.ema200) {
+    if (tf15m.ema50 > tf15m.ema200) {
+      regime15m = 'trending_bull'
+      if (tf15m.prevEma50 && tf15m.prevEma200 && tf15m.prevEma50 <= tf15m.prevEma200) {
+        regimeCross = 'golden_cross'
+      }
+    } else if (tf15m.ema50 < tf15m.ema200) {
+      regime15m = 'trending_bear'
+      if (tf15m.prevEma50 && tf15m.prevEma200 && tf15m.prevEma50 >= tf15m.prevEma200) {
+        regimeCross = 'death_cross'
+      }
+    }
+  }
+
+  // 5m: Bias + Structure
+  let bias5m = 'neutral'
+  let biasCross = 'none'
+  if (tf5m.ema9 && tf5m.ema26) {
+    if (tf5m.ema9 > tf5m.ema26) {
+      bias5m = 'bullish'
+      if (tf5m.prevEma9 && tf5m.prevEma26 && tf5m.prevEma9 <= tf5m.prevEma26) {
+        biasCross = 'golden_cross'
+      }
+    } else if (tf5m.ema9 < tf5m.ema26) {
+      bias5m = 'bearish'
+      if (tf5m.prevEma9 && tf5m.prevEma26 && tf5m.prevEma9 >= tf5m.prevEma26) {
+        biasCross = 'death_cross'
+      }
+    }
+  }
+
+  // 1m: Entry Timing
+  let entry1m = 'wait'
+  let entryCross = 'none'
+  if (tf1m.ema9 && tf1m.ema26) {
+    if (tf1m.ema9 > tf1m.ema26) {
+      entry1m = 'long_ready'
+      if (tf1m.prevEma9 && tf1m.prevEma26 && tf1m.prevEma9 <= tf1m.prevEma26) {
+        entryCross = 'golden_cross'
+      }
+    } else if (tf1m.ema9 < tf1m.ema26) {
+      entry1m = 'short_ready'
+      if (tf1m.prevEma9 && tf1m.prevEma26 && tf1m.prevEma9 >= tf1m.prevEma26) {
+        entryCross = 'death_cross'
+      }
+    }
+  }
 
   return {
-    trend: trend, // bullish | bearish
-    rsi: parseFloat(currentRsi.toFixed(2)),
-    atr: parseFloat(currentAtr.toFixed(4)),
-    structure: 'calculating...', // Để AI tự đánh giá thêm
-    funding: market.funding,
+    // 15m - Market Regime
+    regime_15m: regime15m,
+    regime_cross: regimeCross,
+    regime_ema50: tf15m.ema50 ? parseFloat(tf15m.ema50.toFixed(2)) : null,
+    regime_ema200: tf15m.ema200 ? parseFloat(tf15m.ema200.toFixed(2)) : null,
+    regime_rsi14: tf15m.rsi14 ? parseFloat(tf15m.rsi14.toFixed(2)) : null,
+
+    // 5m - Bias & Structure
+    bias_5m: bias5m,
+    bias_cross: biasCross,
+    bias_ema9: tf5m.ema9 ? parseFloat(tf5m.ema9.toFixed(2)) : null,
+    bias_ema26: tf5m.ema26 ? parseFloat(tf5m.ema26.toFixed(2)) : null,
+    bias_rsi7: tf5m.rsi7 ? parseFloat(tf5m.rsi7.toFixed(2)) : null,
+    bias_atr: tf5m.atr ? parseFloat(tf5m.atr.toFixed(4)) : null,
+
+    // 1m - Entry Timing
+    entry_1m: entry1m,
+    entry_cross: entryCross,
+    entry_ema9: tf1m.ema9 ? parseFloat(tf1m.ema9.toFixed(2)) : null,
+    entry_ema26: tf1m.ema26 ? parseFloat(tf1m.ema26.toFixed(2)) : null,
+    entry_rsi7: tf1m.rsi7 ? parseFloat(tf1m.rsi7.toFixed(2)) : null,
+
+    // Common
     price: market.price,
     symbol: market.symbol,
-    interval: process.env.TIMEFRAME || '15m'
+    funding: market.funding
   }
 }

@@ -29,11 +29,11 @@ export function notify(decision) {
 ${icon} <b>SIGNAL ALERT: ${decision.action}</b> ${icon}
 
 🤖 <b>Confidence:</b> ${confidencePercent}%
+💡 <b>Reason:</b> ${decision.reason}
 🎯 <b>Entry:</b> ${decision.entry}
 🛑 <b>Stop Loss:</b> ${decision.stop_loss_logic}
 💰 <b>Take Profit:</b> ${decision.take_profit_logic.join(', ')}
 
-<i>Powered by DeepSeek AI</i>
 `
 
   sendMessage(message)

@@ -2,18 +2,20 @@ import axios from 'axios'
 
 const API_URL = 'https://api.hyperliquid.xyz/info'
 const SYMBOL = process.env.SYMBOL || 'ETH'
-const INTERVAL = process.env.TIMEFRAME || '15m'
 
-async function getCandles() {
+async function getCandles(interval) {
   try {
+    // Tính số giờ cần lấy dựa trên interval để đủ 250 nến
+    const hoursNeeded = interval === '15m' ? 63 : interval === '5m' ? 21 : 5 // 15m: 250*15/60=62.5h, 5m: 250*5/60=20.8h, 1m: 250/60=4.2h
+    const startTime = Date.now() - (hoursNeeded * 60 * 60 * 1000)
+
     const response = await axios.post(API_URL, {
       type: 'candleSnapshot',
-      req: { coin: SYMBOL, interval: INTERVAL, startTime: Date.now() - 24 * 60 * 60 * 1000 } // req logic vary, often just coin/interval implies recent
+      req: { coin: SYMBOL, interval: interval, startTime: startTime }
     })
-    // API trả về mảng nến: { t, o, h, l, c, v }
     return response.data
   } catch (error) {
-    console.error('❌ Get Candles Error:', error.message)
+    console.error(`❌ Get Candles Error (${interval}):`, error.message)
     return []
   }
 }
@@ -29,10 +31,15 @@ async function getMeta() {
 }
 
 export async function getMarketSnapshot() {
-  // Chạy song song 2 request cho nhanh
-  const [candles, meta] = await Promise.all([getCandles(), getMeta()])
+  // Lấy 3 khung thời gian song song
+  const [candles15m, candles5m, candles1m, meta] = await Promise.all([
+    getCandles('15m'),
+    getCandles('5m'),
+    getCandles('1m'),
+    getMeta()
+  ])
 
-  if (!candles.length || !meta) {
+  if (!candles15m.length || !candles5m.length || !candles1m.length || !meta) {
     console.warn('⚠️ Market data incomplete')
     return null
   }
@@ -51,7 +58,12 @@ export async function getMarketSnapshot() {
   return {
     symbol: SYMBOL,
     price: currentPrice,
-    candles: candles, // Array of {t, o, h, l, c, v}
+
+    // Multi-timeframe candles
+    candles_15m: candles15m,
+    candles_5m: candles5m,
+    candles_1m: candles1m,
+
     funding: fundingRate,
     openInterest: parseFloat(assetCtx.openInterest),
     // Mock account vì ta không login
