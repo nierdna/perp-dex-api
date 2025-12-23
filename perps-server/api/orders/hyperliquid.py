@@ -2,7 +2,7 @@
 from typing import Optional
 from fastapi import HTTPException
 
-from api.models import UnifiedOrderRequest
+from api.models import UnifiedOrderRequest, UpdateTPSLRequest
 from api.utils import (
     initialize_hyperliquid_client,
     normalize_symbol,
@@ -83,7 +83,7 @@ async def handle_hyperliquid_order(order: UnifiedOrderRequest, keys: dict) -> di
     # TP/SL nếu có
     tp_sl_info = None
     if order.tp_price or order.sl_price:
-        risk_manager = HyperliquidRiskManager(client.get_exchange_api(), client.get_address())
+        risk_manager = HyperliquidRiskManager(client.get_exchange_api(), client.get_info_api(), client.get_address())
         position_size = result.get("position_size") or result.get("filled_size") or result.get("size")
         
         if position_size is None:
@@ -214,3 +214,31 @@ async def handle_hyperliquid_close_position(
         "close_price": result.get('close_price'),
         "pnl_percent": position.get('pnl_percent')
     }
+
+
+async def handle_hyperliquid_update_tp_sl(request: UpdateTPSLRequest, keys: dict) -> dict:
+    """Xử lý update TP/SL cho lệnh Hyperliquid"""
+    client = await initialize_hyperliquid_client(keys)
+    norm = normalize_symbol("hyperliquid", request.symbol)
+    symbol = norm["symbol"]
+
+    executor = HyperliquidOrderExecutor(
+        client.get_exchange_api(),
+        client.get_info_api(),
+        client.get_address()
+    )
+
+    result = await executor.update_tp_sl(
+        symbol=symbol,
+        side=request.side,
+        tp_price=request.tp_price,
+        sl_price=request.sl_price
+    )
+    
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=400,
+            detail=result.get("error")
+        )
+
+    return result

@@ -14,14 +14,140 @@ class HyperliquidRiskManager:
     Đặt Take Profit và Stop Loss orders
     """
     
-    def __init__(self, exchange_api: Exchange, address: str):
+    def __init__(self, exchange_api: Exchange, info_api: Any, address: str):
         """
         Args:
             exchange_api: Hyperliquid Exchange API instance
+            info_api: Hyperliquid Info API instance
             address: Wallet address
         """
         self.exchange = exchange_api
+        self.info = info_api
         self.address = address
+    
+    async def update_tp_sl(
+        self,
+        symbol: str,
+        side: str,  # "long" or "short" of the POSITION
+        tp_price: Optional[float] = None,
+        sl_price: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Cập nhật TP/SL (Cancel cũ -> Đặt mới)
+        
+        Args:
+            symbol: Symbol name
+            side: Side của POSITION (Long/Short)
+            tp_price: Giá TP mới
+            sl_price: Giá SL mới
+        """
+        results = {
+            "success": True,
+            "cancelled": [],
+            "new_tp": None,
+            "new_sl": None
+        }
+        
+        try:
+            # 1. Lấy thông tin position hiện tại để biết size
+            user_state = self.info.user_state(self.address)
+            position_size = 0.0
+            
+            # Find position for symbol
+            for pos in user_state.get("assetPositions", []):
+                p = pos.get("position", {})
+                if p.get("coin") == symbol:
+                    position_size = float(p.get("szi", 0))
+                    # Verify side matches
+                    pos_side = "long" if position_size > 0 else "short"
+                    # Nếu side truyền vào khác side position, có thể user đang muốn setup cho lệnh đang treo?
+                    # Tạm thời ưu tiên size thực tế
+                    break
+            
+            # Nếu không có position nhưng user vẫn muốn update (cho lệnh treo?)
+            # Thì ta phải tìm size từ các lệnh open orders?
+            # Hiện tại logic đơn giản: Lấy size từ position thực tế.
+            # Nếu position_size == 0, ta không thể đặt TP/SL close position được.
+            
+            if position_size == 0:
+                # Fallback: Check if there's an open Limit order?
+                # Nhưng logic này phức tạp. Tạm thời báo lỗi hoặc cảnh báo.
+                pass
+
+            target_size = abs(position_size)
+            if target_size == 0:
+                return {
+                    "success": False,
+                    "error": f"Không tìm thấy position đang mở cho {symbol} để đặt TP/SL"
+                }
+
+            # 2. Cancel TP/SL cũ
+            # Lấy open orders
+            open_orders = self.info.open_orders(self.address)
+            orders_to_cancel = []
+            
+            for order in open_orders:
+                if order.get("coin") == symbol:
+                    oid = order.get("oid")
+                    order_type = order.get("orderType", "")
+                    # Nếu là TP (Limit Reduce-only) hoặc SL (Trigger Reduce-only)
+                    # Cách nhận biết: 
+                    # - TP thường là Limit Order, reduceOnly = true
+                    # - SL thường là Trigger Order, reduceOnly = true
+                    # Tuy nhiên SDK trả về orderType có thể khác.
+                    
+                    is_trigger = "trigger" in str(order) or order.get("triggerCondition")
+                    is_limit = order.get("limitPx") and not is_trigger
+                    
+                    # Logic đơn giản: Hủy tất cả lệnh Trigger và Limit ngược chiều (Close) của symbol này
+                    # Long Position -> Close là Sell
+                    # Short Position -> Close là Buy
+                    
+                    is_buy_order = order.get("side") == "B"
+                    is_close_side = (side.lower() == "long" and not is_buy_order) or \
+                                    (side.lower() == "short" and is_buy_order)
+                    
+                    if is_close_side and (order.get("reduceOnly") or is_trigger):
+                        orders_to_cancel.append({"coin": symbol, "oid": oid})
+            
+            # Thực hiện Cancel
+            if orders_to_cancel:
+                print(f"[Hyperliquid] Cancelling {len(orders_to_cancel)} old TP/SL orders for {symbol}")
+                for cancel_req in orders_to_cancel:
+                    try:
+                        self.exchange.cancel(cancel_req["coin"], cancel_req["oid"])
+                        results["cancelled"].append(cancel_req["oid"])
+                    except Exception as e:
+                        print(f"Failed to cancel order {cancel_req['oid']}: {e}")
+
+            # 3. Đặt lệnh mới
+            # Dùng hàm place_tp_sl_orders có sẵn
+            # Entry price không quan trọng cho TP/SL limit/trigger
+            new_orders = await self.place_tp_sl_orders(
+                symbol=symbol,
+                side=side,
+                size=target_size,
+                entry_price=0, # Placeholder
+                tp_price=tp_price,
+                sl_price=sl_price
+            )
+            
+            results["new_tp"] = new_orders.get("tp")
+            results["new_sl"] = new_orders.get("sl")
+            
+            if not new_orders.get("success"):
+                results["success"] = False
+                results["error"] = new_orders.get("error", "Lỗi khi đặt lệnh mới")
+            
+            return results
+            
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return {
+                "success": False,
+                "error": f"Lỗi khi update TP/SL: {str(e)}"
+            }
     
     async def place_tp_sl_orders(
         self,

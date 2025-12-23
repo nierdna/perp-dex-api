@@ -76,3 +76,14 @@ class UnifiedOrderRequest(BaseModel):
     client_order_id: Optional[str] = Field(None, description="ID phía client để idempotent/tracking (optional)")
     tag: Optional[str] = Field(None, description="Nhãn chiến lược / nguồn lệnh (optional)")
 
+
+class UpdateTPSLRequest(BaseModel):
+    """
+    Request update TP/SL
+    """
+    exchange: Literal["hyperliquid"] = Field(..., description="Currently only supports hyperliquid")
+    symbol: str = Field(..., description="BTC, ETH, etc")
+    side: Literal["long", "short"] = Field(..., description="Side của position (để update TP/SL lệnh close)")
+    tp_price: Optional[float] = Field(None, gt=0, description="New TP price")
+    sl_price: Optional[float] = Field(None, gt=0, description="New SL price")
+

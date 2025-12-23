@@ -6,7 +6,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 
-from api.models import UnifiedOrderRequest, ClosePositionRequest
+from api.models import UnifiedOrderRequest, ClosePositionRequest, UpdateTPSLRequest
 from api.orders import (
     handle_lighter_order,
     handle_aster_order,
@@ -14,6 +14,7 @@ from api.orders import (
     handle_aster_close_position,
     handle_hyperliquid_order,
     handle_hyperliquid_close_position,
+    handle_hyperliquid_update_tp_sl,
 )
 from api.utils import get_keys_or_env, initialize_lighter_client, initialize_aster_client, initialize_hyperliquid_client
 from api.data import (
@@ -648,6 +649,46 @@ async def close_position(request: ClosePositionRequest):
         
         return result
         
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/order/update-tp-sl")
+async def update_tp_sl(request: UpdateTPSLRequest):
+    """
+    Cập nhật TP/SL (Cancel lệnh cũ & Đặt lệnh mới)
+    
+    Chỉ hỗ trợ Hyperliquid hiện tại.
+    """
+    try:
+        print(f"\n{'=' * 60}")
+        print("🔄 UPDATE TP/SL REQUEST")
+        print(f"{'=' * 60}")
+        print(f"Exchange   : {request.exchange.upper()}")
+        print(f"Symbol     : {request.symbol}")
+        print(f"Side       : {request.side.upper()}")
+        print(f"TP Price   : {request.tp_price}")
+        print(f"SL Price   : {request.sl_price}")
+        
+        keys = get_keys_or_env(None, request.exchange)
+        
+        if request.exchange == "hyperliquid":
+            result = await handle_hyperliquid_update_tp_sl(request, keys)
+        else:
+            raise HTTPException(status_code=400, detail=f"Update TP/SL not supported for {request.exchange}")
+            
+        print("\n✅ TP/SL UPDATED SUCCESSFULLY")
+        print(f"Cancelled  : {result.get('cancelled')}")
+        print(f"New TP     : {result.get('new_tp')}")
+        print(f"New SL     : {result.get('new_sl')}")
+        print(f"{'=' * 60}\n")
+        
+        return result
+
     except HTTPException:
         raise
     except Exception as e:

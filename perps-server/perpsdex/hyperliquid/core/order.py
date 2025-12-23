@@ -5,6 +5,7 @@ Hyperliquid Order Executor - Đặt lệnh Market/Limit
 from typing import Dict, Any, Optional
 from hyperliquid.exchange import Exchange
 from hyperliquid.info import Info
+from perpsdex.hyperliquid.core.risk import HyperliquidRiskManager
 import time
 
 
@@ -25,6 +26,7 @@ class HyperliquidOrderExecutor:
         self.exchange = exchange_api
         self.info = info_api
         self.address = address
+        self.risk_manager = HyperliquidRiskManager(self.exchange, self.info, self.address)
     
     async def place_market_order(
         self,
@@ -337,6 +339,7 @@ class HyperliquidOrderExecutor:
         try:
             # Lấy current position
             user_state = self.info.user_state(self.address)
+            self.risk_manager = HyperliquidRiskManager(self.exchange, self.info, self.address)
             if not user_state:
                 return {
                     "success": False,
@@ -436,3 +439,20 @@ class HyperliquidOrderExecutor:
                 "error": f"Lỗi khi close position: {str(e)}",
                 "exception": str(e)
             }
+
+    async def update_tp_sl(
+        self,
+        symbol: str,
+        side: str,
+        tp_price: Optional[float] = None,
+        sl_price: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Update TP/SL for a position
+        """
+        return await self.risk_manager.update_tp_sl(
+            symbol=symbol,
+            side=side,
+            tp_price=tp_price,
+            sl_price=sl_price
+        )

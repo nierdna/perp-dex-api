@@ -7,4 +7,5 @@ from .common import (
 from .hyperliquid import (
     handle_hyperliquid_order,
     handle_hyperliquid_close_position,
+    handle_hyperliquid_update_tp_sl,
 )
