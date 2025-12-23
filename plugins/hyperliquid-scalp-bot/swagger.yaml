@@ -1,0 +1,27 @@
+openapi: 3.0.0
+info:
+  title: Hyperliquid Scalp Bot API
+  version: 1.0.0
+paths:
+  /run-scalp:
+    post:
+      summary: Manually trigger the scalp cycle
+      responses:
+        '200':
+          description: Detailed analysis result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  market_ctx:
+                    type: object
+                  ai_input:
+                    type: string
+                    description: The exact prompt sent to DeepSeek
+                  ai_output:
+                    type: object
+                  notification:
+                    type: string
