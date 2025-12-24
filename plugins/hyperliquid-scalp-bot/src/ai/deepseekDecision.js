@@ -1,4 +1,4 @@
-import axios from 'axios'
+import http from '../utils/httpClient.js'
 
 const DEEPSEEK_ENDPOINT = 'https://api.deepseek.com/chat/completions'
 
@@ -70,7 +70,7 @@ HÃY SUY LUẬN VÀ TRẢ LỜI JSON:
 `
 
   try {
-    const response = await axios.post(
+    const response = await http.post(
       DEEPSEEK_ENDPOINT,
       {
         model: "deepseek-chat", // Hoặc deepseek-coder tuỳ account
@@ -97,12 +97,13 @@ HÃY SUY LUẬN VÀ TRẢ LỜI JSON:
     // Trả về cả decision lẫn prompt đầu vào để debug
     return {
       ...decision,
+      symbol: signal.symbol,
       debug_input: prompt
     }
 
   } catch (error) {
     console.error('❌ DeepSeek API Error:', error.response?.data || error.message)
     // Fallback an toàn
-    return { action: 'NO_TRADE', confidence: 0, reason: "API Error", debug_input: prompt }
+    return { action: 'NO_TRADE', confidence: 0, reason: "API Error", symbol: signal.symbol, debug_input: prompt }
   }
 }

@@ -1,4 +1,4 @@
-import axios from 'axios'
+import http from '../utils/httpClient.js'
 
 export async function sendMessage(text) {
   const token = process.env.TELEGRAM_BOT_TOKEN
@@ -10,7 +10,7 @@ export async function sendMessage(text) {
   }
 
   try {
-    await axios.post(`https://api.telegram.org/bot${token}/sendMessage`, {
+    await http.post(`https://api.telegram.org/bot${token}/sendMessage`, {
       chat_id: chatId,
       text: text,
       parse_mode: 'HTML' // Dùng HTML cho dễ format đậm nhạt
@@ -27,6 +27,14 @@ export async function sendMessage(text) {
 function cleanText(text) {
   if (!text) return text
   
+  // Fix case AI output bị xuống dòng/bullet kỳ lạ: "RSI\n• 7. = 65.08" hoặc "RSI• 7. = 65.08"
+  // Chuẩn hóa về "RSI(7) = 65.08"
+  text = text.replace(/RSI\s*(?:\r?\n\s*)?•\s*(\d+)\.\s*=\s*/g, 'RSI($1) = ')
+  
+  // Fix case bullet standalone: "\n• 7. = 65.08" -> "\nRSI(7) = 65.08"
+  // (Tránh đụng format đánh số thông thường vì pattern này có dấu "=" khá đặc thù)
+  text = text.replace(/(^|\n)\s*•\s*(\d+)\.\s*=\s*/g, '$1RSI($2) = ')
+
   // Fix pattern "7.=" thành "RSI(7) ="
   text = text.replace(/(\d+)\.=/g, (match, num) => {
     return `RSI(${num}) =`
@@ -135,6 +143,7 @@ function formatReason(reason) {
 export function notify(decision, plan = null) {
   const icon = decision.action === 'LONG' ? '🟢' : '🔴'
   const confidencePercent = Math.round(decision.confidence * 100)
+  const symbol = decision.symbol || decision?.market?.symbol || 'N/A'
 
   // Sử dụng plan nếu có, fallback về decision
   const entry = plan?.entry || decision.entry || 'N/A'
@@ -144,7 +153,8 @@ export function notify(decision, plan = null) {
     : [])
 
   // Format reason
-  const formattedReason = formatReason(decision.reason)
+  // Double-pass sanitize để bắt hết các case reason bị xuống dòng/bullet kỳ lạ
+  const formattedReason = cleanText(formatReason(decision.reason))
 
   // Format stop loss
   let stopLossText = stopLoss.des
@@ -170,6 +180,7 @@ export function notify(decision, plan = null) {
 
   const message = `
 ${icon} <b>SIGNAL ALERT: ${decision.action}</b> ${icon}
+🏷️ <b>Token:</b> ${symbol}
 
 ━━━━━━━━━━━━━━━━━━━━
 🤖 <b>Confidence:</b> ${confidencePercent}%
@@ -188,4 +199,5 @@ ${takeProfitText}
 
   sendMessage(message)
   console.log('📢 Processing alert:', decision.action)
+  return message
 }
