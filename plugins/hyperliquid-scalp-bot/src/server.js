@@ -97,7 +97,7 @@ app.get('/ai-scalp', async (req, res) => {
                     createdAtMs: Date.now(),
                 })
             }
-            notify(decision, plan)
+            notify(decision, plan, 'SCALP_01_MANUAL')
             notifStatus = 'Sent to Telegram'
         }
 

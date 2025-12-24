@@ -140,10 +140,15 @@ function formatReason(reason) {
     .join('\n')
 }
 
-export function notify(decision, plan = null) {
+export function notify(decision, plan = null, strategy = null) {
   const icon = decision.action === 'LONG' ? '🟢' : '🔴'
   const confidencePercent = Math.round(decision.confidence * 100)
   const symbol = decision.symbol || decision?.market?.symbol || 'N/A'
+  
+  // Format strategy name với icon phù hợp
+  const strategyName = strategy || 'SCALP_01'
+  const strategyIcon = strategyName.includes('MANUAL') ? '🔧' : '⚡'
+  const strategyLabel = strategyName.includes('MANUAL') ? `${strategyIcon} ${strategyName} (Manual)` : `${strategyIcon} ${strategyName} (Auto)`
 
   // Sử dụng plan nếu có, fallback về decision
   const entry = plan?.entry || decision.entry || 'N/A'
@@ -181,6 +186,7 @@ export function notify(decision, plan = null) {
   const message = `
 ${icon} <b>SIGNAL ALERT: ${decision.action}</b> ${icon}
 🏷️ <b>Token:</b> ${symbol}
+📊 <b>Strategy:</b> ${strategyLabel}
 
 ━━━━━━━━━━━━━━━━━━━━
 🤖 <b>Confidence:</b> ${confidencePercent}%

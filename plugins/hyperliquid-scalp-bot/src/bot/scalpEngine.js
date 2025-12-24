@@ -105,7 +105,7 @@ export async function runScalp(symbol = null) {
   if (outcome !== 'OPEN') return
 
   // Không đặt lệnh, chỉ thông báo
-  notify(decision, plan)
+  notify(decision, plan, 'SCALP_01')
 }
 
 function checkConditions(signal) {
