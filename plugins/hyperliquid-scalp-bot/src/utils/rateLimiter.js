@@ -17,6 +17,7 @@ const MARKET_API_RATE_LIMIT_MS = parseInt(process.env.MARKET_API_RATE_LIMIT_MS |
 const META_CACHE_MS = parseInt(process.env.META_CACHE_MS || '10000') // 10s cache cho meta (dùng chung cho tất cả symbols)
 const SKIP_LOG_COOLDOWN_MS = parseInt(process.env.SKIP_LOG_COOLDOWN_MINUTES || '5') * 60 * 1000 // 5 phút cooldown cho SKIP logs
 const NO_TRADE_LOG_COOLDOWN_MS = parseInt(process.env.NO_TRADE_LOG_COOLDOWN_MINUTES || '2') * 60 * 1000 // 2 phút cooldown cho NO_TRADE logs
+const OPEN_LOG_COOLDOWN_MS = parseInt(process.env.OPEN_LOG_COOLDOWN_MINUTES || '10') * 60 * 1000 // 10 phút cooldown cho OPEN logs (LONG/SHORT cùng action)
 
 // Cache storage
 const marketDataCache = new Map() // Map<symbol, { data, timestamp }>
@@ -27,7 +28,8 @@ const metaCache = { data: null, timestamp: 0 } // Meta dùng chung cho tất c�
 const lastAICall = { timestamp: 0 }
 const lastMarketAPICall = { timestamp: 0 }
 
-// Database write cooldown tracking: Map<symbol_strategy, { action, timestamp }>
+// Database write cooldown tracking: Map<symbol_strategy, { action, timestamp, aiAction }>
+// aiAction: LONG/SHORT để check cooldown cho OPEN logs
 const lastDbWrites = new Map()
 
 /**
@@ -212,21 +214,45 @@ export function shouldSaveSkipLog(symbol, strategy) {
 }
 
 /**
- * Check xem có nên lưu NO_TRADE/REJECTED log vào database không
+ * Check xem có nên lưu NO_TRADE/REJECTED/OPEN log vào database không
  * @param {string} symbol - Trading symbol
  * @param {string} strategy - Strategy name
- * @param {string} action - Action (NO_TRADE, REJECTED)
+ * @param {string} action - Action (NO_TRADE, REJECTED, OPEN)
+ * @param {string} aiAction - AI action (LONG, SHORT) - chỉ cần khi action === 'OPEN'
  * @returns {boolean} - true nếu được phép lưu, false nếu đang trong cooldown
  */
-export function shouldSaveNoTradeLog(symbol, strategy, action) {
-  // OPEN logs luôn được lưu (quan trọng)
-  if (action === 'OPEN') {
-    return true
-  }
-  
+export function shouldSaveNoTradeLog(symbol, strategy, action, aiAction = null) {
   const key = `${symbol.toUpperCase()}_${strategy}`
   const last = lastDbWrites.get(key)
   
+  // OPEN logs: check cooldown dựa trên aiAction (LONG/SHORT)
+  if (action === 'OPEN' && (aiAction === 'LONG' || aiAction === 'SHORT')) {
+    if (!last || last.action !== 'OPEN') {
+      // Chưa có OPEN log → cho phép
+      return true
+    }
+    
+    // Nếu khác action (LONG → SHORT hoặc ngược lại) → cho phép (có thể là reverse)
+    if (last.aiAction && last.aiAction !== aiAction) {
+      return true
+    }
+    
+    // Cùng action (LONG → LONG hoặc SHORT → SHORT) → check cooldown
+    const now = Date.now()
+    const elapsed = now - last.timestamp
+    
+    if (elapsed >= OPEN_LOG_COOLDOWN_MS) {
+      // Hết cooldown → cho phép
+      return true
+    }
+    
+    // Đang trong cooldown → skip
+    const remainingMinutes = Math.ceil((OPEN_LOG_COOLDOWN_MS - elapsed) / 60000)
+    console.log(`⏸️  DB cooldown: ${symbol} ${aiAction} (${remainingMinutes}min remaining)`)
+    return false
+  }
+  
+  // NO_TRADE/REJECTED logs
   if (!last || (last.action !== 'NO_TRADE' && last.action !== 'REJECTED')) {
     // Chưa có hoặc khác action → cho phép lưu
     return true
@@ -249,11 +275,13 @@ export function shouldSaveNoTradeLog(symbol, strategy, action) {
  * @param {string} symbol - Trading symbol
  * @param {string} strategy - Strategy name
  * @param {string} action - Action (SKIP, NO_TRADE, REJECTED, OPEN)
+ * @param {string} aiAction - AI action (LONG, SHORT) - chỉ cần khi action === 'OPEN'
  */
-export function markDbWrite(symbol, strategy, action) {
+export function markDbWrite(symbol, strategy, action, aiAction = null) {
   const key = `${symbol.toUpperCase()}_${strategy}`
   lastDbWrites.set(key, {
     action,
+    aiAction: action === 'OPEN' ? aiAction : null, // Chỉ lưu aiAction cho OPEN logs
     timestamp: Date.now()
   })
 }

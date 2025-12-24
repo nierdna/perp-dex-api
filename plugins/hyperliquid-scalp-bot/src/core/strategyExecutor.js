@@ -85,10 +85,11 @@ export async function executeStrategy(symbol, strategy, skipFilter = false) {
     // Trong tương lai, method này cũng có thể move vào strategy nếu cần
     const outcome = isValidSignal(decision) ? 'OPEN' : 'REJECTED'
     const action = decision.action === 'NO_TRADE' ? 'NO_TRADE' : (outcome === 'OPEN' ? 'OPEN' : 'REJECTED')
+    const aiAction = (decision.action === 'LONG' || decision.action === 'SHORT') ? decision.action : null
 
-    // 7. Save Log (với cooldown cho NO_TRADE/REJECTED)
+    // 7. Save Log (với cooldown cho NO_TRADE/REJECTED/OPEN)
     let logId = null
-    if (outcome === 'OPEN' || shouldSaveNoTradeLog(signal.symbol, strategyName, action)) {
+    if (outcome === 'OPEN' || shouldSaveNoTradeLog(signal.symbol, strategyName, action, aiAction)) {
         logId = await saveLog({
             strategy: strategyName, // Log đúng tên strategy
             symbol: signal.symbol,
@@ -105,7 +106,7 @@ export async function executeStrategy(symbol, strategy, skipFilter = false) {
             take_profit_prices: takeProfitPrices,
             outcome: outcome === 'OPEN' ? 'OPEN' : null
         })
-        markDbWrite(signal.symbol, strategyName, action)
+        markDbWrite(signal.symbol, strategyName, action, aiAction)
     }
 
     // 8. Register Monitor & Notify

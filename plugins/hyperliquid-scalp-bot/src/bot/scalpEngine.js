@@ -74,10 +74,11 @@ export async function runScalp(symbol = null) {
   // 6. Nếu signal đủ mạnh: đánh dấu OPEN để WS monitor theo dõi WIN/LOSS
   const outcome = isValidSignal(decision) ? 'OPEN' : null
   const action = decision.action === 'NO_TRADE' ? 'NO_TRADE' : (outcome === 'OPEN' ? 'OPEN' : 'REJECTED')
+  const aiAction = (decision.action === 'LONG' || decision.action === 'SHORT') ? decision.action : null
 
-  // 7. Lưu Log vào DB (kèm entry/SL/TP nếu có, với cooldown cho NO_TRADE/REJECTED)
+  // 7. Lưu Log vào DB (kèm entry/SL/TP nếu có, với cooldown cho NO_TRADE/REJECTED/OPEN)
   let logId = null
-  if (outcome === 'OPEN' || shouldSaveNoTradeLog(signal.symbol, 'SCALP_01', action)) {
+  if (outcome === 'OPEN' || shouldSaveNoTradeLog(signal.symbol, 'SCALP_01', action, aiAction)) {
     logId = await saveLog({
       strategy: 'SCALP_01',
       symbol: signal.symbol,
@@ -94,7 +95,7 @@ export async function runScalp(symbol = null) {
       take_profit_prices: takeProfitPrices,
       outcome
     })
-    markDbWrite(signal.symbol, 'SCALP_01', action)
+    markDbWrite(signal.symbol, 'SCALP_01', action, aiAction)
   }
 
   // Nếu OPEN thì register vào WS monitor để tự update WIN/LOSS
