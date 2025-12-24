@@ -8,6 +8,7 @@ import { notify } from '../notify/telegram.js'
 import { saveLog } from '../data/db.js'
 import { getTodaysNews } from '../data/newsCollector.js'
 import { registerOpenTrade } from '../monitor/tradeOutcomeMonitor.js'
+import { shouldSaveSkipLog, shouldSaveNoTradeLog, markDbWrite } from '../utils/rateLimiter.js'
 
 /**
  * Execute a single cycle for a specific strategy
@@ -43,17 +44,22 @@ export async function executeStrategy(symbol, strategy, skipFilter = false) {
 
     if (!isWorthy) {
         console.log(`   [${strategyName}] 💤 Skipped (Technical Filter)`)
-        await saveLog({
-            strategy: strategyName,
-            symbol: signal.symbol,
-            timeframe: 'Multi-TF',
-            price: signal.price,
-            ai_action: 'SKIP',
-            ai_confidence: 0,
-            ai_reason: 'Filtered by Technical Conditions',
-            ai_full_response: null,
-            market_snapshot: indicators
-        })
+        
+        // Chống spam SKIP logs vào database
+        if (shouldSaveSkipLog(signal.symbol, strategyName)) {
+            await saveLog({
+                strategy: strategyName,
+                symbol: signal.symbol,
+                timeframe: 'Multi-TF',
+                price: signal.price,
+                ai_action: 'SKIP',
+                ai_confidence: 0,
+                ai_reason: 'Filtered by Technical Conditions',
+                ai_full_response: null,
+                market_snapshot: indicators
+            })
+            markDbWrite(signal.symbol, strategyName, 'SKIP')
+        }
         return { status: 'skipped', reason: 'Technical Filter' }
     }
 
@@ -78,24 +84,29 @@ export async function executeStrategy(symbol, strategy, skipFilter = false) {
     // Check global risk rules + strategy specific logic (here using generic riskManager)
     // Trong tương lai, method này cũng có thể move vào strategy nếu cần
     const outcome = isValidSignal(decision) ? 'OPEN' : 'REJECTED'
+    const action = decision.action === 'NO_TRADE' ? 'NO_TRADE' : (outcome === 'OPEN' ? 'OPEN' : 'REJECTED')
 
-    // 7. Save Log
-    const logId = await saveLog({
-        strategy: strategyName, // Log đúng tên strategy
-        symbol: signal.symbol,
-        timeframe: 'Multi-TF',
-        price: signal.price,
-        ai_action: decision.action,
-        ai_confidence: decision.confidence,
-        ai_reason: decision.reason,
-        ai_full_response: decision,
-        market_snapshot: indicators,
-        plan,
-        entry_price: plan?.entry ?? null,
-        stop_loss_price: plan?.stop_loss?.price ?? null,
-        take_profit_prices: takeProfitPrices,
-        outcome: outcome === 'OPEN' ? 'OPEN' : null
-    })
+    // 7. Save Log (với cooldown cho NO_TRADE/REJECTED)
+    let logId = null
+    if (outcome === 'OPEN' || shouldSaveNoTradeLog(signal.symbol, strategyName, action)) {
+        logId = await saveLog({
+            strategy: strategyName, // Log đúng tên strategy
+            symbol: signal.symbol,
+            timeframe: 'Multi-TF',
+            price: signal.price,
+            ai_action: decision.action,
+            ai_confidence: decision.confidence,
+            ai_reason: decision.reason,
+            ai_full_response: decision,
+            market_snapshot: indicators,
+            plan,
+            entry_price: plan?.entry ?? null,
+            stop_loss_price: plan?.stop_loss?.price ?? null,
+            take_profit_prices: takeProfitPrices,
+            outcome: outcome === 'OPEN' ? 'OPEN' : null
+        })
+        markDbWrite(signal.symbol, strategyName, action)
+    }
 
     // 8. Register Monitor & Notify
     if (outcome === 'OPEN') {
