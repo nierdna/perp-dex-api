@@ -20,6 +20,19 @@ async function getCandles(interval) {
   }
 }
 
+export async function getBacktestCandles(symbol, interval, startTime, endTime) {
+  try {
+    const response = await axios.post(API_URL, {
+      type: 'candleSnapshot',
+      req: { coin: symbol, interval: interval, startTime: startTime, endTime: endTime }
+    })
+    return response.data
+  } catch (error) {
+    console.error(`❌ Backtest Data Error (${interval}):`, error.message)
+    return []
+  }
+}
+
 async function getMeta() {
   try {
     const response = await axios.post(API_URL, { type: 'metaAndAssetCtxs' })

@@ -5,15 +5,21 @@ import { getDecision } from '../ai/deepseekDecision.js'
 import { isValidSignal } from '../risk/riskManager.js'
 import { notify } from '../notify/telegram.js'
 import { saveLog } from '../data/db.js'
+import { getTodaysNews } from '../data/newsCollector.js'
+import { parsePlan } from '../utils/parsePlan.js'
 
 export async function runScalp() {
   console.log(`\n[${new Date().toLocaleTimeString()}] ♻️  Starting cycle...`)
 
   // ... (giữ nguyên phần fetch data và filter) ...
 
-  // 1. Fetch Data
+  // 1. Fetch Data & News
   process.stdout.write('   Fetching data... ')
-  const market = await getMarketSnapshot()
+  const [market, news] = await Promise.all([
+    getMarketSnapshot(),
+    getTodaysNews()
+  ])
+
   if (!market) {
     console.log('❌ Failed')
     return
@@ -23,6 +29,7 @@ export async function runScalp() {
   // 2. Calc Indicators
   const indicators = calcIndicators(market)
   const signal = normalizeSignal(indicators)
+  signal.news = news // Attach news for AI
 
   // 3. Filter before AI (Tiết kiệm api)
   const isWorthy = checkConditions(signal)
@@ -38,11 +45,7 @@ export async function runScalp() {
       ai_confidence: 0,
       ai_reason: 'No technical signal (EMA/RSI quiet)',
       ai_full_response: null,
-      market_snapshot: {
-        regime: indicators.regime_15m,
-        bias: indicators.bias_5m,
-        entry: indicators.entry_1m
-      }
+      market_snapshot: indicators // Lưu Full Data Input
     })
     return
   }
@@ -63,39 +66,35 @@ export async function runScalp() {
     ai_confidence: decision.confidence,
     ai_reason: decision.reason,
     ai_full_response: decision,
-    market_snapshot: {
-      regime: indicators.regime_15m,
-      bias: indicators.bias_5m,
-      entry: indicators.entry_1m,
-      ema_cross: {
-        r: indicators.regime_cross,
-        b: indicators.bias_cross,
-        e: indicators.entry_cross
-      }
-    }
+    market_snapshot: indicators // Lưu Full Data Input
   })
 
   // Chỉ bắn alert nếu signal đủ mạnh
   if (!isValidSignal(decision)) return
 
+  // Parse plan để có entry, stop_loss, take_profit
+  const plan = parsePlan(decision, market.price)
+
   // Không đặt lệnh, chỉ thông báo
-  notify(decision)
+  notify(decision, plan)
 }
 
 function checkConditions(signal) {
-  // 1. Phải có tín hiệu Entry rõ ràng ở khung 1m (Trigger)
-  const hasEntrySignal = (signal.entry_cross !== 'none')
+  // 1. BẮT BUỘC: Phải có tín hiệu Entry rõ ràng ở khung 1m (Cross Signal)
+  const hasEntryCross = (signal.entry_cross !== 'none')
+  
+  // Hoặc Entry Ready kết hợp với RSI Extreme (Reversal Setup)
+  const hasEntryReady = (signal.entry_1m === 'long_ready' || signal.entry_1m === 'short_ready')
+  const isRsi1mExtreme = (signal.entry_rsi7 > 80 || signal.entry_rsi7 < 20)
+  const isRsi5mExtreme = (signal.bias_rsi7 > 80 || signal.bias_rsi7 < 20)
+  const hasReversalSetup = hasEntryReady && isRsi1mExtreme && isRsi5mExtreme
 
-  // Hoặc RSI quá cực đoan (Cơ hội bắt đảo chiều - Reversal)
-  // Khắt khe hơn: 80/20 thay vì 75/25
-  const isRsiExtreme = (signal.bias_rsi7 > 80 || signal.bias_rsi7 < 20)
+  // Nếu không có Entry Cross VÀ không có Reversal Setup -> Bỏ qua ngay
+  if (!hasEntryCross && !hasReversalSetup) return false
 
-  // Nếu không có Trigger nào -> Bỏ qua ngay
-  if (!hasEntrySignal && !isRsiExtreme) return false
-
-  // 2. Lọc Xu Hướng (Trend Filter) - CHỈ ÁP DỤNG CHO ENTRY SIGNAL
+  // 2. Lọc Xu Hướng (Trend Filter) - CHỈ ÁP DỤNG CHO ENTRY CROSS
   // Nếu bắt theo Cross, phải thuận xu hướng 5m (Trend Follow)
-  if (hasEntrySignal) {
+  if (hasEntryCross) {
     // Golden Cross (Mua) -> 5m phải Bullish (EMA 9 > 26)
     if (signal.entry_cross === 'golden_cross' && signal.bias_5m !== 'bullish') {
       // console.log('   ⚠️ Filtered: Golden Cross but 5m is Bearish')
@@ -108,7 +107,7 @@ function checkConditions(signal) {
     }
   }
 
-  // 3. Nếu là RSI Extreme (Bắt dao rơi/đỉnh), KHÔNG cần thuận xu hướng 5m
+  // 3. Nếu là Reversal Setup (RSI Extreme), KHÔNG cần thuận xu hướng 5m
   // Vì bản chất là đánh ngược xu hướng (Reversal). 
   // Để AI tự quyết định rủi ro chỗ này.
 

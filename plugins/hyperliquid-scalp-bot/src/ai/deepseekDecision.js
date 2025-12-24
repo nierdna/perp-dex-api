@@ -10,49 +10,63 @@ export async function getDecision(signal) {
   }
 
   const prompt = `
-Đóng vai một chuyên gia giao dịch Crypto Scalping chuyên nghiệp. Hãy phân tích dữ liệu kỹ thuật đa khung thời gian (Multi-Timeframe) dưới đây cho cặp ${signal.symbol}/USD và đưa ra quyết định: LONG, SHORT, hay ĐỨNG NGOÀI (WAIT).
+Vai trò: Bạn là một chuyên gia giao dịch Crypto Scalping chuyên nghiệp. Hãy tận dụng cơ hội ngắn hạn nhưng phải quản lý rủi ro chặt chẽ.
 
-DỮ LIỆU THỊ TRƯỜNG (Multi-Timeframe Analysis):
+MỤC TIÊU: Tìm kiếm lợi nhuận từ các biến động ngắn hạn với xác suất thắng > 70%.
 
-📊 15M - MARKET REGIME (Xu hướng tổng thể):
+DỮ LIỆU THỊ TRƯỜNG CHO CẶP ${signal.symbol}/USD:
+
+📊 15M CHART (Xu hướng chủ đạo):
 - Regime: ${signal.regime_15m || 'unknown'}
-- Cross: ${signal.regime_cross || 'none'} ${signal.regime_cross === 'golden_cross' ? '🟢' : signal.regime_cross === 'death_cross' ? '🔴' : ''}
-- EMA 50: ${signal.regime_ema50} | EMA 200: ${signal.regime_ema200}
-- RSI (14): ${signal.regime_rsi14}
+- Trend Status: ${signal.regime_cross || 'none'} ${signal.regime_cross === 'golden_cross' ? '🟢 UPTREND' : signal.regime_cross === 'death_cross' ? '🔴 DOWNTREND' : '⚪ SIDEWAY'}
+- EMAs: EMA50 (${signal.regime_ema50}) | EMA200 (${signal.regime_ema200})
+- RSI (14): ${signal.regime_rsi14} (>70: Overbought | <30: Oversold)
 
-📈 5M - BIAS & STRUCTURE (Xu hướng ngắn hạn):
+📈 5M CHART (Cấu trúc sóng):
 - Bias: ${signal.bias_5m || 'unknown'}
-- Cross: ${signal.bias_cross || 'none'} ${signal.bias_cross === 'golden_cross' ? '🟢 (Setup!)' : signal.bias_cross === 'death_cross' ? '🔴 (Setup!)' : ''}
-- EMA 9: ${signal.bias_ema9} | EMA 26: ${signal.bias_ema26}
+- Trend: ${signal.bias_cross === 'golden_cross' ? '🟢 Tăng' : signal.bias_cross === 'death_cross' ? '🔴 Giảm' : '⚪ Hỗn hợp'}
+- EMAs: EMA9 (${signal.bias_ema9}) | EMA26 (${signal.bias_ema26})
 - RSI (7): ${signal.bias_rsi7}
-- ATR: ${signal.bias_atr}
 
-⚡ 1M - ENTRY TIMING (Điểm vào lệnh):
-- Status: ${signal.entry_1m || 'unknown'}
-- Cross: ${signal.entry_cross || 'none'} ${signal.entry_cross === 'golden_cross' ? '🟢 (ENTRY!)' : signal.entry_cross === 'death_cross' ? '🔴 (ENTRY!)' : ''}
-- EMA 9: ${signal.entry_ema9} | EMA 26: ${signal.entry_ema26}
+⚡ 1M CHART (Điểm vào lệnh Scalping - Quan trọng nhất):
+- Setup: ${signal.entry_cross || 'none'} ${signal.entry_cross === 'golden_cross' ? '🟢 Golden Cross (MUA)' : signal.entry_cross === 'death_cross' ? '🔴 Death Cross (BÁN)' : ''}
+- EMA9: ${signal.entry_ema9} | EMA26: ${signal.entry_ema26}
+- Giá: ${signal.price}
 - RSI (7): ${signal.entry_rsi7}
+- Volume Force: ${signal.entry_vol_status} (Lực: ${signal.entry_vol_ratio}x)
 
-🔧 THÔNG TIN KHÁC:
-- Giá hiện tại: ${signal.price}
-- Funding Rate: ${signal.funding}
+📰 TIN TỨC:
+${signal.news && signal.news.length > 0
+      ? signal.news.map(n => `- [${n.eventTime}] ${n.title} (Impact: ${n.impact})`).join('\n')
+      : '- Không có tin tức quan trọng.'}
 
-LƯU Ý QUAN TRỌNG:
-- Chỉ vào lệnh khi CẢ 3 KHUNG ĐỒNG THUẬN (15m regime + 5m bias + 1m entry cùng hướng)
-- Ưu tiên NO_TRADE nếu có xung đột giữa các khung
-- Golden/Death Cross trên 1m là tín hiệu entry mạnh nhất
+QUY TẮC GIAO DỊCH (LINH HOẠT HƠN):
 
-ĐỊNH DẠNG OUTPUT (CHỈ TRẢ VỀ JSON):
+1. ĐỒNG THUẬN (Flexible Confluence):
+   - ƯU TIÊN 1: 15m + 5m + 1m cùng chiều -> CỰC MẠNH (Confidence > 0.9).
+   - ƯU TIÊN 2: 15m Sideway nhưng 5m + 1m cùng chiều mạnh -> VÀO LỆNH (Confidence ~ 0.7-0.8).
+   - TRÁNH: 15m Uptrend nhưng 5m Downtrend (Ngược sóng) -> NO_TRADE hoặc chờ hồi.
+
+2. QUẢN LÝ RỦI RO (Risk Management):
+   - LONG: Tránh khi RSI 1m/5m > 75 (Quá mua cực đại).
+   - SHORT: Tránh khi RSI 1m/5m < 25 (Quá bán cực đại).
+   - Volume: Ưu tiên setup có volume > 1.2x trung bình.
+
+3. STOP LOSS & TAKE PROFIT (Scalping Optimized):
+   - Stop Loss: ~0.6% từ entry (dưới/trên support/resistance gần nhất)
+   - Take Profit: ~0.9% từ entry (R:R 1:1.5 để cover fees)
+   - Ưu tiên TP tại EMA levels hoặc resistance/support tiếp theo
+
+HÃY SUY LUẬN VÀ TRẢ LỜI JSON:
 {
-  "action": "LONG" | "SHORT" | "NO_TRADE",
-  "confidence": 0.0 đến 1.0,
-  "entry": "vùng giá entry (nếu có)",
-  "stop_loss_logic": "giải thích ngắn gọn lý do đặt SL",
-  "take_profit_logic": ["target 1", "target 2"],
-  "reason": "giải thích lý do vào lệnh bằng Tiếng Việt ngắn gọn, súc tích"
+  "action": "LONG" | "SHORT" | "WAIT" | "NO_TRADE",
+  "confidence": 0.0 đến 1.0 (Hãy tự tin, nếu đẹp thì cho > 0.8),
+  "entry": SỐ (Giá vào lệnh cụ thể, ví dụ: 86994),
+  "stop_loss_logic": "Điểm dừng lỗ khuyến nghị (mô tả + giá nếu có, ví dụ: Dưới mức hỗ trợ quanh 86600-86650)",
+  "take_profit_logic": ["Mục tiêu 1 (mô tả + giá, ví dụ: EMA9 khung 5M ~ 86982)", "Mục tiêu 2 (mô tả + giá, ví dụ: EMA26 khung 5M ~ 87120)"],
+  "reason": "Lý do thắng > 70% (Tiếng Việt)",
+  "risk_warning": "Cảnh báo rủi ro (nếu có)"
 }
-
-Yêu cầu: Chỉ trả về đúng JSON hợp lệ. Không trả về markdown.
 `
 
   try {
@@ -64,7 +78,7 @@ Yêu cầu: Chỉ trả về đúng JSON hợp lệ. Không trả về markdown.
           { role: "system", content: "Bạn là AI Trading Bot chuyên nghiệp. Hãy trả lời bằng format JSON. Giải thích bằng Tiếng Việt." },
           { role: "user", content: prompt }
         ],
-        temperature: 0.1 // Giữ nhiệt độ thấp để AI trả về đúng format + logic chặt chẽ
+        temperature: 0.0 // Giữ nhiệt độ thấp để AI trả về đúng format + logic chặt chẽ
       },
       {
         headers: {

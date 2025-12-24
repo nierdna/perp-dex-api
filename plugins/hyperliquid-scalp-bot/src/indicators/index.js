@@ -32,6 +32,16 @@ export function calcIndicators(market) {
     // ATR
     const atr = ATR.calculate({ high: highs, low: lows, close: closes, period: 14 })
 
+    // Volume Analysis (SMA 20)
+    const volumes = candles.slice(-21, -1).map(c => parseFloat(c.v))
+    const currentVol = parseFloat(candles[candles.length - 1].v)
+    const volSma = volumes.reduce((a, b) => a + b, 0) / volumes.length
+    const volRatio = volSma > 0 ? (currentVol / volSma) : 0
+    let volStatus = 'normal'
+    if (volRatio >= 3.0) volStatus = 'ultra_high'
+    else if (volRatio >= 1.5) volStatus = 'high'
+    else if (volRatio < 0.8) volStatus = 'low'
+
     return {
       rsi7: rsi7[rsi7.length - 1],
       rsi14: rsi14[rsi14.length - 1],
@@ -43,7 +53,12 @@ export function calcIndicators(market) {
       prevEma9: ema9[ema9.length - 2],
       prevEma26: ema26[ema26.length - 2],
       prevEma50: ema50[ema50.length - 2],
-      prevEma200: ema200[ema200.length - 2]
+      prevEma200: ema200[ema200.length - 2],
+      // Volume
+      vol_current: currentVol,
+      vol_sma: volSma,
+      vol_ratio: volRatio,
+      vol_status: volStatus
     }
   }
 
@@ -129,6 +144,8 @@ export function calcIndicators(market) {
     entry_ema9: tf1m.ema9 ? parseFloat(tf1m.ema9.toFixed(2)) : null,
     entry_ema26: tf1m.ema26 ? parseFloat(tf1m.ema26.toFixed(2)) : null,
     entry_rsi7: tf1m.rsi7 ? parseFloat(tf1m.rsi7.toFixed(2)) : null,
+    entry_vol_ratio: tf1m.vol_ratio ? parseFloat(tf1m.vol_ratio.toFixed(2)) : null,
+    entry_vol_status: tf1m.vol_status,
 
     // Common
     price: market.price,

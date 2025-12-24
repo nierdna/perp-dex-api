@@ -8,8 +8,10 @@ import { normalizeSignal } from './signal/normalizeSignal.js'
 import { getDecision } from './ai/deepseekDecision.js'
 import { isValidSignal } from './risk/riskManager.js'
 import { notify } from './notify/telegram.js'
+import { parsePlan } from './utils/parsePlan.js'
 
 import { saveLog } from './data/db.js'
+import { getTodaysNews } from './data/newsCollector.js'
 
 const app = express()
 app.use(cors())
@@ -24,8 +26,12 @@ app.post('/run-scalp', async (req, res) => {
     try {
         console.log('⚡ Manual Trigger Received')
 
-        // 1. Fetch Data
-        const market = await getMarketSnapshot()
+        // 1. Fetch Data & News
+        const [market, news] = await Promise.all([
+            getMarketSnapshot(),
+            getTodaysNews()
+        ])
+
         if (!market) {
             return res.status(500).json({ error: 'Failed to fetch market data' })
         }
@@ -33,6 +39,7 @@ app.post('/run-scalp', async (req, res) => {
         // 2. Indicators
         const indicators = calcIndicators(market)
         const signal = normalizeSignal(indicators)
+        signal.news = news // Attach news
 
         // 3. AI Analysis
         const decision = await getDecision(signal)
@@ -47,22 +54,16 @@ app.post('/run-scalp', async (req, res) => {
             ai_confidence: decision.confidence,
             ai_reason: decision.reason,
             ai_full_response: decision,
-            market_snapshot: {
-                regime: indicators.regime_15m,
-                bias: indicators.bias_5m,
-                entry: indicators.entry_1m,
-                ema_cross: {
-                    r: indicators.regime_cross,
-                    b: indicators.bias_cross,
-                    e: indicators.entry_cross
-                }
-            }
+            market_snapshot: indicators // Lưu Full Data Input
         })
 
-        // 5. Notify if valid
+        // 5. Parse plan để format đúng structure
+        const plan = parsePlan(decision, market.price)
+
+        // 6. Notify if valid
         let notifStatus = 'Skipped (Low Confidence)'
         if (isValidSignal(decision)) {
-            notify(decision)
+            notify(decision, plan)
             notifStatus = 'Sent to Telegram'
         }
 
@@ -78,11 +79,7 @@ app.post('/run-scalp', async (req, res) => {
                 action: decision.action,
                 confidence: decision.confidence,
                 reason: decision.reason,
-                plan: {
-                    entry: decision.entry,
-                    stop_loss: decision.stop_loss_logic,
-                    take_profit: decision.take_profit_logic
-                }
+                plan: plan // Format: { entry, stop_loss: { price, des }, take_profit: [{ price, des }] }
             },
             notification: notifStatus
         })

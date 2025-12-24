@@ -21,19 +21,83 @@ export async function sendMessage(text) {
   }
 }
 
-export function notify(decision) {
+/**
+ * Format reason text thành bullet points dễ đọc
+ */
+function formatReason(reason) {
+  if (!reason) return 'N/A'
+  
+  // Nếu reason có dấu ngoặc đơn với số, chia thành bullet points
+  // Ví dụ: "(1) ... (2) ... (3) ..."
+  const bulletPattern = /\((\d+)\)/g
+  if (bulletPattern.test(reason)) {
+    return reason
+      .split(/(?=\(\d+\))/) // Split tại mỗi (1), (2), (3)...
+      .map(item => item.trim())
+      .filter(item => item.length > 0)
+      .map(item => {
+        // Thay (1) thành • 1.
+        return item.replace(/^\((\d+)\)/, '• $1.')
+      })
+      .join('\n')
+  }
+  
+  // Nếu không có bullet pattern, trả về nguyên bản
+  return reason
+}
+
+export function notify(decision, plan = null) {
   const icon = decision.action === 'LONG' ? '🟢' : '🔴'
   const confidencePercent = Math.round(decision.confidence * 100)
+
+  // Sử dụng plan nếu có, fallback về decision
+  const entry = plan?.entry || decision.entry || 'N/A'
+  const stopLoss = plan?.stop_loss || { price: null, des: decision.stop_loss_logic || 'N/A' }
+  const takeProfit = plan?.take_profit || (Array.isArray(decision.take_profit_logic) 
+    ? decision.take_profit_logic.map(tp => ({ price: null, des: tp }))
+    : [])
+
+  // Format reason
+  const formattedReason = formatReason(decision.reason)
+
+  // Format stop loss
+  let stopLossText = stopLoss.des
+  if (stopLoss.price) {
+    stopLossText = `${stopLoss.price} (${stopLoss.des})`
+  }
+
+  // Format take profit
+  let takeProfitText = ''
+  if (takeProfit.length > 0) {
+    takeProfitText = takeProfit
+      .map((tp, index) => {
+        const tpNum = index + 1
+        if (tp.price) {
+          return `TP${tpNum}: ${tp.price} - ${tp.des}`
+        }
+        return `TP${tpNum}: ${tp.des}`
+      })
+      .join('\n')
+  } else {
+    takeProfitText = 'N/A'
+  }
 
   const message = `
 ${icon} <b>SIGNAL ALERT: ${decision.action}</b> ${icon}
 
+━━━━━━━━━━━━━━━━━━━━
 🤖 <b>Confidence:</b> ${confidencePercent}%
-💡 <b>Reason:</b> ${decision.reason}
-🎯 <b>Entry:</b> ${decision.entry}
-🛑 <b>Stop Loss:</b> ${decision.stop_loss_logic}
-💰 <b>Take Profit:</b> ${decision.take_profit_logic.join(', ')}
 
+💡 <b>Phân tích:</b>
+${formattedReason}
+
+━━━━━━━━━━━━━━━━━━━━
+🎯 <b>Entry:</b> ${entry}
+🛑 <b>Stop Loss:</b> ${stopLossText}
+
+💰 <b>Take Profit:</b>
+${takeProfitText}
+━━━━━━━━━━━━━━━━━━━━
 `
 
   sendMessage(message)
