@@ -13,6 +13,7 @@ import { parsePlan } from './utils/parsePlan.js'
 import { saveLog } from './data/db.js'
 import { getTodaysNews } from './data/newsCollector.js'
 import { registerOpenTrade } from './monitor/tradeOutcomeMonitor.js'
+import { isSymbolLocked, withSymbolLock } from './bot/symbolLock.js'
 
 const app = express()
 app.use(cors())
@@ -29,6 +30,11 @@ app.get('/ai-scalp', async (req, res) => {
         const symbol = req.query?.symbol || 'BTC'
         console.log(`⚡ Manual Trigger Received for ${symbol}`)
 
+        if (isSymbolLocked(symbol)) {
+            return res.status(429).json({ error: `Symbol ${symbol} is busy (cycle in progress). Try again shortly.` })
+        }
+
+        const locked = await withSymbolLock(symbol, async () => {
         // 1. Fetch Data & News
         const [market, news] = await Promise.all([
             getMarketSnapshot(symbol),
@@ -36,7 +42,7 @@ app.get('/ai-scalp', async (req, res) => {
         ])
 
         if (!market) {
-            return res.status(500).json({ error: 'Failed to fetch market data' })
+            return { status: 500, body: { error: 'Failed to fetch market data' } }
         }
 
         // 2. Indicators
@@ -88,13 +94,14 @@ app.get('/ai-scalp', async (req, res) => {
                     entryPrice: plan.entry,
                     stopLossPrice: plan?.stop_loss?.price ?? null,
                     takeProfitPrices: takeProfitPrices || [],
+                    createdAtMs: Date.now(),
                 })
             }
             notify(decision, plan)
             notifStatus = 'Sent to Telegram'
         }
 
-        res.json({
+        return { status: 200, body: {
             message: 'Cycle executed successfully',
             market_ctx: {
                 symbol: market.symbol,
@@ -109,7 +116,13 @@ app.get('/ai-scalp', async (req, res) => {
                 plan: plan // Format: { entry, stop_loss: { price, des }, take_profit: [{ price, des }] }
             },
             notification: notifStatus
+        } }
         })
+
+        if (locked?.skipped) {
+            return res.status(429).json({ error: `Symbol ${symbol} is busy (cycle in progress). Try again shortly.` })
+        }
+        return res.status(locked?.result?.status || 200).json(locked?.result?.body || { message: 'OK' })
 
     } catch (error) {
         console.error(error)

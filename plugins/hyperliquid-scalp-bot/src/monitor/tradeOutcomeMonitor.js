@@ -3,6 +3,8 @@ import { fetchOpenTrades, updateTradeOutcome } from '../data/db.js'
 
 const WS_URL = process.env.HYPERLIQUID_WS_URL || 'wss://api.hyperliquid.xyz/ws'
 const RECONNECT_MS = parseInt(process.env.WS_RECONNECT_MS || '2000')
+const TRADE_TTL_MS = parseInt(process.env.TRADE_TTL_MINUTES || '60') * 60 * 1000
+const TTL_CHECK_INTERVAL_MS = parseInt(process.env.TRADE_TTL_CHECK_MS || '5000')
 
 /**
  * Trade object stored in memory.
@@ -10,15 +12,18 @@ const RECONNECT_MS = parseInt(process.env.WS_RECONNECT_MS || '2000')
  * - takeProfitPrice: number | null (TP mục tiêu để quyết định WIN; lấy TP gần entry nhất)
  */
 const openTradesBySymbol = new Map() // symbol -> Map<tradeId, trade>
+const lastMidBySymbol = new Map() // symbol -> number
 let ws = null
 let started = false
 let reconnectTimer = null
+let ttlTimer = null
 
 export async function startTradeOutcomeMonitor() {
   if (started) return
   started = true
 
   await loadOpenTradesFromDB()
+  startTtlWatcher()
   connect()
 }
 
@@ -29,6 +34,9 @@ export function registerOpenTrade(trade) {
   // Derive TP target nếu chưa được set
   if (!Number.isFinite(trade.takeProfitPrice)) {
     trade.takeProfitPrice = pickTakeProfitTarget(trade)
+  }
+  if (!Number.isFinite(trade.createdAtMs)) {
+    trade.createdAtMs = Date.now()
   }
 
   const symbol = trade.symbol
@@ -48,6 +56,7 @@ async function loadOpenTradesFromDB() {
       entryPrice: toNumber(r.entry_price),
       stopLossPrice: toNumber(r.stop_loss_price),
       takeProfitPrices,
+      createdAtMs: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
     }
     trade.takeProfitPrice = pickTakeProfitTarget(trade)
     registerOpenTrade(trade)
@@ -120,6 +129,7 @@ function handleAllMids(mids) {
     if (!pxStr) continue
     const px = parseFloat(pxStr)
     if (!Number.isFinite(px)) continue
+    lastMidBySymbol.set(symbol, px)
 
     for (const trade of tradesMap.values()) {
       evaluateTradeOnPrice(trade, px)
@@ -173,6 +183,28 @@ async function closeTrade(trade, closePrice, outcome, reason) {
   }
 
   console.log(`🏁 Trade #${trade.id} ${trade.symbol} -> ${outcome} (${reason}) @ ${closePrice}`)
+}
+
+function startTtlWatcher() {
+  if (!Number.isFinite(TRADE_TTL_MS) || TRADE_TTL_MS <= 0) return
+  if (ttlTimer) return
+
+  ttlTimer = setInterval(() => {
+    const now = Date.now()
+    for (const [symbol, tradesMap] of openTradesBySymbol.entries()) {
+      const lastPx = lastMidBySymbol.get(symbol)
+      for (const trade of tradesMap.values()) {
+        if (trade?._closing) continue
+        const createdAtMs = Number.isFinite(trade.createdAtMs) ? trade.createdAtMs : now
+        if (now - createdAtMs < TRADE_TTL_MS) continue
+
+        // Nếu chưa có giá mid gần nhất, đợi tick giá rồi close để có close_price/pnl.
+        if (!Number.isFinite(lastPx)) continue
+
+        closeTrade(trade, lastPx, 'TIMEOUT', 'TTL expired')
+      }
+    }
+  }, TTL_CHECK_INTERVAL_MS)
 }
 
 function pickTakeProfitTarget(trade) {

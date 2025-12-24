@@ -3,6 +3,7 @@ import { runScalp } from './bot/scalpEngine.js'
 import { startServer } from './server.js'
 import { initDB } from './data/db.js'
 import { startTradeOutcomeMonitor } from './monitor/tradeOutcomeMonitor.js'
+import { withSymbolLock } from './bot/symbolLock.js'
 
 // Parse SYMBOL từ .env (có thể là "BTC" hoặc "BTC,ETH,SOL")
 const SYMBOLS = process.env.SYMBOL 
@@ -25,10 +26,13 @@ async function bootstrap() {
 
   // Start Bot Loop - Chạy cho từng symbol
   let symbolIndex = 0
-  setInterval(() => {
+  setInterval(async () => {
     // Round-robin qua các symbol
     const currentSymbol = SYMBOLS[symbolIndex % SYMBOLS.length]
-    runScalp(currentSymbol)
+    const locked = await withSymbolLock(currentSymbol, () => runScalp(currentSymbol))
+    if (locked?.skipped) {
+      console.warn(`⏭️  Skip cycle for ${currentSymbol} (previous cycle still running)`)
+    }
     symbolIndex++
   }, POLL_INTERVAL)
 

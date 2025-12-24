@@ -97,6 +97,7 @@ export async function runScalp(symbol = null) {
       entryPrice: plan.entry,
       stopLossPrice: plan?.stop_loss?.price ?? null,
       takeProfitPrices: takeProfitPrices || [],
+      createdAtMs: Date.now(),
     })
   }
 

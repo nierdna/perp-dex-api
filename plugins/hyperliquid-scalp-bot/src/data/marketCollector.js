@@ -1,4 +1,4 @@
-import axios from 'axios'
+import http from '../utils/httpClient.js'
 
 const API_URL = 'https://api.hyperliquid.xyz/info'
 
@@ -8,7 +8,7 @@ async function getCandles(symbol, interval) {
     const hoursNeeded = interval === '15m' ? 63 : interval === '5m' ? 21 : 5 // 15m: 250*15/60=62.5h, 5m: 250*5/60=20.8h, 1m: 250/60=4.2h
     const startTime = Date.now() - (hoursNeeded * 60 * 60 * 1000)
 
-    const response = await axios.post(API_URL, {
+    const response = await http.post(API_URL, {
       type: 'candleSnapshot',
       req: { coin: symbol, interval: interval, startTime: startTime }
     })
@@ -21,7 +21,7 @@ async function getCandles(symbol, interval) {
 
 export async function getBacktestCandles(symbol, interval, startTime, endTime) {
   try {
-    const response = await axios.post(API_URL, {
+    const response = await http.post(API_URL, {
       type: 'candleSnapshot',
       req: { coin: symbol, interval: interval, startTime: startTime, endTime: endTime }
     })
@@ -34,7 +34,7 @@ export async function getBacktestCandles(symbol, interval, startTime, endTime) {
 
 async function getMeta() {
   try {
-    const response = await axios.post(API_URL, { type: 'metaAndAssetCtxs' })
+    const response = await http.post(API_URL, { type: 'metaAndAssetCtxs' })
     return response.data
   } catch (error) {
     console.error('❌ Get Meta Error:', error.message)

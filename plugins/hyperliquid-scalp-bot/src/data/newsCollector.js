@@ -1,4 +1,4 @@
-import axios from 'axios'
+import http from '../utils/httpClient.js'
 
 const NEWS_API_URL = 'https://divine-insight-production.up.railway.app/events'
 
@@ -13,8 +13,8 @@ export async function getTodaysNews() {
 
         // Gọi song song 2 ngày
         const [resToday, resTomorrow] = await Promise.all([
-            axios.get(`${NEWS_API_URL}?date=${todayStr}`, { headers: { 'accept': 'application/json' } }),
-            axios.get(`${NEWS_API_URL}?date=${tomorrowStr}`, { headers: { 'accept': 'application/json' } })
+            http.get(`${NEWS_API_URL}?date=${todayStr}`, { headers: { 'accept': 'application/json' } }),
+            http.get(`${NEWS_API_URL}?date=${tomorrowStr}`, { headers: { 'accept': 'application/json' } })
         ])
 
         const allEvents = [...(resToday.data || []), ...(resTomorrow.data || [])]
