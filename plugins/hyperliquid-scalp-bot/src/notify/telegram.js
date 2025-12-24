@@ -251,11 +251,12 @@ ${safeTakeProfitText}
 `
 
   // Check cooldown trước khi gửi (chống spam cùng action)
-  const symbol = decision.symbol || decision?.market?.symbol || 'UNKNOWN'
+  // Dùng lại biến symbol đã khai báo ở trên (dòng 184)
   const action = decision.action
+  const symbolForCooldown = symbol === 'N/A' ? 'UNKNOWN' : symbol
 
-  if (!canSendAlert(symbol, action)) {
-    console.log(`⏸️  Alert skipped (cooldown): ${symbol} ${action}`)
+  if (!canSendAlert(symbolForCooldown, action)) {
+    console.log(`⏸️  Alert skipped (cooldown): ${symbolForCooldown} ${action}`)
     return null // Không gửi alert
   }
 
@@ -263,7 +264,7 @@ ${safeTakeProfitText}
   sendMessage(message)
   
   // Đánh dấu đã gửi (update cooldown tracker)
-  markAlertSent(symbol, action)
+  markAlertSent(symbolForCooldown, action)
   
   console.log('📢 Processing alert:', decision.action)
   return message
