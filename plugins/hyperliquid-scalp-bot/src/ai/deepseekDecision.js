@@ -69,8 +69,8 @@ HÃY SUY LUẬN VÀ TRẢ LỜI JSON:
 }
 `
 
-  // DeepSeek AI cần timeout dài hơn (30s) vì AI processing có thể lâu
-  const aiTimeout = parseInt(process.env.DEEPSEEK_TIMEOUT_MS || '30000')
+  // DeepSeek AI cần timeout dài hơn (120s) vì AI processing có thể lâu
+  const aiTimeout = parseInt(process.env.DEEPSEEK_TIMEOUT_MS || '120000')
   
   try {
     const response = await http.post(
@@ -84,7 +84,7 @@ HÃY SUY LUẬN VÀ TRẢ LỜI JSON:
         temperature: 0.0 // Giữ nhiệt độ thấp để AI trả về đúng format + logic chặt chẽ
       },
       {
-        timeout: Number.isFinite(aiTimeout) ? aiTimeout : 30000,
+        timeout: Number.isFinite(aiTimeout) ? aiTimeout : 120000,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
