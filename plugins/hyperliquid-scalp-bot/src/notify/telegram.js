@@ -62,27 +62,30 @@ export async function sendMessage(text) {
 function cleanText(text) {
   if (!text) return text
   
-  // Fix case AI output bị xuống dòng/bullet kỳ lạ: "RSI\n• 7. = 65.08" hoặc "RSI• 7. = 65.08"
-  // Chuẩn hóa về "RSI(7) = 65.08"
-  text = text.replace(/RSI\s*(?:\r?\n\s*)?•\s*(\d+)\.\s*=\s*/g, 'RSI($1) = ')
+  // Convert RSI(7) → RSI_7 (format mới)
+  text = text.replace(/RSI\((\d+)\)/g, 'RSI_$1')
   
-  // Fix case bullet standalone: "\n• 7. = 65.08" -> "\nRSI(7) = 65.08"
+  // Fix case AI output bị xuống dòng/bullet kỳ lạ: "RSI\n• 7. = 65.08" hoặc "RSI• 7. = 65.08"
+  // Chuẩn hóa về "RSI_7 = 65.08"
+  text = text.replace(/RSI\s*(?:\r?\n\s*)?•\s*(\d+)\.\s*=\s*/g, 'RSI_$1 = ')
+  
+  // Fix case bullet standalone: "\n• 7. = 65.08" -> "\nRSI_7 = 65.08"
   // (Tránh đụng format đánh số thông thường vì pattern này có dấu "=" khá đặc thù)
-  text = text.replace(/(^|\n)\s*•\s*(\d+)\.\s*=\s*/g, '$1RSI($2) = ')
+  text = text.replace(/(^|\n)\s*•\s*(\d+)\.\s*=\s*/g, '$1RSI_$2 = ')
 
-  // Fix pattern "7.=" thành "RSI(7) ="
+  // Fix pattern "7.=" thành "RSI_7 ="
   text = text.replace(/(\d+)\.=/g, (match, num) => {
-    return `RSI(${num}) =`
+    return `RSI_${num} =`
   })
   
-  // Fix pattern "RSI 7.=" thành "RSI(7) ="
-  text = text.replace(/RSI\s+(\d+)\.=/g, 'RSI($1) =')
+  // Fix pattern "RSI 7.=" thành "RSI_7 ="
+  text = text.replace(/RSI\s+(\d+)\.=/g, 'RSI_$1 =')
   
-  // Fix pattern "RSI7.=" thành "RSI(7) ="
-  text = text.replace(/RSI(\d+)\.=/g, 'RSI($1) =')
+  // Fix pattern "RSI7.=" thành "RSI_7 ="
+  text = text.replace(/RSI(\d+)\.=/g, 'RSI_$1 =')
   
-  // Fix các pattern tương tự với EMA, Volume, etc.
-  text = text.replace(/(EMA\d+|Volume|RSI)\s*(\d+)\.=/g, '$1($2) =')
+  // Fix các pattern tương tự với EMA, Volume, etc. (giữ format EMA(26) nhưng RSI dùng RSI_7)
+  text = text.replace(/(EMA\d+|Volume)\s*(\d+)\.=/g, '$1($2) =')
   
   return text
 }

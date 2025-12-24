@@ -26,8 +26,8 @@ export class Scalp02 extends BaseStrategy {
         if (isBearRegime && signal.bias_5m !== 'bearish') return false
 
         // RSI Filter (Trend Strength)
-        // - LONG: RSI(7) >= 55
-        // - SHORT: RSI(7) <= 45
+        // - LONG: RSI_7 >= 55
+        // - SHORT: RSI_7 <= 45
         if (isBullRegime && signal.bias_rsi7 < 55) return false
         if (isBearRegime && signal.bias_rsi7 > 45) return false
 
@@ -95,17 +95,17 @@ MARKET DATA (${signal.symbol}):
 
 1. 15M (Regime):
 - Trend: ${signal.regime_15m} (EMA50 vs EMA200)
-- RSI(14): ${signal.regime_rsi14}
+- RSI_14: ${signal.regime_rsi14}
 
 2. 5M (Strength):
 - Bias: ${signal.bias_5m}
-- RSI(7): ${signal.bias_rsi7} (Bull >= 55, Bear <= 45)
+- RSI_7: ${signal.bias_rsi7} (Bull >= 55, Bear <= 45)
 
 3. 1M (Entry Trigger):
 - Price: ${signal.entry_close_1m}
 - EMA9: ${signal.entry_ema9} | EMA26: ${signal.entry_ema26}
-- RSI(7): ${signal.entry_rsi7}
-- ATR(1m): ${atrValue}
+- RSI_7: ${signal.entry_rsi7}
+- ATR_1m: ${atrValue}
 - Volume Force: ${signal.entry_vol_ratio}x
 
 REQUIRED ANALYSIS:
@@ -115,6 +115,11 @@ REQUIRED ANALYSIS:
    - SL = Price +/- (1.0 * ATR) (Tight Stop)
    - TP = Price +/- (2.0 * ATR) (Target 2R)
 
+QUAN TRỌNG - FORMAT REASON:
+- Luôn dùng format RSI_7, RSI_14 (dấu gạch dưới, KHÔNG dùng ngoặc đơn)
+- Ví dụ: "RSI_7 = 65.08 cho thấy momentum mạnh"
+- KHÔNG viết RSI(7) hoặc RSI 7 hoặc 7.=
+
 OUTPUT JSON:
 {
   "action": "LONG" | "SHORT" | "NO_TRADE",
@@ -122,7 +127,7 @@ OUTPUT JSON:
   "entry": ${signal.entry_close_1m},
   "stop_loss_logic": "Value (e.g. ${signal.entry_close_1m} - ${atrValue})",
   "take_profit_logic": ["Value (e.g. ${signal.entry_close_1m} + ${2 * atrValue})"],
-  "reason": "Explain WHY this momentum is valid. Mention RSI strength & Pullback hold.",
+  "reason": "Explain WHY this momentum is valid. Mention RSI_7 strength & Pullback hold. (dùng RSI_7 format)",
   "risk_warning": "Warning if ATR is too high"
 }
 `

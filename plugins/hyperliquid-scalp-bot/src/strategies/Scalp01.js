@@ -38,18 +38,18 @@ DỮ LIỆU THỊ TRƯỜNG (${signal.symbol}/USD):
 - Regime: ${signal.regime_15m || 'unknown'}
 - Cross: ${signal.regime_cross || 'none'}
 - EMA50: ${signal.regime_ema50} | EMA200: ${signal.regime_ema200}
-- RSI(14): ${signal.regime_rsi14}
+- RSI_14: ${signal.regime_rsi14}
 
 2. 5M CHART (Bias):
 - Bias: ${signal.bias_5m || 'unknown'}
 - EMA9/26: ${signal.bias_ema9} | ${signal.bias_ema26}
-- RSI(7): ${signal.bias_rsi7}
+- RSI_7: ${signal.bias_rsi7}
 
 3. 1M CHART (Entry):
 - Setup: ${signal.entry_cross || 'none'}
 - Price: ${signal.price}
 - EMA9/26: ${signal.entry_ema9} | ${signal.entry_ema26}
-- RSI(7): ${signal.entry_rsi7}
+- RSI_7: ${signal.entry_rsi7}
 - Vol Force: ${signal.entry_vol_status} (${signal.entry_vol_ratio}x)
 
 TIN TỨC:
@@ -57,8 +57,13 @@ ${signal.news && signal.news.length > 0 ? signal.news.map(n => `- [${n.eventTime
 
 QUY TẮC:
 1. Confluence: 15m+5m+1m đồng thuận -> Mạnh.
-2. Risk: RSI > 75 (Long risk), RSI < 25 (Short risk).
+2. Risk: RSI_7 > 75 (Long risk), RSI_7 < 25 (Short risk).
 3. TP/SL: Scalping tight (TP ~0.9%, SL ~0.6%).
+
+QUAN TRỌNG - FORMAT REASON:
+- Luôn dùng format RSI_7, RSI_14 (dấu gạch dưới, KHÔNG dùng ngoặc đơn)
+- Ví dụ: "Khung 1M RSI_7 = 30.55 cho thấy quá bán"
+- KHÔNG viết RSI(7) hoặc RSI 7 hoặc 7.=
 
 OUTPUT JSON:
 {
@@ -67,7 +72,7 @@ OUTPUT JSON:
   "entry": number,
   "stop_loss_logic": "string",
   "take_profit_logic": ["string"],
-  "reason": "Vietnamese explanation",
+  "reason": "Vietnamese explanation (dùng RSI_7, RSI_14 format)",
   "risk_warning": "string"
 }
 `
