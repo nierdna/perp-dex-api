@@ -62,16 +62,16 @@ SCALP_02 is designed to:
 **Indicators**
 - EMA9
 - EMA26
-- RSI(7)
+- RSI_7 (format: underscore, not parentheses)
 - ATR(14)
 
 **Conditions (ALL REQUIRED)**
 - bias_5m === regime_direction
 - |EMA9 − EMA26| ≥ min_trend_distance
 
-**RSI Filter**
-- LONG: RSI(7) ≥ 55
-- SHORT: RSI(7) ≤ 45
+**RSI Filter** (Updated: Loosened for better signal frequency)
+- LONG: RSI_7 ≥ 50 (was 55, now more flexible)
+- SHORT: RSI_7 ≤ 50 (was 45, now more flexible)
 
 ---
 
@@ -80,11 +80,11 @@ SCALP_02 is designed to:
 **Purpose**: Ensure move is not exhausted or reversing.
 
 **RSI Continuation Zone**
-- LONG: RSI(7) 60–85
-- SHORT: RSI(7) 15–40
+- LONG: RSI_7 60–85
+- SHORT: RSI_7 15–40
 
 **Invalid Conditions**
-- RSI > 90 or < 10
+- RSI_7 > 90 or < 10
 - Any bullish/bearish divergence
 
 ---
@@ -96,12 +96,12 @@ SCALP_02 is designed to:
 **LONG**
 - Pullback to EMA9/EMA26
 - No candle close below EMA26
-- RSI cools from >70 → 45–55
+- RSI_7 cools from >70 → 45–55
 
 **SHORT**
 - Pullback to EMA9/EMA26
 - No candle close above EMA26
-- RSI recovers from <30 → 45–55
+- RSI_7 recovers from <30 → 45–55
 
 ---
 
@@ -124,9 +124,11 @@ SCALP_02 is designed to:
 **Rules**
 - LONG only in bull regime
 - SHORT only in bear regime
-- Reject late RSI
+- Reject late RSI_7 (too high/low)
 - Reject abnormal volume
 - Reject high-impact news proximity
+
+**Note**: AI output uses RSI_7 format (underscore), not RSI(7)
 
 **Confidence**
 - Clean continuation: 0.75–0.9
@@ -148,8 +150,8 @@ SCALP_02 is designed to:
 
 - TP hit → WIN
 - SL hit → LOSS
-- RSI loses continuation → CLOSE
-- > 20–25 minutes → TIMEOUT
+- RSI_7 loses continuation → CLOSE
+- > 60 minutes (TTL) → TIMEOUT (auto-close at current price)
 
 ---
 
@@ -170,6 +172,13 @@ START → Regime Check → Trend Strength → RSI Continuation → Pullback → 
 
 ## 📦 Versioning
 
-Document Version: 1.0  
+Document Version: 1.1  
+Last Updated: 2025-01-XX  
 Status: Production-ready  
 Designed to run alongside SCALP_01
+
+### Changelog v1.1
+- **RSI Filter Loosened**: Changed from RSI_7 ≥ 55/≤ 45 to ≥ 50/≤ 50 for better signal frequency
+- **RSI Format**: Updated to RSI_7 (underscore) format throughout documentation
+- **TTL Added**: Trades auto-close after 60 minutes if TP/SL not hit
+- **Price Fallback**: Added fallback to `signal.price` if `entry_close_1m` not available

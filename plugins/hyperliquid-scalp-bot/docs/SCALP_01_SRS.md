@@ -30,7 +30,7 @@
   - `EMA50 > EMA200` → Bullish regime
   - `EMA50 < EMA200` → Bearish regime
   - Crossover detection: Golden Cross (bullish) / Death Cross (bearish)
-- **RSI(14)**: Overbought/Oversold levels
+- **RSI_14**: Overbought/Oversold levels (format: underscore, not parentheses)
   - >70: Overbought
   - <30: Oversold
 
@@ -52,7 +52,7 @@
   - `EMA9 > EMA26` → Bullish bias
   - `EMA9 < EMA26` → Bearish bias
   - Crossover detection for trend changes
-- **RSI(7)**: Short-term momentum
+- **RSI_7**: Short-term momentum (format: underscore, not parentheses)
 - **ATR(14)**: Volatility measurement
 
 **Bias States**:
@@ -72,7 +72,7 @@
 - **EMA9 vs EMA26**: Entry signal generation
   - Golden Cross (EMA9 crosses above EMA26) → LONG signal
   - Death Cross (EMA9 crosses below EMA26) → SHORT signal
-- **RSI(7)**: Entry momentum confirmation
+- **RSI_7**: Entry momentum confirmation (format: underscore, not parentheses)
 - **Volume Analysis**: Entry force validation
   - `vol_ratio >= 3.0` → Ultra high volume
   - `vol_ratio >= 1.5` → High volume
@@ -133,9 +133,9 @@
 ### Input Data
 
 1. **Multi-Timeframe Technical Data**:
-   - 15m: Regime, EMA50/200, RSI(14), cross status
-   - 5m: Bias, EMA9/26, RSI(7), cross status
-   - 1m: Entry setup, EMA9/26, RSI(7), volume force
+   - 15m: Regime, EMA50/200, RSI_14, cross status
+   - 5m: Bias, EMA9/26, RSI_7, cross status
+   - 1m: Entry setup, EMA9/26, RSI_7, volume force
 
 2. **Fundamental Data**:
    - News events (High/Medium impact, US/EU/CN related)
@@ -156,8 +156,8 @@
 
 #### 2. Risk Management Constraints
 
-- **LONG**: Avoid if RSI(1m) > 75 OR RSI(5m) > 75 (extreme overbought)
-- **SHORT**: Avoid if RSI(1m) < 25 OR RSI(5m) < 25 (extreme oversold)
+- **LONG**: Avoid if RSI_7 (1m) > 75 OR RSI_7 (5m) > 75 (extreme overbought)
+- **SHORT**: Avoid if RSI_7 (1m) < 25 OR RSI_7 (5m) < 25 (extreme oversold)
 - **Volume**: Prefer setups with volume > 1.2x average
 
 #### 3. Stop Loss & Take Profit Guidelines
@@ -406,9 +406,9 @@ TRADE_TTL_MINUTES=60        # Auto-close timeout (minutes)
                         ↓
 ┌─────────────────────────────────────────────────────────────┐
 │ 2. INDICATOR CALCULATION                                    │
-│    - 15m: EMA50/200, RSI(14), regime detection              │
-│    - 5m: EMA9/26, RSI(7), bias detection                    │
-│    - 1m: EMA9/26, RSI(7), volume analysis                   │
+│    - 15m: EMA50/200, RSI_14, regime detection              │
+│    - 5m: EMA9/26, RSI_7, bias detection                    │
+│    - 1m: EMA9/26, RSI_7, volume analysis                   │
 └─────────────────────────────────────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -467,7 +467,12 @@ TRADE_TTL_MINUTES=60        # Auto-close timeout (minutes)
 
 ---
 
-**Document Version**: 1.0  
+**Document Version**: 1.1  
 **Last Updated**: 2025-01-XX  
 **Strategy Code**: `SCALP_01`
+
+### Changelog v1.1
+- **RSI Format**: Updated to RSI_7, RSI_14 (underscore format) throughout documentation
+- **AI Prompt**: AI now instructed to use RSI_7 format in responses
+- **Code**: Text cleaning functions auto-convert RSI(7) → RSI_7 for consistency
 
