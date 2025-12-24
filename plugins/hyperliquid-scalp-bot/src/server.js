@@ -2,17 +2,8 @@ import express from 'express'
 import cors from 'cors'
 import swaggerUi from 'swagger-ui-express'
 import YAML from 'yamljs'
-import { getMarketSnapshot } from './data/marketCollector.js'
-import { calcIndicators } from './indicators/index.js'
-import { normalizeSignal } from './signal/normalizeSignal.js'
-import { getDecision } from './ai/deepseekDecision.js'
-import { isValidSignal } from './risk/riskManager.js'
-import { notify } from './notify/telegram.js'
-import { parsePlan } from './utils/parsePlan.js'
-
-import { saveLog } from './data/db.js'
-import { getTodaysNews } from './data/newsCollector.js'
-import { registerOpenTrade } from './monitor/tradeOutcomeMonitor.js'
+import { getActiveStrategies, getStrategy } from './strategies/index.js'
+import { executeStrategy } from './core/strategyExecutor.js'
 import { isSymbolLocked, withSymbolLock } from './bot/symbolLock.js'
 
 const app = express()
@@ -26,103 +17,48 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 // Manual Trigger Endpoint
 app.get('/ai-scalp', async (req, res) => {
     try {
-        // Lấy SYMBOL từ query, default là BTC
+        // Lấy params
         const symbol = req.query?.symbol || 'BTC'
-        console.log(`⚡ Manual Trigger Received for ${symbol}`)
+        const strategyName = req.query?.strategy || 'SCALP_01'
+        const force = req.query?.force === 'true' // Check force param
 
+        console.log(`⚡ Manual Trigger Received: ${strategyName} on ${symbol} (Force: ${force})`)
+
+        // 1. Validate Strategy
+        const strategy = getStrategy(strategyName)
+        if (!strategy) {
+            return res.status(400).json({
+                error: `Strategy '${strategyName}' not found. Available: SCALP_01, SCALP_02`
+            })
+        }
+
+        // 2. Check Lock
         if (isSymbolLocked(symbol)) {
-            return res.status(429).json({ error: `Symbol ${symbol} is busy (cycle in progress). Try again shortly.` })
+            return res.status(429).json({ error: `Symbol ${symbol} is busy. Try again shortly.` })
         }
 
+        // 3. Execute with Lock
         const locked = await withSymbolLock(symbol, async () => {
-        // 1. Fetch Data & News
-        const [market, news] = await Promise.all([
-            getMarketSnapshot(symbol),
-            getTodaysNews()
-        ])
-
-        if (!market) {
-            return { status: 500, body: { error: 'Failed to fetch market data' } }
-        }
-
-        // 2. Indicators
-        const indicators = calcIndicators(market)
-        const signal = normalizeSignal(indicators)
-        signal.news = news // Attach news
-
-        // 3. AI Analysis
-        const decision = await getDecision(signal)
-
-        // 4. Parse plan (chỉ meaningful khi LONG/SHORT)
-        const plan = (decision.action === 'LONG' || decision.action === 'SHORT')
-            ? parsePlan(decision, market.price)
-            : null
-
-        const takeProfitPrices = plan?.take_profit
-            ? plan.take_profit.map(tp => tp?.price).filter(p => typeof p === 'number' && Number.isFinite(p))
-            : null
-
-        // 5. Nếu signal đủ mạnh: đánh dấu OPEN để WS monitor theo dõi WIN/LOSS
-        const outcome = isValidSignal(decision) ? 'OPEN' : null
-
-        // 6. Lưu Log vào DB (Manual Trigger) - kèm plan/entry/SL/TP
-        const logId = await saveLog({
-            strategy: 'SCALP_01_MANUAL',
-            symbol: signal.symbol,
-            timeframe: 'Multi-TF',
-            price: signal.price,
-            ai_action: decision.action,
-            ai_confidence: decision.confidence,
-            ai_reason: decision.reason,
-            ai_full_response: decision,
-            market_snapshot: indicators, // Lưu Full Data Input
-            plan,
-            entry_price: plan?.entry ?? null,
-            stop_loss_price: plan?.stop_loss?.price ?? null,
-            take_profit_prices: takeProfitPrices,
-            outcome
-        })
-
-        // 6. Notify if valid
-        let notifStatus = 'Skipped (Low Confidence)'
-        if (outcome === 'OPEN') {
-            if (logId && plan?.entry) {
-                registerOpenTrade({
-                    id: logId,
-                    symbol: signal.symbol,
-                    action: decision.action,
-                    entryPrice: plan.entry,
-                    stopLossPrice: plan?.stop_loss?.price ?? null,
-                    takeProfitPrices: takeProfitPrices || [],
-                    createdAtMs: Date.now(),
-                })
-            }
-            notify(decision, plan, 'SCALP_01_MANUAL')
-            notifStatus = 'Sent to Telegram'
-        }
-
-        return { status: 200, body: {
-            message: 'Cycle executed successfully',
-            market_ctx: {
-                symbol: market.symbol,
-                price: market.price,
-                indicators: indicators // Trả về cả EMA, RSI để double check
-            },
-            ai_input: decision.debug_input, // INPUT: Prompt gửi đi
-            ai_output: {                   // OUTPUT: Kết quả trả về
-                action: decision.action,
-                confidence: decision.confidence,
-                reason: decision.reason,
-                plan: plan // Format: { entry, stop_loss: { price, des }, take_profit: [{ price, des }] }
-            },
-            notification: notifStatus
-        } }
+            // Pass force param to skip technical filter
+            return await executeStrategy(symbol, strategy, force)
         })
 
         if (locked?.skipped) {
-            return res.status(429).json({ error: `Symbol ${symbol} is busy (cycle in progress). Try again shortly.` })
+            return res.status(429).json({ error: `Symbol ${symbol} is busy.` })
         }
-        return res.status(locked?.result?.status || 200).json(locked?.result?.body || { message: 'OK' })
+
+        // 4. Response
+        const result = locked?.result
+        if (result?.status === 'error') {
+            return res.status(500).json(result)
+        }
+
+        return res.status(200).json({
+            message: 'Cycle executed successfully',
+            strategy: strategyName,
+            symbol: symbol,
+            result: result
+        })
 
     } catch (error) {
         console.error(error)
@@ -138,3 +74,4 @@ export function startServer() {
         console.log(`📄 Swagger Docs at http://localhost:${PORT}/api-docs`)
     })
 }
+

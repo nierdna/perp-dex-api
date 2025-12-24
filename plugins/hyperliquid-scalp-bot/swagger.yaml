@@ -11,10 +11,10 @@ paths:
         Trigger a single analysis cycle for a specific symbol. 
         The bot will fetch market data, calculate indicators, analyze with AI, and optionally send Telegram notification.
         
-        **Symbol Parameter:**
-        - Pass via query parameter (`?symbol=BTC`)
-        - Default: BTC (if not provided)
-        - Supported: Any valid Hyperliquid symbol (BTC, ETH, SOL, etc.)
+        **Parameters:**
+        - `symbol`: Trading symbol (e.g., BTC, ETH). Default: BTC
+        - `strategy`: Strategy to execute (SCALP_01, SCALP_02). Default: SCALP_01
+        - `force`: Set to `true` to skip technical filters and force AI analysis. Default: false
       parameters:
         - name: symbol
           in: query
@@ -23,6 +23,21 @@ paths:
           schema:
             type: string
             example: BTC
+        - name: strategy
+          in: query
+          description: Strategy to execute. Default is SCALP_01.
+          required: false
+          schema:
+            type: string
+            enum: [SCALP_01, SCALP_02]
+            example: SCALP_02
+        - name: force
+          in: query
+          description: If true, skip technical filters and force AI analysis.
+          required: false
+          schema:
+            type: boolean
+            example: true
       responses:
         '200':
           description: Detailed analysis result
@@ -34,93 +49,29 @@ paths:
                   message:
                     type: string
                     example: Cycle executed successfully
-                  market_ctx:
-                    type: object
-                    properties:
-                      symbol:
-                        type: string
-                        example: BTC
-                      price:
-                        type: number
-                        example: 86978
-                      indicators:
-                        type: object
-                        description: Full technical indicators (RSI, EMA, ATR, etc.)
-                  ai_input:
+                  strategy:
                     type: string
-                    description: The exact prompt sent to DeepSeek AI
-                  ai_output:
-                    type: object
-                    properties:
-                      action:
-                        type: string
-                        enum: [LONG, SHORT, NO_TRADE]
-                        example: LONG
-                      confidence:
-                        type: number
-                        minimum: 0
-                        maximum: 1
-                        example: 0.75
-                      reason:
-                        type: string
-                        description: AI reasoning in Vietnamese
-                      plan:
-                        type: object
-                        properties:
-                          entry:
-                            type: number
-                            example: 86978
-                          stop_loss:
-                            type: object
-                            properties:
-                              price:
-                                type: number
-                                nullable: true
-                                example: 86840
-                              des:
-                                type: string
-                                example: Dưới mức hỗ trợ tại EMA26 khung 1M
-                          take_profit:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                price:
-                                  type: number
-                                  nullable: true
-                                  example: 87200
-                                des:
-                                  type: string
-                                  example: Mục tiêu 1: EMA9 khung 5M ~ 87200
-                  notification:
+                    example: SCALP_02
+                  symbol:
                     type: string
-                    enum: [Sent to Telegram, Skipped (Low Confidence)]
-                    example: Sent to Telegram
-              example:
-                message: Cycle executed successfully
-                market_ctx:
-                  symbol: BTC
-                  price: 86978
-                  indicators:
-                    regime_15m: trending_bear
-                    bias_5m: bearish
-                    entry_1m: long_ready
-                ai_input: "Vai trò: Bạn là một chuyên gia..."
-                ai_output:
-                  action: LONG
-                  confidence: 0.75
-                  reason: "1. Khung 1M có tín hiệu MUA mạnh..."
-                  plan:
-                    entry: 86978
-                    stop_loss:
-                      price: 86840
-                      des: "Dưới mức hỗ trợ tại EMA26 khung 1M"
-                    take_profit:
-                      - price: 87200
-                        des: "Mục tiêu 1: EMA9 khung 5M ~ 87200"
-                      - price: 87400
-                        des: "Mục tiêu 2: EMA26 khung 5M ~ 87400"
-                notification: Sent to Telegram
+                    example: BTC
+                  result:
+                    type: object
+                    description: The execution result from strategyExecutor
+                    properties:
+                        status:
+                            type: string
+                            example: executed
+                        action:
+                            type: string
+                            example: LONG
+                        logId:
+                            type: integer
+                            example: 123
+        '400':
+            description: Invalid strategy name
+        '429':
+            description: Bot is busy (locked)
         '500':
           description: Server error
           content:

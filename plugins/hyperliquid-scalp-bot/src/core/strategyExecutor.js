@@ -1,0 +1,123 @@
+
+import { getMarketSnapshot } from '../data/marketCollector.js'
+import { calcIndicators } from '../indicators/index.js'
+import { normalizeSignal } from '../signal/normalizeSignal.js'
+import { getDecision } from '../ai/deepseekDecision.js'
+import { isValidSignal } from '../risk/riskManager.js'
+import { notify } from '../notify/telegram.js'
+import { saveLog } from '../data/db.js'
+import { getTodaysNews } from '../data/newsCollector.js'
+import { registerOpenTrade } from '../monitor/tradeOutcomeMonitor.js'
+
+/**
+ * Execute a single cycle for a specific strategy
+ * @param {String} symbol - The target symbol (e.g., 'BTC')
+ * @param {Object} strategy - The Strategy Instance (must extend BaseStrategy)
+ * @param {Boolean} skipFilter - If true, bypass technical filters and force AI analysis (default: false)
+ */
+export async function executeStrategy(symbol, strategy, skipFilter = false) {
+    const strategyName = strategy.getName()
+    console.log(`\n[${new Date().toLocaleTimeString()}] ♻️  Executing ${strategyName} for ${symbol}${skipFilter ? ' (Filter Skipped)' : ''}...`)
+
+    // 1. Fetch Data & News (Shared Data Layer)
+    process.stdout.write(`   [${strategyName}] Fetching data... `)
+    const [market, news] = await Promise.all([
+        getMarketSnapshot(symbol),
+        getTodaysNews()
+    ])
+
+    if (!market) {
+        console.log('❌ Failed to fetch market data')
+        return { status: 'error', reason: 'Market data fetch failed' }
+    }
+    console.log('✅')
+
+    // 2. Calc Indicators & Signal
+    const indicators = calcIndicators(market)
+    const signal = normalizeSignal(indicators)
+    signal.news = news
+
+    // 3. Technical Filter (Strategy Specific)
+    // Nếu skipFilter = true thì bỏ qua bước này
+    const isWorthy = skipFilter ? true : strategy.checkConditions(signal)
+
+    if (!isWorthy) {
+        console.log(`   [${strategyName}] 💤 Skipped (Technical Filter)`)
+        await saveLog({
+            strategy: strategyName,
+            symbol: signal.symbol,
+            timeframe: 'Multi-TF',
+            price: signal.price,
+            ai_action: 'SKIP',
+            ai_confidence: 0,
+            ai_reason: 'Filtered by Technical Conditions',
+            ai_full_response: null,
+            market_snapshot: indicators
+        })
+        return { status: 'skipped', reason: 'Technical Filter' }
+    }
+
+    // 4. AI Analysis
+    process.stdout.write(`   [${strategyName}] 🤖 AI Analyzing... `)
+    const prompt = strategy.buildAiPrompt(signal)
+    const decision = await getDecision(signal, prompt)
+    console.log('✅ Done')
+    console.log(`   👉 Action: ${decision.action} | Confidence: ${Math.round(decision.confidence * 100)}%`)
+
+    // 5. Build Plan
+    // Parse plan via strategy method (or default)
+    const plan = (decision.action === 'LONG' || decision.action === 'SHORT')
+        ? strategy.parsePlan(decision, market.price)
+        : null
+
+    const takeProfitPrices = plan?.take_profit
+        ? plan.take_profit.map(tp => tp?.price).filter(p => typeof p === 'number' && Number.isFinite(p))
+        : null
+
+    // 6. Validation (Post-AI)
+    // Check global risk rules + strategy specific logic (here using generic riskManager)
+    // Trong tương lai, method này cũng có thể move vào strategy nếu cần
+    const outcome = isValidSignal(decision) ? 'OPEN' : 'REJECTED'
+
+    // 7. Save Log
+    const logId = await saveLog({
+        strategy: strategyName, // Log đúng tên strategy
+        symbol: signal.symbol,
+        timeframe: 'Multi-TF',
+        price: signal.price,
+        ai_action: decision.action,
+        ai_confidence: decision.confidence,
+        ai_reason: decision.reason,
+        ai_full_response: decision,
+        market_snapshot: indicators,
+        plan,
+        entry_price: plan?.entry ?? null,
+        stop_loss_price: plan?.stop_loss?.price ?? null,
+        take_profit_prices: takeProfitPrices,
+        outcome: outcome === 'OPEN' ? 'OPEN' : null
+    })
+
+    // 8. Register Monitor & Notify
+    if (outcome === 'OPEN') {
+        if (logId && plan?.entry) {
+            registerOpenTrade({
+                id: logId,
+                symbol: signal.symbol,
+                action: decision.action,
+                entryPrice: plan.entry,
+                stopLossPrice: plan?.stop_loss?.price ?? null,
+                takeProfitPrices: takeProfitPrices || [],
+                createdAtMs: Date.now(),
+            })
+        }
+        notify(decision, plan, strategyName)
+        return { status: 'executed', action: decision.action, logId }
+    }
+
+    return {
+        status: 'processed',
+        action: decision.action,
+        reason: 'Low Confidence/No Trade',
+        ai_output: decision // Trả thêm full AI response để debug
+    }
+}

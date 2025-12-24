@@ -144,8 +144,13 @@ export function calcIndicators(market) {
     entry_ema9: tf1m.ema9 ? parseFloat(tf1m.ema9.toFixed(2)) : null,
     entry_ema26: tf1m.ema26 ? parseFloat(tf1m.ema26.toFixed(2)) : null,
     entry_rsi7: tf1m.rsi7 ? parseFloat(tf1m.rsi7.toFixed(2)) : null,
+    entry_atr: tf1m.atr ? parseFloat(tf1m.atr.toFixed(4)) : null, // Added ATR 1m
     entry_vol_ratio: tf1m.vol_ratio ? parseFloat(tf1m.vol_ratio.toFixed(2)) : null,
     entry_vol_status: tf1m.vol_status,
+
+    // Raw Data for specialized logic
+    entry_close_1m: parseFloat(market.candles_1m[market.candles_1m.length - 1].c),
+    entry_prev_close_1m: parseFloat(market.candles_1m[market.candles_1m.length - 2].c),
 
     // Common
     price: market.price,
