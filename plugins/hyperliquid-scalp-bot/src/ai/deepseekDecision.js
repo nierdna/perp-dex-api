@@ -59,7 +59,7 @@ QUY TẮC GIAO DỊCH (LINH HOẠT HƠN):
 
 HÃY SUY LUẬN VÀ TRẢ LỜI JSON:
 {
-  "action": "LONG" | "SHORT" | "WAIT" | "NO_TRADE",
+  "action": "LONG" | "SHORT" | "NO_TRADE",
   "confidence": 0.0 đến 1.0 (Hãy tự tin, nếu đẹp thì cho > 0.8),
   "entry": SỐ (Giá vào lệnh cụ thể, ví dụ: 86994),
   "stop_loss_logic": "Điểm dừng lỗ khuyến nghị (mô tả + giá nếu có, ví dụ: Dưới mức hỗ trợ quanh 86600-86650)",

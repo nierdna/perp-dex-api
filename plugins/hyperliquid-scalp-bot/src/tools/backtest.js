@@ -150,7 +150,8 @@ async function runBacktest() {
                     aiDecision = await getDecision(signal)
 
                     // Check AI confidence và action
-                    if (aiDecision.action === 'WAIT' || aiDecision.action === 'NO_TRADE' || aiDecision.confidence < MIN_AI_CONFIDENCE) {
+                    // NOTE: Chuẩn hoá action chỉ còn LONG/SHORT/NO_TRADE (không dùng WAIT nữa)
+                    if (aiDecision.action === 'NO_TRADE' || aiDecision.confidence < MIN_AI_CONFIDENCE) {
                         console.log(`⚠️ AI rejected signal: action=${aiDecision.action}, confidence=${(aiDecision.confidence * 100).toFixed(0)}%`);
                         shouldTrade = false
                         aiSkips++

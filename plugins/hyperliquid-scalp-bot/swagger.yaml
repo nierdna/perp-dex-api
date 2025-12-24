@@ -54,7 +54,7 @@ paths:
                     properties:
                       action:
                         type: string
-                        enum: [LONG, SHORT, NO_TRADE, WAIT]
+                        enum: [LONG, SHORT, NO_TRADE]
                         example: LONG
                       confidence:
                         type: number
