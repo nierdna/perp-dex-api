@@ -19,6 +19,14 @@ function extractNumber(text) {
   return null
 }
 
+function isPlausiblePrice(candidate, entryPrice) {
+  if (!Number.isFinite(candidate) || candidate <= 0) return false
+  if (!Number.isFinite(entryPrice) || entryPrice <= 0) return false
+  const ratio = candidate / entryPrice
+  // Wide bounds để hỗ trợ biến động, nhưng chặn các số kiểu EMA(26), RSI(7), timeframe(5)…
+  return ratio > 0.2 && ratio < 5
+}
+
 /**
  * Parse stop_loss từ text
  * @param {string} stopLossText - Text mô tả stop loss
@@ -31,7 +39,7 @@ export function parseStopLoss(stopLossText, entryPrice, action) {
     return { price: null, des: stopLossText || 'N/A' }
   }
 
-  // Tìm số trong text - ưu tiên số lớn (giá thực tế) thay vì số nhỏ (EMA26, RSI, etc.)
+  // Tìm số trong text - ưu tiên số hợp lý quanh entry (tránh ăn nhầm EMA/RSI/timeframe)
   const numbers = stopLossText.match(/[\d,]+\.?\d*/g)
   
   if (numbers && numbers.length > 0) {
@@ -40,29 +48,22 @@ export function parseStopLoss(stopLossText, entryPrice, action) {
       .map(n => parseFloat(n.replace(/,/g, '')))
       .filter(n => !isNaN(n))
     
-    if (prices.length > 0) {
-      // Ưu tiên số gần với entry price (thường là giá thực tế)
-      // Nếu không có số nào gần entry, lấy số lớn nhất (tránh lấy EMA26, RSI nhỏ)
-      const pricesNearEntry = prices.filter(p => 
-        p > entryPrice * 0.8 && p < entryPrice * 1.2
-      )
-      
-      let price
-      if (pricesNearEntry.length > 0) {
-        // Lấy số gần entry nhất
-        price = pricesNearEntry.reduce((closest, current) => 
-          Math.abs(current - entryPrice) < Math.abs(closest - entryPrice) ? current : closest
-        )
-      } else {
-        // Nếu không có số nào gần entry, lấy số lớn nhất (thường là giá)
-        price = Math.max(...prices)
-      }
-      
-      return {
-        price: price,
-        des: stopLossText
-      }
+    const plausible = prices.filter(p => isPlausiblePrice(p, entryPrice))
+    if (plausible.length === 0) {
+      return { price: null, des: stopLossText }
     }
+
+    // StopLoss nên nằm "ngược hướng" so với entry
+    const onCorrectSide = action === 'LONG'
+      ? plausible.filter(p => p < entryPrice)
+      : plausible.filter(p => p > entryPrice)
+
+    const candidates = onCorrectSide.length > 0 ? onCorrectSide : plausible
+    const price = candidates.reduce((closest, current) =>
+      Math.abs(current - entryPrice) < Math.abs(closest - entryPrice) ? current : closest
+    )
+
+    return { price, des: stopLossText }
   }
 
   // Nếu không tìm thấy số, thử parse từ mô tả
@@ -116,18 +117,26 @@ export function parseTakeProfit(takeProfitTexts, entryPrice, action) {
       return { price: null, des: 'N/A' }
     }
 
-    // Tìm số trong text (ưu tiên số lớn nhất - thường là giá target)
+    // Tìm số trong text (ưu tiên số hợp lý quanh entry để tránh ăn nhầm EMA/RSI/timeframe)
     const numbers = text.match(/[\d,]+\.?\d*/g)
     
     if (numbers && numbers.length > 0) {
-      // Lấy số lớn nhất (thường là giá target)
-      const prices = numbers.map(n => parseFloat(n.replace(/,/g, ''))).filter(n => !isNaN(n))
-      if (prices.length > 0) {
-        const maxPrice = Math.max(...prices)
-        return {
-          price: maxPrice,
-          des: text
-        }
+      const prices = numbers
+        .map(n => parseFloat(n.replace(/,/g, '')))
+        .filter(n => !isNaN(n))
+
+      const plausible = prices.filter(p => isPlausiblePrice(p, entryPrice))
+      if (plausible.length > 0) {
+        const onCorrectSide = action === 'LONG'
+          ? plausible.filter(p => p > entryPrice)
+          : plausible.filter(p => p < entryPrice)
+
+        const candidates = onCorrectSide.length > 0 ? onCorrectSide : plausible
+        const price = candidates.reduce((closest, current) =>
+          Math.abs(current - entryPrice) < Math.abs(closest - entryPrice) ? current : closest
+        )
+
+        return { price, des: text }
       }
     }
 

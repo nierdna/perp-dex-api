@@ -7,6 +7,7 @@ import { notify } from '../notify/telegram.js'
 import { saveLog } from '../data/db.js'
 import { getTodaysNews } from '../data/newsCollector.js'
 import { parsePlan } from '../utils/parsePlan.js'
+import { registerOpenTrade } from '../monitor/tradeOutcomeMonitor.js'
 
 export async function runScalp(symbol = null) {
   const targetSymbol = symbol || process.env.SYMBOL?.split(',')[0]?.trim() || 'BTC'
@@ -37,7 +38,7 @@ export async function runScalp(symbol = null) {
   if (!isWorthy) {
     console.log('💤 Market quiet. Skip AI.')
     // Lưu log SKIP để tracking
-    saveLog({
+    await saveLog({
       strategy: 'SCALP_01',
       symbol: signal.symbol,
       timeframe: 'Multi-TF',
@@ -57,8 +58,20 @@ export async function runScalp(symbol = null) {
   console.log('✅ Done')
   console.log(`   👉 Action: ${decision.action} | Confidence: ${Math.round(decision.confidence * 100)}%`)
 
-  // 5. Lưu Log vào DB
-  saveLog({
+  // 5. Parse plan (chỉ meaningful khi LONG/SHORT)
+  const plan = (decision.action === 'LONG' || decision.action === 'SHORT')
+    ? parsePlan(decision, market.price)
+    : null
+
+  const takeProfitPrices = plan?.take_profit
+    ? plan.take_profit.map(tp => tp?.price).filter(p => typeof p === 'number' && Number.isFinite(p))
+    : null
+
+  // 6. Nếu signal đủ mạnh: đánh dấu OPEN để WS monitor theo dõi WIN/LOSS
+  const outcome = isValidSignal(decision) ? 'OPEN' : null
+
+  // 7. Lưu Log vào DB (kèm entry/SL/TP nếu có)
+  const logId = await saveLog({
     strategy: 'SCALP_01',
     symbol: signal.symbol,
     timeframe: 'Multi-TF',
@@ -67,14 +80,28 @@ export async function runScalp(symbol = null) {
     ai_confidence: decision.confidence,
     ai_reason: decision.reason,
     ai_full_response: decision,
-    market_snapshot: indicators // Lưu Full Data Input
+    market_snapshot: indicators, // Lưu Full Data Input
+    plan,
+    entry_price: plan?.entry ?? null,
+    stop_loss_price: plan?.stop_loss?.price ?? null,
+    take_profit_prices: takeProfitPrices,
+    outcome
   })
 
-  // Chỉ bắn alert nếu signal đủ mạnh
-  if (!isValidSignal(decision)) return
+  // Nếu OPEN thì register vào WS monitor để tự update WIN/LOSS
+  if (outcome === 'OPEN' && logId && plan?.entry) {
+    registerOpenTrade({
+      id: logId,
+      symbol: signal.symbol,
+      action: decision.action,
+      entryPrice: plan.entry,
+      stopLossPrice: plan?.stop_loss?.price ?? null,
+      takeProfitPrices: takeProfitPrices || [],
+    })
+  }
 
-  // Parse plan để có entry, stop_loss, take_profit
-  const plan = parsePlan(decision, market.price)
+  // Chỉ bắn alert nếu signal đủ mạnh
+  if (outcome !== 'OPEN') return
 
   // Không đặt lệnh, chỉ thông báo
   notify(decision, plan)

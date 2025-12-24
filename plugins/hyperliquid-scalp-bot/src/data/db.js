@@ -32,9 +32,26 @@ const CREATE_TABLE_QUERY = `
   );
 `
 
+// Schema mở rộng để lưu plan/entry/SL/TP và kết quả WIN/LOSS theo WS monitor.
+// Dùng ALTER ... IF NOT EXISTS để không phá DB đang chạy.
+const MIGRATION_QUERIES = [
+    `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS plan JSONB;`,
+    `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS entry_price NUMERIC;`,
+    `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS stop_loss_price NUMERIC;`,
+    `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS take_profit_prices JSONB;`,
+    `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS outcome VARCHAR(10);`, // OPEN | WIN | LOSS
+    `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS outcome_reason TEXT;`,
+    `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS close_price NUMERIC;`,
+    `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS pnl_percent NUMERIC;`,
+    `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP;`,
+]
+
 export async function initDB() {
     try {
         await pool.query(CREATE_TABLE_QUERY)
+        for (const q of MIGRATION_QUERIES) {
+            await pool.query(q)
+        }
         console.log('✅ Database connected & table logs_trade ready')
     } catch (err) {
         console.error('❌ Database connection error:', err.message)
@@ -44,8 +61,9 @@ export async function initDB() {
 export async function saveLog(data) {
     const query = `
     INSERT INTO logs_trade 
-    (strategy, symbol, timeframe, price, ai_action, ai_confidence, ai_reason, ai_full_response, market_snapshot)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    (strategy, symbol, timeframe, price, ai_action, ai_confidence, ai_reason, ai_full_response, market_snapshot, plan, entry_price, stop_loss_price, take_profit_prices, outcome)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    RETURNING id
   `
     const values = [
         data.strategy || 'SCALP_01',
@@ -56,13 +74,55 @@ export async function saveLog(data) {
         data.ai_confidence,
         data.ai_reason,
         JSON.stringify(data.ai_full_response),
-        JSON.stringify(data.market_snapshot)
+        JSON.stringify(data.market_snapshot),
+        data.plan ? JSON.stringify(data.plan) : null,
+        data.entry_price ?? null,
+        data.stop_loss_price ?? null,
+        data.take_profit_prices ? JSON.stringify(data.take_profit_prices) : null,
+        data.outcome ?? null,
     ]
 
     try {
-        await pool.query(query, values)
+        const result = await pool.query(query, values)
         // console.log('💾 Log saved to DB')
+        return result?.rows?.[0]?.id ?? null
     } catch (err) {
         console.error('❌ Save log error:', err.message)
+        return null
+    }
+}
+
+export async function fetchOpenTrades() {
+    const query = `
+      SELECT id, symbol, ai_action, entry_price, stop_loss_price, take_profit_prices, created_at
+      FROM logs_trade
+      WHERE outcome = 'OPEN'
+    `
+    try {
+        const result = await pool.query(query)
+        return result.rows || []
+    } catch (err) {
+        console.error('❌ Fetch open trades error:', err.message)
+        return []
+    }
+}
+
+export async function updateTradeOutcome({ id, outcome, close_price, pnl_percent, outcome_reason }) {
+    const query = `
+      UPDATE logs_trade
+      SET outcome = $2,
+          close_price = $3,
+          pnl_percent = $4,
+          outcome_reason = $5,
+          closed_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+    `
+    const values = [id, outcome, close_price ?? null, pnl_percent ?? null, outcome_reason ?? null]
+    try {
+        await pool.query(query, values)
+        return true
+    } catch (err) {
+        console.error('❌ Update trade outcome error:', err.message)
+        return false
     }
 }

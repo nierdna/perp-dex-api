@@ -12,6 +12,7 @@ import { parsePlan } from './utils/parsePlan.js'
 
 import { saveLog } from './data/db.js'
 import { getTodaysNews } from './data/newsCollector.js'
+import { registerOpenTrade } from './monitor/tradeOutcomeMonitor.js'
 
 const app = express()
 app.use(cors())
@@ -46,8 +47,20 @@ app.get('/ai-scalp', async (req, res) => {
         // 3. AI Analysis
         const decision = await getDecision(signal)
 
-        // 4. Lưu Log vào DB (Manual Trigger)
-        saveLog({
+        // 4. Parse plan (chỉ meaningful khi LONG/SHORT)
+        const plan = (decision.action === 'LONG' || decision.action === 'SHORT')
+            ? parsePlan(decision, market.price)
+            : null
+
+        const takeProfitPrices = plan?.take_profit
+            ? plan.take_profit.map(tp => tp?.price).filter(p => typeof p === 'number' && Number.isFinite(p))
+            : null
+
+        // 5. Nếu signal đủ mạnh: đánh dấu OPEN để WS monitor theo dõi WIN/LOSS
+        const outcome = isValidSignal(decision) ? 'OPEN' : null
+
+        // 6. Lưu Log vào DB (Manual Trigger) - kèm plan/entry/SL/TP
+        const logId = await saveLog({
             strategy: 'SCALP_01_MANUAL',
             symbol: signal.symbol,
             timeframe: 'Multi-TF',
@@ -56,15 +69,27 @@ app.get('/ai-scalp', async (req, res) => {
             ai_confidence: decision.confidence,
             ai_reason: decision.reason,
             ai_full_response: decision,
-            market_snapshot: indicators // Lưu Full Data Input
+            market_snapshot: indicators, // Lưu Full Data Input
+            plan,
+            entry_price: plan?.entry ?? null,
+            stop_loss_price: plan?.stop_loss?.price ?? null,
+            take_profit_prices: takeProfitPrices,
+            outcome
         })
-
-        // 5. Parse plan để format đúng structure
-        const plan = parsePlan(decision, market.price)
 
         // 6. Notify if valid
         let notifStatus = 'Skipped (Low Confidence)'
-        if (isValidSignal(decision)) {
+        if (outcome === 'OPEN') {
+            if (logId && plan?.entry) {
+                registerOpenTrade({
+                    id: logId,
+                    symbol: signal.symbol,
+                    action: decision.action,
+                    entryPrice: plan.entry,
+                    stopLossPrice: plan?.stop_loss?.price ?? null,
+                    takeProfitPrices: takeProfitPrices || [],
+                })
+            }
             notify(decision, plan)
             notifStatus = 'Sent to Telegram'
         }
