@@ -67,12 +67,16 @@ Bot chạy một vòng lặp vô tận, cứ **mỗi 60 giây** sẽ thực hi�
    npm install
    ```
 2. **Cấu hình**:
-   Copy file `.env.example` ra `.env` và điền:
+   Tạo file `.env` và điền các biến sau:
    - `DEEPSEEK_API_KEY`: Key AI.
    - `TELEGRAM_BOT_TOKEN`: Token bot Tele.
    - `TELEGRAM_CHAT_ID`: ID chat của bạn.
    - `SYMBOL`: Token cần theo dõi (Ví dụ: BTC, ETH, SOL - mặc định ETH).
    - `TIMEFRAME`: Khung thời gian (Ví dụ: 15m, 1h, 4h - mặc định 15m).
+   - `DATABASE_URL`: Connection string PostgreSQL (Format: `postgresql://username:password@host:port/database`)
+     - Ví dụ: `DATABASE_URL=postgresql://postgres:password@localhost:5432/hyperliquid_bot`
+     - Với SSL: `DATABASE_URL=postgresql://postgres:password@host:5432/db?sslmode=require`
+     - Hoặc dùng các biến riêng lẻ: `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`
 3. **Chạy**:
    ```bash
    npm run dev

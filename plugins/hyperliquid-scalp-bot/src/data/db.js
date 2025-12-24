@@ -1,13 +1,19 @@
 import pg from 'pg'
 import 'dotenv/config'
 
-const pool = new pg.Pool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-})
+// Support both DATABASE_URL and individual connection params (backward compatible)
+const pool = process.env.DATABASE_URL
+    ? new pg.Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.DATABASE_URL.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined
+    })
+    : new pg.Pool({
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        user: process.env.DB_USERNAME,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE,
+    })
 
 // Tạo bảng nếu chưa có (cập nhật tên bảng và thêm cột strategy)
 const CREATE_TABLE_QUERY = `
