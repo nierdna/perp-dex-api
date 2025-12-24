@@ -69,6 +69,9 @@ HÃY SUY LUẬN VÀ TRẢ LỜI JSON:
 }
 `
 
+  // DeepSeek AI cần timeout dài hơn (30s) vì AI processing có thể lâu
+  const aiTimeout = parseInt(process.env.DEEPSEEK_TIMEOUT_MS || '30000')
+  
   try {
     const response = await http.post(
       DEEPSEEK_ENDPOINT,
@@ -81,6 +84,7 @@ HÃY SUY LUẬN VÀ TRẢ LỜI JSON:
         temperature: 0.0 // Giữ nhiệt độ thấp để AI trả về đúng format + logic chặt chẽ
       },
       {
+        timeout: Number.isFinite(aiTimeout) ? aiTimeout : 30000,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
@@ -102,8 +106,30 @@ HÃY SUY LUẬN VÀ TRẢ LỜI JSON:
     }
 
   } catch (error) {
-    console.error('❌ DeepSeek API Error:', error.response?.data || error.message)
+    // Phân loại lỗi rõ ràng hơn
+    let errorType = 'Unknown'
+    let errorDetail = error.message || 'Unknown error'
+    
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.message === 'aborted') {
+      errorType = 'Timeout'
+      errorDetail = `Request timeout after ${aiTimeout}ms (AI processing may take longer)`
+    } else if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
+      errorType = 'Network Error'
+      errorDetail = `Connection error: ${error.code}`
+    } else if (error.response) {
+      errorType = 'API Error'
+      errorDetail = error.response.data || error.response.statusText || `HTTP ${error.response.status}`
+    }
+    
+    console.error(`❌ DeepSeek API Error [${errorType}]:`, errorDetail)
+    
     // Fallback an toàn
-    return { action: 'NO_TRADE', confidence: 0, reason: "API Error", symbol: signal.symbol, debug_input: prompt }
+    return { 
+      action: 'NO_TRADE', 
+      confidence: 0, 
+      reason: `API Error: ${errorType}`, 
+      symbol: signal.symbol, 
+      debug_input: prompt 
+    }
   }
 }
