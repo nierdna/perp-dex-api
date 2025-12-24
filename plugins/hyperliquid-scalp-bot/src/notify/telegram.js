@@ -1,4 +1,5 @@
 import http from '../utils/httpClient.js'
+import { canSendAlert, markAlertSent } from './alertCooldown.js'
 
 /**
  * Escape HTML special characters để tránh lỗi Telegram API 400
@@ -246,7 +247,21 @@ ${safeTakeProfitText}
 ━━━━━━━━━━━━━━━━━━━━
 `
 
+  // Check cooldown trước khi gửi (chống spam cùng action)
+  const symbol = decision.symbol || decision?.market?.symbol || 'UNKNOWN'
+  const action = decision.action
+
+  if (!canSendAlert(symbol, action)) {
+    console.log(`⏸️  Alert skipped (cooldown): ${symbol} ${action}`)
+    return null // Không gửi alert
+  }
+
+  // Gửi alert
   sendMessage(message)
+  
+  // Đánh dấu đã gửi (update cooldown tracker)
+  markAlertSent(symbol, action)
+  
   console.log('📢 Processing alert:', decision.action)
   return message
 }
