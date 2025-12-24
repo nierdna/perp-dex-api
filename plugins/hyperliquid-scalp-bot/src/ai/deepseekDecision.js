@@ -64,7 +64,7 @@ HÃY SUY LUẬN VÀ TRẢ LỜI JSON:
   "entry": SỐ (Giá vào lệnh cụ thể, ví dụ: 86994),
   "stop_loss_logic": "Điểm dừng lỗ khuyến nghị (mô tả + giá nếu có, ví dụ: Dưới mức hỗ trợ quanh 86600-86650)",
   "take_profit_logic": ["Mục tiêu 1 (mô tả + giá, ví dụ: EMA9 khung 5M ~ 86982)", "Mục tiêu 2 (mô tả + giá, ví dụ: EMA26 khung 5M ~ 87120)"],
-  "reason": "Lý do thắng > 70% (Tiếng Việt)",
+  "reason": "Lý do thắng > 70% (Tiếng Việt). QUAN TRỌNG: Format rõ ràng, mỗi điểm một dòng, bắt đầu bằng số thứ tự. Ví dụ:\n1. Khung 1M RSI(7) = 30.55 cho thấy quá bán ngắn hạn\n2. Khung 5M RSI(7) = 33.61 cũng ở vùng oversold\n3. Khung 15M đang sideway, không cản trở đà tăng\nLƯU Ý: Luôn viết đầy đủ RSI(7) = giá_trị, KHÔNG viết tắt thành 7.= hoặc các format lạ khác.",
   "risk_warning": "Cảnh báo rủi ro (nếu có)"
 }
 `

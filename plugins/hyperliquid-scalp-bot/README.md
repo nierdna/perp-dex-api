@@ -3,7 +3,7 @@
 ## 🌐 API & Swagger
 Bot có sẵn API server để bạn trigger thủ công:
 - **Swagger UI**: [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
-- **Manual Trigger**: `POST http://localhost:3000/run-scalp`
+- **Manual Trigger**: `GET http://localhost:3000/ai-scalp?symbol=BTC`
 - **Port**: Mặc định 3000 (Chỉnh trong file server.js nếu cần)
 
 ## 🎯 Mục tiêu

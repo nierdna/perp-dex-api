@@ -22,13 +22,15 @@ const swaggerDocument = YAML.load('./swagger.yaml')
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
 // Manual Trigger Endpoint
-app.post('/run-scalp', async (req, res) => {
+app.get('/ai-scalp', async (req, res) => {
     try {
-        console.log('⚡ Manual Trigger Received')
+        // Lấy SYMBOL từ query, default là BTC
+        const symbol = req.query?.symbol || 'BTC'
+        console.log(`⚡ Manual Trigger Received for ${symbol}`)
 
         // 1. Fetch Data & News
         const [market, news] = await Promise.all([
-            getMarketSnapshot(),
+            getMarketSnapshot(symbol),
             getTodaysNews()
         ])
 

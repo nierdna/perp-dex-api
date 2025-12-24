@@ -8,15 +8,16 @@ import { saveLog } from '../data/db.js'
 import { getTodaysNews } from '../data/newsCollector.js'
 import { parsePlan } from '../utils/parsePlan.js'
 
-export async function runScalp() {
-  console.log(`\n[${new Date().toLocaleTimeString()}] ♻️  Starting cycle...`)
+export async function runScalp(symbol = null) {
+  const targetSymbol = symbol || process.env.SYMBOL?.split(',')[0]?.trim() || 'BTC'
+  console.log(`\n[${new Date().toLocaleTimeString()}] ♻️  Starting cycle for ${targetSymbol}...`)
 
   // ... (giữ nguyên phần fetch data và filter) ...
 
   // 1. Fetch Data & News
-  process.stdout.write('   Fetching data... ')
+  process.stdout.write(`   Fetching data for ${targetSymbol}... `)
   const [market, news] = await Promise.all([
-    getMarketSnapshot(),
+    getMarketSnapshot(targetSymbol),
     getTodaysNews()
   ])
 
