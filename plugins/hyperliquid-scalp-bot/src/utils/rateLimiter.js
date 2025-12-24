@@ -10,16 +10,18 @@
  */
 
 // Config từ env
-const MARKET_DATA_CACHE_MS = parseInt(process.env.MARKET_DATA_CACHE_MS || '10000') // 10s cache
+const MARKET_DATA_CACHE_MS = parseInt(process.env.MARKET_DATA_CACHE_MS || '30000') // 30s cache (tăng từ 10s để giảm API calls)
 const NEWS_CACHE_MS = parseInt(process.env.NEWS_CACHE_MS || '60000') // 60s cache (news ít thay đổi)
 const AI_RATE_LIMIT_MS = parseInt(process.env.AI_RATE_LIMIT_MS || '2000') // Min 2s giữa các AI calls
-const MARKET_API_RATE_LIMIT_MS = parseInt(process.env.MARKET_API_RATE_LIMIT_MS || '1000') // Min 1s giữa market API calls
+const MARKET_API_RATE_LIMIT_MS = parseInt(process.env.MARKET_API_RATE_LIMIT_MS || '2000') // Min 2s giữa market API calls (tăng từ 1s)
+const META_CACHE_MS = parseInt(process.env.META_CACHE_MS || '10000') // 10s cache cho meta (dùng chung cho tất cả symbols)
 const SKIP_LOG_COOLDOWN_MS = parseInt(process.env.SKIP_LOG_COOLDOWN_MINUTES || '5') * 60 * 1000 // 5 phút cooldown cho SKIP logs
 const NO_TRADE_LOG_COOLDOWN_MS = parseInt(process.env.NO_TRADE_LOG_COOLDOWN_MINUTES || '2') * 60 * 1000 // 2 phút cooldown cho NO_TRADE logs
 
 // Cache storage
 const marketDataCache = new Map() // Map<symbol, { data, timestamp }>
 const newsCache = { data: null, timestamp: 0 }
+const metaCache = { data: null, timestamp: 0 } // Meta dùng chung cho tất cả symbols
 
 // Rate limit tracking
 const lastAICall = { timestamp: 0 }
@@ -142,6 +144,35 @@ export function canCallMarketAPI() {
  */
 export function markMarketAPICall() {
   lastMarketAPICall.timestamp = Date.now()
+}
+
+/**
+ * Get cached meta data nếu còn valid
+ * @returns {Object|null} - Cached meta hoặc null nếu expired
+ */
+export function getCachedMeta() {
+  if (!metaCache.data) return null
+  
+  const now = Date.now()
+  const age = now - metaCache.timestamp
+  
+  if (age < META_CACHE_MS) {
+    return metaCache.data
+  }
+  
+  // Cache expired
+  metaCache.data = null
+  metaCache.timestamp = 0
+  return null
+}
+
+/**
+ * Cache meta data (dùng chung cho tất cả symbols)
+ * @param {Object} data - Meta data
+ */
+export function cacheMeta(data) {
+  metaCache.data = data
+  metaCache.timestamp = Date.now()
 }
 
 /**

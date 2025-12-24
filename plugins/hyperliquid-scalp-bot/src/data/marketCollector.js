@@ -1,18 +1,38 @@
 import http from '../utils/httpClient.js'
-import { getCachedMarketData, cacheMarketData, canCallMarketAPI, markMarketAPICall } from '../utils/rateLimiter.js'
+import { getCachedMarketData, cacheMarketData, canCallMarketAPI, markMarketAPICall, getCachedMeta, cacheMeta } from '../utils/rateLimiter.js'
 
 const API_URL = 'https://api.hyperliquid.xyz/info'
 
-async function getCandles(symbol, interval) {
-  try {
-    // Tính số giờ cần lấy dựa trên interval để đủ 250 nến
-    const hoursNeeded = interval === '15m' ? 63 : interval === '5m' ? 21 : 5 // 15m: 250*15/60=62.5h, 5m: 250*5/60=20.8h, 1m: 250/60=4.2h
-    const startTime = Date.now() - (hoursNeeded * 60 * 60 * 1000)
+// Retry logic với exponential backoff cho 429 errors
+async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (error) {
+      // Chỉ retry nếu là 429 (rate limit)
+      if (error.response?.status === 429 && attempt < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, attempt) // Exponential backoff: 1s, 2s, 4s
+        console.warn(`⚠️ Rate limit 429, retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        continue
+      }
+      throw error
+    }
+  }
+}
 
-    const response = await http.post(API_URL, {
-      type: 'candleSnapshot',
-      req: { coin: symbol, interval: interval, startTime: startTime }
-    })
+async function getCandles(symbol, interval) {
+  // Tính số giờ cần lấy dựa trên interval để đủ 250 nến
+  const hoursNeeded = interval === '15m' ? 63 : interval === '5m' ? 21 : 5 // 15m: 250*15/60=62.5h, 5m: 250*5/60=20.8h, 1m: 250/60=4.2h
+  const startTime = Date.now() - (hoursNeeded * 60 * 60 * 1000)
+
+  try {
+    const response = await retryWithBackoff(() => 
+      http.post(API_URL, {
+        type: 'candleSnapshot',
+        req: { coin: symbol, interval: interval, startTime: startTime }
+      })
+    )
     return response.data
   } catch (error) {
     console.error(`❌ Get Candles Error (${symbol} ${interval}):`, error.message)
@@ -34,9 +54,22 @@ export async function getBacktestCandles(symbol, interval, startTime, endTime) {
 }
 
 async function getMeta() {
+  // Check cache trước (meta dùng chung cho tất cả symbols)
+  const cached = getCachedMeta()
+  if (cached) {
+    return cached
+  }
+
   try {
-    const response = await http.post(API_URL, { type: 'metaAndAssetCtxs' })
-    return response.data
+    const response = await retryWithBackoff(() => 
+      http.post(API_URL, { type: 'metaAndAssetCtxs' })
+    )
+    const metaData = response.data
+    
+    // Cache meta
+    cacheMeta(metaData)
+    
+    return metaData
   } catch (error) {
     console.error('❌ Get Meta Error:', error.message)
     return null
@@ -53,21 +86,27 @@ export async function getMarketSnapshot(symbol = null) {
     return cached
   }
   
-  // Rate limit check
+  // Rate limit check - đợi nếu cần
   if (!canCallMarketAPI()) {
-    // Nếu không được phép gọi API ngay, trả về cache cũ nhất (nếu có)
-    // Hoặc đợi một chút
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Đợi một chút trước khi gọi API
+    const waitTime = 1000 // 1s
+    await new Promise(resolve => setTimeout(resolve, waitTime))
   }
   
-  // Lấy 3 khung thời gian song song
-  const [candles15m, candles5m, candles1m, meta] = await Promise.all([
-    getCandles(targetSymbol, '15m'),
-    getCandles(targetSymbol, '5m'),
-    getCandles(targetSymbol, '1m'),
-    getMeta()
-  ])
+  // Lấy 3 khung thời gian song song (nhưng stagger nhẹ để tránh rate limit)
+  // Meta được cache riêng nên không cần đợi
+  const meta = await getMeta()
   
+  // Stagger candles requests (mỗi request cách nhau 200ms)
+  const candles15m = await getCandles(targetSymbol, '15m')
+  markMarketAPICall()
+  
+  await new Promise(resolve => setTimeout(resolve, 200))
+  const candles5m = await getCandles(targetSymbol, '5m')
+  markMarketAPICall()
+  
+  await new Promise(resolve => setTimeout(resolve, 200))
+  const candles1m = await getCandles(targetSymbol, '1m')
   markMarketAPICall()
 
   if (!candles15m.length || !candles5m.length || !candles1m.length || !meta) {
