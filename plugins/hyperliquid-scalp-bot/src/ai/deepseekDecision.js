@@ -1,4 +1,5 @@
 import http from '../utils/httpClient.js'
+import { canCallAI, markAICall } from '../utils/rateLimiter.js'
 
 const DEEPSEEK_ENDPOINT = 'https://api.deepseek.com/chat/completions'
 
@@ -17,6 +18,13 @@ export async function getDecision(signal, prompt) {
 
   // DeepSeek AI cần timeout dài hơn (120s) vì AI processing có thể lâu
   const aiTimeout = parseInt(process.env.DEEPSEEK_TIMEOUT_MS || '120000')
+
+  // Rate limit check
+  if (!canCallAI()) {
+    // Nếu không được phép gọi AI ngay, đợi một chút
+    const waitTime = 1000 // 1s
+    await new Promise(resolve => setTimeout(resolve, waitTime))
+  }
 
   try {
     const response = await http.post(
@@ -43,6 +51,9 @@ export async function getDecision(signal, prompt) {
     const cleanJson = content.replace(/```json|```/g, '').trim()
 
     const decision = JSON.parse(cleanJson)
+
+    // Mark AI call đã thực hiện
+    markAICall()
 
     // Trả về cả decision lẫn prompt đầu vào để debug
     return {

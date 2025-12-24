@@ -1,8 +1,15 @@
 import http from '../utils/httpClient.js'
+import { getCachedNews, cacheNews } from '../utils/rateLimiter.js'
 
 const NEWS_API_URL = 'https://divine-insight-production.up.railway.app/events'
 
 export async function getTodaysNews() {
+    // Check cache trước
+    const cached = getCachedNews()
+    if (cached) {
+        return cached
+    }
+    
     try {
         const today = new Date()
         const tomorrow = new Date(today)
@@ -27,7 +34,12 @@ export async function getTodaysNews() {
         })
 
         // Sắp xếp theo giờ
-        return importantEvents.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate))
+        const sortedEvents = importantEvents.sort((a, b) => new Date(a.eventDate) - new Date(b.eventDate))
+        
+        // Cache news
+        cacheNews(sortedEvents)
+        
+        return sortedEvents
     } catch (error) {
         console.warn('⚠️ Fetch News Error:', error.message)
         return [] // Không crash bot nếu lỗi news

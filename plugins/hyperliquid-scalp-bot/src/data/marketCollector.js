@@ -1,4 +1,5 @@
 import http from '../utils/httpClient.js'
+import { getCachedMarketData, cacheMarketData, canCallMarketAPI, markMarketAPICall } from '../utils/rateLimiter.js'
 
 const API_URL = 'https://api.hyperliquid.xyz/info'
 
@@ -46,6 +47,19 @@ export async function getMarketSnapshot(symbol = null) {
   // Default symbol: BTC (theo yêu cầu)
   const targetSymbol = symbol || process.env.SYMBOL?.split(',')[0]?.trim() || 'BTC'
   
+  // Check cache trước
+  const cached = getCachedMarketData(targetSymbol)
+  if (cached) {
+    return cached
+  }
+  
+  // Rate limit check
+  if (!canCallMarketAPI()) {
+    // Nếu không được phép gọi API ngay, trả về cache cũ nhất (nếu có)
+    // Hoặc đợi một chút
+    await new Promise(resolve => setTimeout(resolve, 500))
+  }
+  
   // Lấy 3 khung thời gian song song
   const [candles15m, candles5m, candles1m, meta] = await Promise.all([
     getCandles(targetSymbol, '15m'),
@@ -53,6 +67,8 @@ export async function getMarketSnapshot(symbol = null) {
     getCandles(targetSymbol, '1m'),
     getMeta()
   ])
+  
+  markMarketAPICall()
 
   if (!candles15m.length || !candles5m.length || !candles1m.length || !meta) {
     console.warn(`⚠️ Market data incomplete for ${targetSymbol}`)
@@ -74,7 +90,7 @@ export async function getMarketSnapshot(symbol = null) {
   // Funding rate (hourly formatted)
   const fundingRate = parseFloat(assetCtx.funding)
 
-  return {
+  const marketData = {
     symbol: targetSymbol,
     price: currentPrice,
 
@@ -88,4 +104,9 @@ export async function getMarketSnapshot(symbol = null) {
     // Mock account vì ta không login
     account: { hasPosition: false, dailyLoss: 0 }
   }
+  
+  // Cache data
+  cacheMarketData(targetSymbol, marketData)
+  
+  return marketData
 }
