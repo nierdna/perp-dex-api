@@ -31,13 +31,33 @@ export function parseStopLoss(stopLossText, entryPrice, action) {
     return { price: null, des: stopLossText || 'N/A' }
   }
 
-  // Tìm số trong text
+  // Tìm số trong text - ưu tiên số lớn (giá thực tế) thay vì số nhỏ (EMA26, RSI, etc.)
   const numbers = stopLossText.match(/[\d,]+\.?\d*/g)
   
   if (numbers && numbers.length > 0) {
-    // Lấy số đầu tiên (thường là giá)
-    const price = parseFloat(numbers[0].replace(/,/g, ''))
-    if (!isNaN(price)) {
+    // Parse tất cả số và filter
+    const prices = numbers
+      .map(n => parseFloat(n.replace(/,/g, '')))
+      .filter(n => !isNaN(n))
+    
+    if (prices.length > 0) {
+      // Ưu tiên số gần với entry price (thường là giá thực tế)
+      // Nếu không có số nào gần entry, lấy số lớn nhất (tránh lấy EMA26, RSI nhỏ)
+      const pricesNearEntry = prices.filter(p => 
+        p > entryPrice * 0.8 && p < entryPrice * 1.2
+      )
+      
+      let price
+      if (pricesNearEntry.length > 0) {
+        // Lấy số gần entry nhất
+        price = pricesNearEntry.reduce((closest, current) => 
+          Math.abs(current - entryPrice) < Math.abs(closest - entryPrice) ? current : closest
+        )
+      } else {
+        // Nếu không có số nào gần entry, lấy số lớn nhất (thường là giá)
+        price = Math.max(...prices)
+      }
+      
       return {
         price: price,
         des: stopLossText

@@ -27,10 +27,9 @@ export async function sendMessage(text) {
 function formatReason(reason) {
   if (!reason) return 'N/A'
   
-  // Nếu reason có dấu ngoặc đơn với số, chia thành bullet points
-  // Ví dụ: "(1) ... (2) ... (3) ..."
-  const bulletPattern = /\((\d+)\)/g
-  if (bulletPattern.test(reason)) {
+  // Pattern 1: "(1) ... (2) ... (3) ..."
+  const parenPattern = /\((\d+)\)/g
+  if (parenPattern.test(reason)) {
     return reason
       .split(/(?=\(\d+\))/) // Split tại mỗi (1), (2), (3)...
       .map(item => item.trim())
@@ -42,7 +41,34 @@ function formatReason(reason) {
       .join('\n')
   }
   
-  // Nếu không có bullet pattern, trả về nguyên bản
+  // Pattern 2: "1. ... 2. ... 3. ..." (số + dấu chấm)
+  const dotPattern = /^\d+\.\s/
+  if (dotPattern.test(reason.trim())) {
+    return reason
+      .split(/(?=^\d+\.\s)/m) // Split tại mỗi "1. ", "2. ", "3. "...
+      .map(item => item.trim())
+      .filter(item => item.length > 0)
+      .map(item => {
+        // Thay "1. " thành "• 1. "
+        return item.replace(/^(\d+)\.\s/, '• $1. ')
+      })
+      .join('\n')
+  }
+  
+  // Pattern 3: "1) ... 2) ... 3) ..." (số + dấu ngoặc đơn không có dấu chấm)
+  const parenNoDotPattern = /^\d+\)\s/
+  if (parenNoDotPattern.test(reason.trim())) {
+    return reason
+      .split(/(?=^\d+\)\s)/m)
+      .map(item => item.trim())
+      .filter(item => item.length > 0)
+      .map(item => {
+        return item.replace(/^(\d+)\)\s/, '• $1. ')
+      })
+      .join('\n')
+  }
+  
+  // Nếu không có pattern nào, trả về nguyên bản
   return reason
 }
 
