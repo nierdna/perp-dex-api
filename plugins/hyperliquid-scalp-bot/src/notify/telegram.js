@@ -1,5 +1,25 @@
 import http from '../utils/httpClient.js'
 
+/**
+ * Escape HTML special characters để tránh lỗi Telegram API 400
+ * Telegram HTML mode yêu cầu escape: < > & 
+ */
+function escapeHtml(text) {
+  if (!text) return text
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+/**
+ * Truncate message nếu quá dài (Telegram limit 4096 chars)
+ */
+function truncateMessage(text, maxLength = 4000) {
+  if (!text || text.length <= maxLength) return text
+  return text.substring(0, maxLength - 50) + '\n\n... (message truncated)'
+}
+
 export async function sendMessage(text) {
   const token = process.env.TELEGRAM_BOT_TOKEN
   const chatId = process.env.TELEGRAM_CHAT_ID
@@ -9,15 +29,29 @@ export async function sendMessage(text) {
     return
   }
 
+  // Truncate nếu quá dài
+  const truncated = truncateMessage(text, 4000)
+  
+  // Log length để debug
+  if (text.length > 4000) {
+    console.warn(`⚠️ Telegram message too long (${text.length} chars), truncating to ${truncated.length}`)
+  }
+
   try {
     await http.post(`https://api.telegram.org/bot${token}/sendMessage`, {
       chat_id: chatId,
-      text: text,
+      text: truncated,
       parse_mode: 'HTML' // Dùng HTML cho dễ format đậm nhạt
     })
     console.log('✅ Telegram alert sent')
   } catch (error) {
-    console.error('❌ Telegram send error:', error.message)
+    // Log chi tiết hơn để debug
+    const errorDetail = error.response?.data || error.message
+    console.error('❌ Telegram send error:', errorDetail)
+    if (error.response?.status === 400) {
+      console.error('   Message length:', truncated.length, 'chars')
+      console.error('   First 200 chars:', truncated.substring(0, 200))
+    }
   }
 }
 
@@ -183,23 +217,32 @@ export function notify(decision, plan = null, strategy = null) {
     takeProfitText = 'N/A'
   }
 
+  // Escape HTML trong các giá trị động (tránh lỗi 400)
+  // Note: <b> tags đã được Telegram hỗ trợ, chỉ cần escape content bên trong
+  const safeSymbol = escapeHtml(symbol)
+  const safeStrategyLabel = escapeHtml(strategyLabel)
+  const safeEntry = escapeHtml(String(entry))
+  const safeStopLossText = escapeHtml(String(stopLossText))
+  const safeTakeProfitText = escapeHtml(takeProfitText)
+  const safeFormattedReason = escapeHtml(formattedReason)
+
   const message = `
 ${icon} <b>SIGNAL ALERT: ${decision.action}</b> ${icon}
-🏷️ <b>Token:</b> ${symbol}
-📊 <b>Strategy:</b> ${strategyLabel}
+🏷️ <b>Token:</b> ${safeSymbol}
+📊 <b>Strategy:</b> ${safeStrategyLabel}
 
 ━━━━━━━━━━━━━━━━━━━━
 🤖 <b>Confidence:</b> ${confidencePercent}%
 
 💡 <b>Phân tích:</b>
-${formattedReason}
+${safeFormattedReason}
 
 ━━━━━━━━━━━━━━━━━━━━
-🎯 <b>Entry:</b> ${entry}
-🛑 <b>Stop Loss:</b> ${stopLossText}
+🎯 <b>Entry:</b> ${safeEntry}
+🛑 <b>Stop Loss:</b> ${safeStopLossText}
 
 💰 <b>Take Profit:</b>
-${takeProfitText}
+${safeTakeProfitText}
 ━━━━━━━━━━━━━━━━━━━━
 `
 
