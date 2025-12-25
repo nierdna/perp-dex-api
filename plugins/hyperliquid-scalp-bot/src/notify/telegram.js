@@ -101,7 +101,7 @@ function formatReason(reason) {
   
   // Tách text dính liền thành từng dòng (tìm pattern số + dấu chấm hoặc số + ngoặc)
   // Ví dụ: "...tăng kỹ thuật. 2. Khung 5M..." -> tách thành 2 dòng
-  reason = reason.replace(/(\.)\s*(\d+)[\.\)]\s*/g, '$1\n$2$3 ')
+  reason = reason.replace(/(\.)\s*(\d+)([\.\)])\s*/g, '$1\n$2$3 ')
   
   // Pattern 1: "(1) ... (2) ... (3) ..."
   const parenPattern = /\((\d+)\)/g
