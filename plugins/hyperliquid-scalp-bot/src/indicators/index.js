@@ -1,6 +1,6 @@
 import { RSI, EMA, ATR } from 'technicalindicators'
 
-export function calcIndicators(market) {
+export function calcIndicators(market, options = {}) {
   if (!market || !market.candles_15m || !market.candles_5m || !market.candles_1m) {
     return {
       regime_15m: 'unknown',
@@ -9,13 +9,17 @@ export function calcIndicators(market) {
     }
   }
 
-  // Helper: Tính indicators cho 1 khung thời gian
-  function analyzeTimeframe(candles) {
-    if (candles.length < 50) return null
+  const { excludeLastCandle = false } = options
 
-    const closes = candles.map(c => parseFloat(c.c))
-    const highs = candles.map(c => parseFloat(c.h))
-    const lows = candles.map(c => parseFloat(c.l))
+  // Helper: Tính indicators cho 1 khung thời gian
+  function analyzeTimeframe(candles, excludeLast = false) {
+    // Exclude last candle if requested (to avoid repaint on incomplete bars)
+    const data = excludeLast ? candles.slice(0, -1) : candles
+    if (data.length < 50) return null
+
+    const closes = data.map(c => parseFloat(c.c))
+    const highs = data.map(c => parseFloat(c.h))
+    const lows = data.map(c => parseFloat(c.l))
 
     // RSI
     const rsi7 = RSI.calculate({ values: closes, period: 7 })
@@ -33,8 +37,8 @@ export function calcIndicators(market) {
     const atr = ATR.calculate({ high: highs, low: lows, close: closes, period: 14 })
 
     // Volume Analysis (SMA 20)
-    const volumes = candles.slice(-21, -1).map(c => parseFloat(c.v))
-    const currentVol = parseFloat(candles[candles.length - 1].v)
+    const volumes = data.slice(-21, -1).map(c => parseFloat(c.v))
+    const currentVol = parseFloat(data[data.length - 1].v)
     const volSma = volumes.reduce((a, b) => a + b, 0) / volumes.length
     const volRatio = volSma > 0 ? (currentVol / volSma) : 0
     let volStatus = 'normal'
@@ -63,9 +67,9 @@ export function calcIndicators(market) {
   }
 
   // Phân tích 3 khung
-  const tf15m = analyzeTimeframe(market.candles_15m)
-  const tf5m = analyzeTimeframe(market.candles_5m)
-  const tf1m = analyzeTimeframe(market.candles_1m)
+  const tf15m = analyzeTimeframe(market.candles_15m, excludeLastCandle)
+  const tf5m = analyzeTimeframe(market.candles_5m, excludeLastCandle)
+  const tf1m = analyzeTimeframe(market.candles_1m, excludeLastCandle)
 
   if (!tf15m || !tf5m || !tf1m) {
     return { regime_15m: 'insufficient_data', bias_5m: 'insufficient_data', entry_1m: 'insufficient_data' }
@@ -149,8 +153,13 @@ export function calcIndicators(market) {
     entry_vol_status: tf1m.vol_status,
 
     // Raw Data for specialized logic
-    entry_close_1m: parseFloat(market.candles_1m[market.candles_1m.length - 1].c),
-    entry_prev_close_1m: parseFloat(market.candles_1m[market.candles_1m.length - 2].c),
+    // When excludeLastCandle=true, use the last closed candle (length-2 becomes "current", length-3 becomes "previous")
+    entry_close_1m: excludeLastCandle 
+      ? parseFloat(market.candles_1m[market.candles_1m.length - 2].c)
+      : parseFloat(market.candles_1m[market.candles_1m.length - 1].c),
+    entry_prev_close_1m: excludeLastCandle
+      ? parseFloat(market.candles_1m[market.candles_1m.length - 3].c)
+      : parseFloat(market.candles_1m[market.candles_1m.length - 2].c),
 
     // Common
     price: market.price,

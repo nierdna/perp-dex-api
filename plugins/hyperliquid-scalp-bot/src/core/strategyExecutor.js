@@ -18,12 +18,14 @@ import { shouldSaveSkipLog, shouldSaveNoTradeLog, markDbWrite } from '../utils/r
  * @param {Object} options - Extra options (used by API/manual mode)
  * @param {'bot'|'api'} options.mode - Execution mode (default: 'bot')
  * @param {Boolean} options.notify - If true, send Telegram notification for this cycle (default: false)
+ * @param {Boolean} options.useClosedCandles - If true, exclude last (incomplete) candle from indicators (default: false)
  */
 export async function executeStrategy(symbol, strategy, skipFilter = false, options = {}) {
     const strategyName = strategy.getName()
     const mode = options?.mode || 'bot'
     const shouldNotify = options?.notify === true
-    console.log(`\n[${new Date().toLocaleTimeString()}] ♻️  Executing ${strategyName} for ${symbol}${skipFilter ? ' (Filter Skipped)' : ''}...`)
+    const useClosedCandles = options?.useClosedCandles || false
+    console.log(`\n[${new Date().toLocaleTimeString()}] ♻️  Executing ${strategyName} for ${symbol}${skipFilter ? ' (Filter Skipped)' : ''}${useClosedCandles ? ' [Closed]' : ''}...`)
 
     // 1. Fetch Data & News (Shared Data Layer)
     process.stdout.write(`   [${strategyName}] Fetching data... `)
@@ -39,7 +41,7 @@ export async function executeStrategy(symbol, strategy, skipFilter = false, opti
     console.log('✅')
 
     // 2. Calc Indicators & Signal
-    const indicators = calcIndicators(market)
+    const indicators = calcIndicators(market, { excludeLastCandle: useClosedCandles })
     const signal = normalizeSignal(indicators)
     signal.news = news
 
