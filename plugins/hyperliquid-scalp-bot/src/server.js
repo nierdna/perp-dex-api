@@ -21,8 +21,10 @@ app.get('/ai-scalp', async (req, res) => {
         const symbol = req.query?.symbol || 'BTC'
         const strategyName = req.query?.strategy || 'SCALP_01'
         const force = req.query?.force === 'true' // Check force param
+        // Manual API call: mặc định KHÔNG gửi Telegram (tránh spam). Bật bằng ?notify=true nếu cần.
+        const notify = req.query?.notify === 'true'
 
-        console.log(`⚡ Manual Trigger Received: ${strategyName} on ${symbol} (Force: ${force})`)
+        console.log(`⚡ Manual Trigger Received: ${strategyName} on ${symbol} (Force: ${force}, Notify: ${notify})`)
 
         // 1. Validate Strategy
         const strategy = getStrategy(strategyName)
@@ -40,7 +42,7 @@ app.get('/ai-scalp', async (req, res) => {
         // 3. Execute with Lock
         const locked = await withSymbolLock(symbol, async () => {
             // Pass force param to skip technical filter
-            return await executeStrategy(symbol, strategy, force)
+            return await executeStrategy(symbol, strategy, force, { mode: 'api', notify })
         })
 
         if (locked?.skipped) {
@@ -53,6 +55,12 @@ app.get('/ai-scalp', async (req, res) => {
             return res.status(500).json(result)
         }
 
+        // Prefer legacy/clean API payload for manual trigger
+        if (result?.api_response) {
+            return res.status(200).json(result.api_response)
+        }
+
+        // Fallback (should not happen, but keep backward compatibility)
         return res.status(200).json({
             message: 'Cycle executed successfully',
             strategy: strategyName,

@@ -2,6 +2,8 @@
  * Base Strategy Class
  * Tất cả các strategy mới phải kế thừa class này
  */
+import { parsePlan } from '../utils/parsePlan.js'
+
 export class BaseStrategy {
     constructor(name = 'BASE_STRATEGY') {
         this.name = name
@@ -41,7 +43,7 @@ export class BaseStrategy {
      */
     parsePlan(decision, currentPrice) {
         // Default parser (có thể override nếu strategy có format output khác)
-        // Tạm thời return null để các class con tự implement hoặc dùng util chung
-        return null
+        // Chuẩn hóa output plan cho tất cả strategy theo util chung
+        return parsePlan(decision, currentPrice)
     }
 }

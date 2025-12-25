@@ -2,15 +2,38 @@ import http from '../utils/httpClient.js'
 import { canSendAlert, markAlertSent } from './alertCooldown.js'
 
 /**
- * Escape HTML special characters để tránh lỗi Telegram API 400
- * Telegram HTML mode yêu cầu escape: < > & 
+ * Escape MarkdownV2 special characters để tránh lỗi Telegram API 400.
+ * Ref: Telegram MarkdownV2 requires escaping: _ * [ ] ( ) ~ ` > # + - = | { } . !
  */
-function escapeHtml(text) {
-  if (!text) return text
+function escapeMarkdownV2(text) {
+  if (text === null || text === undefined) return ''
+  const s = String(text)
+  // Escape backslash first
+  return s
+    .replace(/\\/g, '\\\\')
+    // IMPORTANT: escape '-' inside character class to avoid "Range out of order"
+    // Match Telegram MarkdownV2 special chars: _ * [ ] ( ) ~ ` > # + - = | { } . !
+    .replace(/[_*\[\]()~`>#+=|{}.!\\-]/g, '\\$&')
+}
+
+/**
+ * Escape content placed INSIDE inline code block: `...`
+ * In MarkdownV2, inside code we only need to escape backslash and backtick.
+ */
+function escapeInlineCode(text) {
+  if (text === null || text === undefined) return ''
   return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+    .replace(/\\/g, '\\\\')
+    .replace(/`/g, '\\`')
+}
+
+/**
+ * Sanitize content placed inside triple-backtick code block.
+ * Avoid breaking the fence by stripping triple backticks.
+ */
+function sanitizeForCodeBlock(text) {
+  if (text === null || text === undefined) return ''
+  return String(text).replace(/```/g, "'''")
 }
 
 /**
@@ -42,7 +65,7 @@ export async function sendMessage(text) {
     await http.post(`https://api.telegram.org/bot${token}/sendMessage`, {
       chat_id: chatId,
       text: truncated,
-      parse_mode: 'HTML' // Dùng HTML cho dễ format đậm nhạt
+      parse_mode: 'MarkdownV2' // MarkdownV2 (yêu cầu escape chặt)
     })
     console.log('✅ Telegram alert sent')
   } catch (error) {
@@ -101,7 +124,8 @@ function formatReason(reason) {
   
   // Tách text dính liền thành từng dòng (tìm pattern số + dấu chấm hoặc số + ngoặc)
   // Ví dụ: "...tăng kỹ thuật. 2. Khung 5M..." -> tách thành 2 dòng
-  reason = reason.replace(/(\.)\s*(\d+)([\.\)])\s*/g, '$1\n$2$3 ')
+  // Chỉ coi là đánh số list nếu số nhỏ (tránh ăn nhầm EMA200, ATR14, v.v.)
+  reason = reason.replace(/(\.)\s*((?:[1-9]|1\d|20))([\.\)])\s*/g, '$1\n$2$3 ')
   
   // Pattern 1: "(1) ... (2) ... (3) ..."
   const parenPattern = /\((\d+)\)/g
@@ -115,7 +139,7 @@ function formatReason(reason) {
         item = cleanText(item)
         return item.replace(/^\((\d+)\)/, '• $1.')
       })
-      .join('\n')
+      .join('\n')                                                                                                              
   }
   
   // Pattern 2: "1. ... 2. ... 3. ..." (số + dấu chấm)
@@ -149,10 +173,11 @@ function formatReason(reason) {
   
   // Pattern 4: Text có chứa "Khung" hoặc các từ khóa phân tích, tự động tách
   // Tìm các pattern như "1. Khung", "2. Khung", "3. Khung" ngay cả khi không có xuống dòng
-  const khungPattern = /(\d+)[\.\)]\s*(Khung|RSI|EMA|Volume|Giá|Trend)/g
+  // Chỉ match số nhỏ để tránh "200. Khung" từ EMA200.
+  const khungPattern = /((?:[1-9]|1\d|20))[\.\)]\s*(Khung|RSI|EMA|Volume|Giá|Trend)/g
   if (khungPattern.test(reason)) {
     // Tách tại mỗi số + dấu chấm/ngoặc + từ khóa
-    const parts = reason.split(/(?=\d+[\.\)]\s*(?:Khung|RSI|EMA|Volume|Giá|Trend))/)
+    const parts = reason.split(/(?=(?:[1-9]|1\d|20)[\.\)]\s*(?:Khung|RSI|EMA|Volume|Giá|Trend))/)
     if (parts.length > 1) {
       return parts
         .map(item => item.trim())
@@ -160,8 +185,8 @@ function formatReason(reason) {
         .map(item => {
           item = cleanText(item)
           // Thêm bullet nếu chưa có
-          if (/^\d+[\.\)]/.test(item)) {
-            return item.replace(/^(\d+)([\.\)])\s*/, '• $1. ')
+          if (/^(?:[1-9]|1\d|20)[\.\)]/.test(item)) {
+            return item.replace(/^((?:[1-9]|1\d|20))([\.\)])\s*/, '• $1. ')
           }
           return '• ' + item
         })
@@ -179,7 +204,7 @@ function formatReason(reason) {
 }
 
 export function notify(decision, plan = null, strategy = null) {
-  const icon = decision.action === 'LONG' ? '🟢' : '🔴'
+  const icon = decision.action === 'LONG' ? '🟢' : (decision.action === 'SHORT' ? '🔴' : '⚪')
   const confidencePercent = Math.round(decision.confidence * 100)
   const symbol = decision.symbol || decision?.market?.symbol || 'N/A'
   
@@ -190,9 +215,9 @@ export function notify(decision, plan = null, strategy = null) {
 
   // Sử dụng plan nếu có, fallback về decision
   const entry = plan?.entry || decision.entry || 'N/A'
-  const stopLoss = plan?.stop_loss || { price: null, des: decision.stop_loss_logic || 'N/A' }
+  const stopLoss = plan?.stop_loss || { price: null, description: decision.stop_loss_logic || 'N/A' }
   const takeProfit = plan?.take_profit || (Array.isArray(decision.take_profit_logic) 
-    ? decision.take_profit_logic.map(tp => ({ price: null, des: tp }))
+    ? decision.take_profit_logic.map(tp => ({ price: null, description: tp }))
     : [])
 
   // Format reason
@@ -200,9 +225,10 @@ export function notify(decision, plan = null, strategy = null) {
   const formattedReason = cleanText(formatReason(decision.reason))
 
   // Format stop loss
-  let stopLossText = stopLoss.des
+  const stopLossDesc = stopLoss?.description ?? stopLoss?.des ?? 'N/A'
+  let stopLossText = stopLossDesc
   if (stopLoss.price) {
-    stopLossText = `${stopLoss.price} (${stopLoss.des})`
+    stopLossText = `${stopLoss.price} (${stopLossDesc})`
   }
 
   // Format take profit
@@ -211,44 +237,63 @@ export function notify(decision, plan = null, strategy = null) {
     takeProfitText = takeProfit
       .map((tp, index) => {
         const tpNum = index + 1
-        if (tp.price) {
-          return `TP${tpNum}: ${tp.price} - ${tp.des}`
+        const label = `TP${tpNum}:`
+        const desRaw = (tp?.description ?? tp?.des ?? '').toString().trim()
+
+        // Nếu AI đã format sẵn "TP1: 86950 ..." thì dùng nguyên bản để tránh bị lặp "TP1: ... - TP1: ..."
+        if (/^TP\s*\d+\s*:/i.test(desRaw)) {
+          return desRaw
         }
-        return `TP${tpNum}: ${tp.des}`
+
+        // Nếu des đã chứa price (vd "86950 (0.9% dưới entry)") thì chỉ cần prefix label
+        if (tp?.price && desRaw.includes(String(tp.price))) {
+          return `${label} ${desRaw}`
+        }
+
+        if (tp?.price) {
+          return `${label} ${tp.price} - ${desRaw || 'N/A'}`
+        }
+        return `${label} ${desRaw || 'N/A'}`
       })
       .join('\n')
   } else {
     takeProfitText = 'N/A'
   }
 
-  // Escape HTML trong các giá trị động (tránh lỗi 400)
-  // Note: <b> tags đã được Telegram hỗ trợ, chỉ cần escape content bên trong
-  const safeSymbol = escapeHtml(symbol)
-  const safeStrategyLabel = escapeHtml(strategyLabel)
-  const safeEntry = escapeHtml(String(entry))
-  const safeStopLossText = escapeHtml(String(stopLossText))
-  const safeTakeProfitText = escapeHtml(takeProfitText)
-  const safeFormattedReason = escapeHtml(formattedReason)
+  // MarkdownV2:
+  // - Các giá trị dynamic nên đặt trong inline code để tránh escape quá nhiều.
+  // - Phần reason & TP dùng code block để giữ nguyên dấu chấm, RSI_7, EMA200... và tránh Telegram parse list.
+  const safeAction = escapeMarkdownV2(decision.action)
+  const safeSymbolCode = escapeInlineCode(symbol)
+  const safeStrategyCode = escapeInlineCode(strategyLabel)
+  const safeEntryCode = escapeInlineCode(String(entry))
+  const safeStopLossCode = escapeInlineCode(String(stopLossText))
 
-  const message = `
-${icon} <b>SIGNAL ALERT: ${decision.action}</b> ${icon}
-🏷️ <b>Token:</b> ${safeSymbol}
-📊 <b>Strategy:</b> ${safeStrategyLabel}
+  const reasonBlock = sanitizeForCodeBlock(formattedReason)
+  const tpBlock = sanitizeForCodeBlock(takeProfitText)
 
-━━━━━━━━━━━━━━━━━━━━
-🤖 <b>Confidence:</b> ${confidencePercent}%
-
-💡 <b>Phân tích:</b>
-${safeFormattedReason}
+  const message =
+`${icon} *SIGNAL ALERT: ${safeAction}* ${icon}
+🏷️ *Token:* \`${safeSymbolCode}\`
+📊 *Strategy:* \`${safeStrategyCode}\`
 
 ━━━━━━━━━━━━━━━━━━━━
-🎯 <b>Entry:</b> ${safeEntry}
-🛑 <b>Stop Loss:</b> ${safeStopLossText}
+🤖 *Confidence:* \`${confidencePercent}%\`
 
-💰 <b>Take Profit:</b>
-${safeTakeProfitText}
+💡 *Phân tích:*
+\`\`\`
+${reasonBlock}
+\`\`\`
+
 ━━━━━━━━━━━━━━━━━━━━
-`
+🎯 *Entry:* \`${safeEntryCode}\`
+🛑 *Stop Loss:* \`${safeStopLossCode}\`
+
+💰 *Take Profit:*
+\`\`\`
+${tpBlock}
+\`\`\`
+━━━━━━━━━━━━━━━━━━━━`
 
   // Check cooldown trước khi gửi (chống spam cùng action)
   // Dùng lại biến symbol đã khai báo ở trên (dòng 184)

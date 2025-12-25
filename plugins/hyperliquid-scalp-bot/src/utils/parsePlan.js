@@ -32,11 +32,11 @@ function isPlausiblePrice(candidate, entryPrice) {
  * @param {string} stopLossText - Text mô tả stop loss
  * @param {number} entryPrice - Giá entry để tính toán
  * @param {string} action - LONG hoặc SHORT
- * @returns {object} { price: number, des: string }
+ * @returns {object} { price: number, description: string }
  */
 export function parseStopLoss(stopLossText, entryPrice, action) {
   if (!stopLossText || !entryPrice) {
-    return { price: null, des: stopLossText || 'N/A' }
+    return { price: null, description: stopLossText || 'N/A' }
   }
 
   // Tìm số trong text - ưu tiên số hợp lý quanh entry (tránh ăn nhầm EMA/RSI/timeframe)
@@ -50,7 +50,7 @@ export function parseStopLoss(stopLossText, entryPrice, action) {
     
     const plausible = prices.filter(p => isPlausiblePrice(p, entryPrice))
     if (plausible.length === 0) {
-      return { price: null, des: stopLossText }
+      return { price: null, description: stopLossText }
     }
 
     // StopLoss nên nằm "ngược hướng" so với entry
@@ -63,7 +63,7 @@ export function parseStopLoss(stopLossText, entryPrice, action) {
       Math.abs(current - entryPrice) < Math.abs(closest - entryPrice) ? current : closest
     )
 
-    return { price, des: stopLossText }
+    return { price, description: stopLossText }
   }
 
   // Nếu không tìm thấy số, thử parse từ mô tả
@@ -77,7 +77,7 @@ export function parseStopLoss(stopLossText, entryPrice, action) {
     const price = action === 'LONG' ? lowerPrice : upperPrice
     return {
       price: price,
-      des: stopLossText
+      description: stopLossText
     }
   }
 
@@ -90,13 +90,13 @@ export function parseStopLoss(stopLossText, entryPrice, action) {
       : entryPrice * (1 + percent)
     return {
       price: Math.round(price),
-      des: stopLossText
+      description: stopLossText
     }
   }
 
   return {
     price: null,
-    des: stopLossText
+    description: stopLossText
   }
 }
 
@@ -105,7 +105,7 @@ export function parseStopLoss(stopLossText, entryPrice, action) {
  * @param {array} takeProfitTexts - Array text mô tả take profit
  * @param {number} entryPrice - Giá entry để tính toán
  * @param {string} action - LONG hoặc SHORT
- * @returns {array} [{ price: number, des: string }, ...]
+ * @returns {array} [{ price: number, description: string }, ...]
  */
 export function parseTakeProfit(takeProfitTexts, entryPrice, action) {
   if (!Array.isArray(takeProfitTexts) || !entryPrice) {
@@ -114,7 +114,7 @@ export function parseTakeProfit(takeProfitTexts, entryPrice, action) {
 
   return takeProfitTexts.map(text => {
     if (!text) {
-      return { price: null, des: 'N/A' }
+      return { price: null, description: 'N/A' }
     }
 
     // Tìm số trong text (ưu tiên số hợp lý quanh entry để tránh ăn nhầm EMA/RSI/timeframe)
@@ -136,7 +136,7 @@ export function parseTakeProfit(takeProfitTexts, entryPrice, action) {
           Math.abs(current - entryPrice) < Math.abs(closest - entryPrice) ? current : closest
         )
 
-        return { price, des: text }
+        return { price, description: text }
       }
     }
 
@@ -148,7 +148,7 @@ export function parseTakeProfit(takeProfitTexts, entryPrice, action) {
       if (!isNaN(price)) {
         return {
           price: price,
-          des: text
+          description: text
         }
       }
     }
@@ -162,13 +162,13 @@ export function parseTakeProfit(takeProfitTexts, entryPrice, action) {
         : entryPrice * (1 - percent)
       return {
         price: Math.round(price),
-        des: text
+        description: text
       }
     }
 
     return {
       price: null,
-      des: text
+      description: text
     }
   })
 }

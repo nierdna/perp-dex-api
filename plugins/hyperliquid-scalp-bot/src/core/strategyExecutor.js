@@ -15,9 +15,14 @@ import { shouldSaveSkipLog, shouldSaveNoTradeLog, markDbWrite } from '../utils/r
  * @param {String} symbol - The target symbol (e.g., 'BTC')
  * @param {Object} strategy - The Strategy Instance (must extend BaseStrategy)
  * @param {Boolean} skipFilter - If true, bypass technical filters and force AI analysis (default: false)
+ * @param {Object} options - Extra options (used by API/manual mode)
+ * @param {'bot'|'api'} options.mode - Execution mode (default: 'bot')
+ * @param {Boolean} options.notify - If true, send Telegram notification for this cycle (default: false)
  */
-export async function executeStrategy(symbol, strategy, skipFilter = false) {
+export async function executeStrategy(symbol, strategy, skipFilter = false, options = {}) {
     const strategyName = strategy.getName()
+    const mode = options?.mode || 'bot'
+    const shouldNotify = options?.notify === true
     console.log(`\n[${new Date().toLocaleTimeString()}] ♻️  Executing ${strategyName} for ${symbol}${skipFilter ? ' (Filter Skipped)' : ''}...`)
 
     // 1. Fetch Data & News (Shared Data Layer)
@@ -38,13 +43,21 @@ export async function executeStrategy(symbol, strategy, skipFilter = false) {
     const signal = normalizeSignal(indicators)
     signal.news = news
 
+    // market_ctx: trả full indicators như "bản cũ" (regime/bias/entry/ema/rsi/atr/vol/funding...)
+    // Lưu ý: indicators ở đây là output của calcIndicators(market), KHÔNG chứa candles (tránh payload quá nặng)
+    const marketCtx = {
+        symbol: signal.symbol,
+        price: signal.price,
+        indicators: indicators
+    }
+
     // 3. Technical Filter (Strategy Specific)
     // Nếu skipFilter = true thì bỏ qua bước này
     const isWorthy = skipFilter ? true : strategy.checkConditions(signal)
 
     if (!isWorthy) {
         console.log(`   [${strategyName}] 💤 Skipped (Technical Filter)`)
-        
+
         // Chống spam SKIP logs vào database
         if (shouldSaveSkipLog(signal.symbol, strategyName)) {
             await saveLog({
@@ -60,6 +73,25 @@ export async function executeStrategy(symbol, strategy, skipFilter = false) {
             })
             markDbWrite(signal.symbol, strategyName, 'SKIP')
         }
+        if (mode === 'api') {
+            return {
+                status: 'skipped',
+                reason: 'Technical Filter',
+                api_response: {
+                    message: 'Cycle executed successfully',
+                    market_ctx: marketCtx,
+                    ai_input: null,
+                    ai_output: {
+                        action: 'NO_TRADE',
+                        confidence: 0,
+                        reason: 'Filtered by Technical Conditions',
+                        plan: null
+                    },
+                    notification: null
+                }
+            }
+        }
+
         return { status: 'skipped', reason: 'Technical Filter' }
     }
 
@@ -122,8 +154,67 @@ export async function executeStrategy(symbol, strategy, skipFilter = false) {
                 createdAtMs: Date.now(),
             })
         }
-        notify(decision, plan, strategyName)
+        // Bot auto chỉ notify khi OPEN; API/manual có thể notify theo options.notify
+        if (mode !== 'api') {
+            notify(decision, plan, strategyName)
+        }
+
+        if (mode === 'api') {
+            const manualStrategyName = `${strategyName}_MANUAL`
+            const sent = shouldNotify ? notify(decision, plan, manualStrategyName) : null
+            const aiInput = decision?.debug_input || prompt
+            const aiOutput = { ...decision }
+            delete aiOutput.debug_input
+
+            return {
+                status: 'executed',
+                action: decision.action,
+                logId,
+                api_response: {
+                    message: 'Cycle executed successfully',
+                    market_ctx: marketCtx,
+                    ai_input: aiInput,
+                    ai_output: {
+                        action: aiOutput.action,
+                        confidence: aiOutput.confidence,
+                        reason: aiOutput.reason,
+                        risk_warning: aiOutput.risk_warning,
+                        plan: plan
+                    },
+                    notification: sent ? 'Sent to Telegram' : (shouldNotify ? 'Skipped (cooldown)' : null)
+                }
+            }
+        }
+
         return { status: 'executed', action: decision.action, logId }
+    }
+
+    if (mode === 'api') {
+        const manualStrategyName = `${strategyName}_MANUAL`
+        const sent = shouldNotify ? notify(decision, plan, manualStrategyName) : null
+        const aiInput = decision?.debug_input || prompt
+        const aiOutput = { ...decision }
+        delete aiOutput.debug_input
+
+        return {
+            status: 'processed',
+            action: decision.action,
+            reason: 'Low Confidence/No Trade',
+            ai_output: decision, // giữ nguyên cho nội bộ/backward compat
+            api_response: {
+                message: 'Cycle executed successfully',
+                market_ctx: marketCtx,
+                ai_input: aiInput,
+                ai_output: {
+                    action: aiOutput.action,
+                    confidence: aiOutput.confidence,
+                    reason: aiOutput.reason,
+                    risk_warning: aiOutput.risk_warning,
+                    plan: plan
+                },
+                notification: sent ? 'Sent to Telegram' : (shouldNotify ? 'Skipped (cooldown)' : null)
+            }
+        }
     }
 
     return {
