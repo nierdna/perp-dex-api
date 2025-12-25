@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
-  title: Hyperliquid Scalp Bot API
+  title: Hyperliquid Trading Bot API
   version: 1.0.0
-  description: API for manually triggering scalp bot analysis on Hyperliquid
+  description: API for manually triggering trading bot analysis on Hyperliquid (Scalp & Swing strategies)
 paths:
   /ai-scalp:
     get:
@@ -15,6 +15,10 @@ paths:
         - `symbol`: Trading symbol (e.g., BTC, ETH). Default: BTC
         - `strategy`: Strategy to execute (SCALP_01, SCALP_02). Default: SCALP_01
         - `force`: Set to `true` to skip technical filters and force AI analysis. Default: false
+        - `notify`: Set to `true` to send Telegram notification. Default: false
+        
+        **Response Format:**
+        - Returns `plan` with entry/SL/TP for auto-trading
       parameters:
         - name: symbol
           in: query
@@ -38,6 +42,13 @@ paths:
           schema:
             type: boolean
             example: true
+        - name: notify
+          in: query
+          description: If true, send Telegram notification for this cycle. Default is false.
+          required: false
+          schema:
+            type: boolean
+            example: false
       responses:
         '200':
           description: Detailed analysis result
@@ -68,6 +79,183 @@ paths:
                         logId:
                             type: integer
                             example: 123
+                  market_ctx:
+                    type: object
+                    description: Market context with indicators/trigger info
+                  ai_input:
+                    type: string
+                    description: AI prompt input
+                  ai_output:
+                    type: object
+                    description: AI decision output
+                    properties:
+                      action:
+                        type: string
+                        description: For SCALP strategies (LONG/SHORT/NO_TRADE)
+                      verdict:
+                        type: string
+                        description: For SWING_01 (CONSIDER/WAIT/AVOID)
+                      confidence:
+                        type: number
+                      reason:
+                        type: string
+                        description: For SCALP strategies
+                  plan:
+                    type: object
+                    description: Trade plan with entry/SL/TP
+                  notification:
+                    type: string
+                    description: Notification status (Sent to Telegram / Skipped / null)
+        '400':
+            description: Invalid strategy name
+        '429':
+            description: Bot is busy (locked)
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to fetch market data
+  /ai-swing:
+    get:
+      summary: Manually trigger the swing cycle
+      description: |
+        Trigger a single swing analysis cycle for a specific symbol. 
+        The bot will fetch market data, analyze HTF/LTF conditions, and optionally send Telegram notification.
+        This is a trigger-only strategy (no auto-trade, no entry/SL/TP).
+        
+        **Parameters:**
+        - `symbol`: Trading symbol (e.g., BTC, ETH). Default: BTC
+        - `strategy`: Strategy to execute (SWING_01). Default: SWING_01
+        - `force`: Set to `true` to skip technical filters and force AI analysis. Default: false
+        - `notify`: Set to `true` to send Telegram notification. Default: false
+        
+        **Response Format:**
+        - Returns `trigger_info` with regime, bias, zones, setup state, and AI verdict
+        - NO entry/SL/TP (trigger-only for manual trading decisions)
+      parameters:
+        - name: symbol
+          in: query
+          description: Trading symbol to analyze (e.g., BTC, ETH, SOL). Default is BTC.
+          required: false
+          schema:
+            type: string
+            example: BTC
+        - name: strategy
+          in: query
+          description: Strategy to execute. Default is SWING_01.
+          required: false
+          schema:
+            type: string
+            enum: [SWING_01]
+            example: SWING_01
+        - name: force
+          in: query
+          description: If true, skip technical filters and force AI analysis.
+          required: false
+          schema:
+            type: boolean
+            example: true
+        - name: notify
+          in: query
+          description: If true, send Telegram notification for this cycle. Default is false.
+          required: false
+          schema:
+            type: boolean
+            example: false
+      responses:
+        '200':
+          description: Detailed swing analysis result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Cycle executed successfully
+                  market_ctx:
+                    type: object
+                    description: Market context with trigger info
+                    properties:
+                      symbol:
+                        type: string
+                        example: BTC
+                      price:
+                        type: number
+                        example: 65000
+                      triggerInfo:
+                        type: object
+                  ai_input:
+                    type: string
+                    description: AI prompt input
+                  ai_output:
+                    type: object
+                    description: AI decision output (in Vietnamese)
+                    properties:
+                      verdict:
+                        type: string
+                        enum: [CONSIDER, WAIT, AVOID]
+                        example: CONSIDER
+                      confidence:
+                        type: number
+                        example: 78
+                      reasoning:
+                        type: string
+                        description: Vietnamese explanation
+                        example: "1. Regime TREND_UP ổn định với confidence cao. 2. HTF zone DEMAND mạnh (strength 4/5). 3. Setup MATURE với LTF confirmation BOS_1H."
+                      invalidation_note:
+                        type: string
+                        description: Vietnamese invalidation conditions
+                        example: "Break dưới 40k hoặc regime chuyển sang TRANSITION sẽ làm mất hiệu lực setup này."
+                  trigger_info:
+                    type: object
+                    description: Trigger information (no entry/SL/TP)
+                    properties:
+                      regime:
+                        type: string
+                        example: TREND_UP
+                      bias:
+                        type: string
+                        example: LONG_ONLY
+                      htf_zone:
+                        type: object
+                        properties:
+                          type:
+                            type: string
+                            enum: [DEMAND, SUPPLY, EMA_RETEST, RANGE_EDGE]
+                          priceRange:
+                            type: array
+                            items:
+                              type: number
+                          strength:
+                            type: number
+                            example: 4
+                      setup_state:
+                        type: string
+                        enum: [FORMING, MATURE, STALE, FAILED, NONE]
+                        example: MATURE
+                      ltf_confirmation:
+                        type: object
+                        properties:
+                          confirmed:
+                            type: boolean
+                          signals:
+                            type: array
+                            items:
+                              type: string
+                      trigger_score:
+                        type: number
+                        example: 82
+                      trigger_breakdown:
+                        type: object
+                  notification:
+                    type: string
+                    description: Notification status (Sent to Telegram / Skipped / null)
         '400':
             description: Invalid strategy name
         '429':

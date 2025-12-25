@@ -21,7 +21,7 @@ const CREATE_TABLE_QUERY = `
     id SERIAL PRIMARY KEY,
     strategy VARCHAR(50) DEFAULT 'SCALP_01',
     symbol VARCHAR(10) NOT NULL,
-    timeframe VARCHAR(10) NOT NULL,
+    timeframe VARCHAR(50) NOT NULL,
     price NUMERIC,
     ai_action VARCHAR(20),
     ai_confidence NUMERIC,
@@ -44,6 +44,8 @@ const MIGRATION_QUERIES = [
     `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS close_price NUMERIC;`,
     `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS pnl_percent NUMERIC;`,
     `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP;`,
+    `ALTER TABLE logs_trade ADD COLUMN IF NOT EXISTS trigger_info JSONB;`, // For Swing01 strategy
+    `ALTER TABLE logs_trade ALTER COLUMN timeframe TYPE VARCHAR(50);`, // Fix timeframe length for Swing strategies
 ]
 
 export async function initDB() {
@@ -61,8 +63,8 @@ export async function initDB() {
 export async function saveLog(data) {
     const query = `
     INSERT INTO logs_trade 
-    (strategy, symbol, timeframe, price, ai_action, ai_confidence, ai_reason, ai_full_response, market_snapshot, plan, entry_price, stop_loss_price, take_profit_prices, outcome)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    (strategy, symbol, timeframe, price, ai_action, ai_confidence, ai_reason, ai_full_response, market_snapshot, plan, entry_price, stop_loss_price, take_profit_prices, outcome, trigger_info)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     RETURNING id
   `
     const values = [
@@ -80,6 +82,7 @@ export async function saveLog(data) {
         data.stop_loss_price ?? null,
         data.take_profit_prices ? JSON.stringify(data.take_profit_prices) : null,
         data.outcome ?? null,
+        data.trigger_info ? JSON.stringify(data.trigger_info) : null,
     ]
 
     try {

@@ -1,10 +1,12 @@
 import { Scalp01 } from './Scalp01.js'
 import { Scalp02 } from './Scalp02.js'
+import { Swing01 } from './Swing01.js'
 
 // Registry lưu trữ các strategy instance
 const strategies = {
     SCALP_01: new Scalp01(),
-    SCALP_02: new Scalp02()
+    SCALP_02: new Scalp02(),
+    SWING_01: new Swing01()
 }
 
 /**

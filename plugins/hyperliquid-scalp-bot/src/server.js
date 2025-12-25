@@ -14,7 +14,7 @@ app.use(express.json())
 const swaggerDocument = YAML.load('./swagger.yaml')
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
-// Manual Trigger Endpoint
+// Manual Trigger Endpoint for Scalp Strategies
 app.get('/ai-scalp', async (req, res) => {
     try {
         // Lấy params
@@ -26,11 +26,85 @@ app.get('/ai-scalp', async (req, res) => {
 
         console.log(`⚡ Manual Trigger Received: ${strategyName} on ${symbol} (Force: ${force}, Notify: ${notify})`)
 
-        // 1. Validate Strategy
+        // 1. Validate Strategy (only Scalp strategies)
         const strategy = getStrategy(strategyName)
         if (!strategy) {
             return res.status(400).json({
                 error: `Strategy '${strategyName}' not found. Available: SCALP_01, SCALP_02`
+            })
+        }
+        
+        // Reject Swing strategies on this endpoint
+        if (strategyName === 'SWING_01') {
+            return res.status(400).json({
+                error: `Use /ai-swing endpoint for SWING_01 strategy`
+            })
+        }
+
+        // 2. Check Lock
+        if (isSymbolLocked(symbol)) {
+            return res.status(429).json({ error: `Symbol ${symbol} is busy. Try again shortly.` })
+        }
+
+        // 3. Execute with Lock
+        const locked = await withSymbolLock(symbol, async () => {
+            // Pass force param to skip technical filter
+            return await executeStrategy(symbol, strategy, force, { mode: 'api', notify })
+        })
+
+        if (locked?.skipped) {
+            return res.status(429).json({ error: `Symbol ${symbol} is busy.` })
+        }
+
+        // 4. Response
+        const result = locked?.result
+        if (result?.status === 'error') {
+            return res.status(500).json(result)
+        }
+
+        // Prefer legacy/clean API payload for manual trigger
+        if (result?.api_response) {
+            return res.status(200).json(result.api_response)
+        }
+
+        // Fallback (should not happen, but keep backward compatibility)
+        return res.status(200).json({
+            message: 'Cycle executed successfully',
+            strategy: strategyName,
+            symbol: symbol,
+            result: result
+        })
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+// Manual Trigger Endpoint for Swing Strategies
+app.get('/ai-swing', async (req, res) => {
+    try {
+        // Lấy params
+        const symbol = req.query?.symbol || 'BTC'
+        const strategyName = req.query?.strategy || 'SWING_01'
+        const force = req.query?.force === 'true' // Check force param
+        // Manual API call: mặc định KHÔNG gửi Telegram (tránh spam). Bật bằng ?notify=true nếu cần.
+        const notify = req.query?.notify === 'true'
+
+        console.log(`⚡ Manual Swing Trigger Received: ${strategyName} on ${symbol} (Force: ${force}, Notify: ${notify})`)
+
+        // 1. Validate Strategy (only Swing strategies)
+        const strategy = getStrategy(strategyName)
+        if (!strategy) {
+            return res.status(400).json({
+                error: `Strategy '${strategyName}' not found. Available: SWING_01`
+            })
+        }
+        
+        // Reject Scalp strategies on this endpoint
+        if (strategyName.startsWith('SCALP')) {
+            return res.status(400).json({
+                error: `Use /ai-scalp endpoint for ${strategyName} strategy`
             })
         }
 

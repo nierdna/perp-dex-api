@@ -1,4 +1,5 @@
 import { BaseStrategy } from './BaseStrategy.js'
+import { getSwingData, getEnhancedSwingData } from '../data/swingDataCache.js'
 
 export class Scalp02 extends BaseStrategy {
     constructor() {
@@ -123,6 +124,15 @@ export class Scalp02 extends BaseStrategy {
     buildAiPrompt(signal) {
         const atrValue = signal.entry_atr || signal.bias_atr || 0
         const volatilityState = (atrValue / signal.price * 100 > 0.5) ? 'High' : 'Normal'
+        
+        // Determine scalp direction from regime (Scalp02 is continuation strategy)
+        let scalpDirection = null
+        if (signal.regime_15m === 'trending_bull') scalpDirection = 'LONG'
+        else if (signal.regime_15m === 'trending_bear') scalpDirection = 'SHORT'
+        // If range/unknown, scalpDirection stays null (alignment will be UNKNOWN, which is correct)
+        
+        // Get enhanced swing context
+        const swingContext = getEnhancedSwingData(signal.symbol, signal.entry_close_1m || signal.price, scalpDirection)
 
         return `
 Strategy: SCALP_02 (Trend Continuation)
@@ -146,27 +156,61 @@ MARKET DATA (${signal.symbol}):
 - ATR_1m: ${atrValue}
 - Volume Force: ${signal.entry_vol_ratio}x
 
+4. SWING CONTEXT (HTF - Higher Timeframe):
+- Last Updated: ${swingContext?.lastUpdated || 'N/A'}
+- Regime: ${swingContext?.regime || 'N/A'}
+- Bias: ${swingContext?.bias || 'N/A'}
+- HTF Zone: ${swingContext?.formattedZone || 'N/A'}
+- Zone Proximity: ${swingContext?.zoneProximity || 'N/A'}
+- Trigger Score: ${swingContext?.trigger_score !== null && swingContext?.trigger_score !== undefined ? swingContext.trigger_score : 'N/A'}/100
+- Trend Alignment: ${swingContext?.trendAlignment || 'UNKNOWN'}
+
+TIMEFRAME HIERARCHY (Higher = Priority):
+1. Daily/4H (Swing) - Macro trend
+2. 15M (Scalp Regime) - Primary trend
+3. 5M/1M - Execution timing
+→ Trade WITH higher timeframe trends
+
 REQUIRED ANALYSIS:
 1. Is the 15M trend clean? (No choppy price action)
 2. Is the 1M pullback resolved? (Price reclaimed EMA9?)
-3. Risk Calculation (Use ATR 1m):
+3. HTF Alignment Check:
+   - ALIGNED: HTF confirms continuation -> Increase confidence +10-15%
+   - DIVERGENT: HTF against continuation -> AVOID or reduce confidence -20%
+4. Zone Proximity Check:
+   - AT_ZONE with continuation direction -> Strong setup (bounce probability high)
+   - AT_ZONE against continuation direction -> Risk high (need strong volume to break)
+5. HTF Score Check:
+   - Score >= 80: HTF trend very strong, continuation highly probable
+   - Score < 50: HTF weak, be careful with continuation
+6. Risk Calculation (Use ATR 1m):
    - SL = Price +/- (1.0 * ATR) (Tight Stop)
    - TP = Price +/- (2.0 * ATR) (Target 2R)
+   - If HTF DIVERGENT: Tighten SL to 0.8 * ATR
+
+CONFLICT RESOLUTION:
+- If HTF trend DIVERGENT from scalp continuation:
+  * HTF Score >= 70: AVOID continuation trade, HTF likely reversal
+  * HTF Score < 50: May continue but reduce size, tight SL
+- If AT_ZONE and trying to break zone:
+  * Need Volume Force >= 1.5x and HTF score < 60
+  * Otherwise AVOID
 
 QUAN TRỌNG - FORMAT REASON:
 - Luôn dùng format RSI_7, RSI_14 (dấu gạch dưới, KHÔNG dùng ngoặc đơn)
 - Ví dụ: "RSI_7 = 65.08 cho thấy momentum mạnh"
 - KHÔNG viết RSI(7) hoặc RSI 7 hoặc 7.=
+- PHẢI mention HTF alignment và zone proximity trong reason
 
 OUTPUT JSON:
 {
   "action": "LONG" | "SHORT" | "NO_TRADE",
   "confidence": 0.75-0.95,
   "entry": ${signal.entry_close_1m || signal.price},
-  "stop_loss_logic": "Value (e.g. ${signal.entry_close_1m || signal.price} - ${atrValue})",
-  "take_profit_logic": ["Value (e.g. ${signal.entry_close_1m || signal.price} + ${2 * atrValue})"],
-  "reason": "Explain WHY this momentum is valid. Mention RSI_7 strength & Pullback hold. (dùng RSI_7 format)",
-  "risk_warning": "Warning if ATR is too high"
+  "stop_loss_logic": "Value (consider HTF conflict -> tighter SL)",
+  "take_profit_logic": ["Value (2R minimum)"],
+  "reason": "Explain continuation validity. Mention HTF alignment, zone proximity, score. (dùng RSI_7 format)",
+  "risk_warning": "Warning if HTF divergent or at zone resistance"
 }
 `
     }

@@ -1,5 +1,6 @@
 import { BaseStrategy } from './BaseStrategy.js'
 import { parsePlan } from '../utils/parsePlan.js'
+import { getSwingData, getEnhancedSwingData } from '../data/swingDataCache.js'
 
 export class Scalp01 extends BaseStrategy {
     constructor() {
@@ -80,6 +81,28 @@ export class Scalp01 extends BaseStrategy {
     }
 
     buildAiPrompt(signal) {
+        // Determine scalp direction from signal (priority order)
+        let scalpDirection = null
+        
+        // Priority 1: Entry signals (strongest)
+        if (signal.entry_cross === 'golden_cross') scalpDirection = 'LONG'
+        else if (signal.entry_cross === 'death_cross') scalpDirection = 'SHORT'
+        else if (signal.entry_1m === 'long_ready') scalpDirection = 'LONG'
+        else if (signal.entry_1m === 'short_ready') scalpDirection = 'SHORT'
+        
+        // Priority 2: Bias (if no entry signal)
+        else if (signal.bias_5m === 'bullish') scalpDirection = 'LONG'
+        else if (signal.bias_5m === 'bearish') scalpDirection = 'SHORT'
+        
+        // Priority 3: Regime (if no bias clear)
+        else if (signal.regime_15m === 'trending_bull') scalpDirection = 'LONG'
+        else if (signal.regime_15m === 'trending_bear') scalpDirection = 'SHORT'
+        
+        // If still null, alignment will be UNKNOWN (which is correct for range/unclear market)
+        
+        // Get enhanced swing context
+        const swingContext = getEnhancedSwingData(signal.symbol, signal.price, scalpDirection)
+        
         return `
 Vai trò: Bạn là một chuyên gia giao dịch Crypto Scalping chuyên nghiệp (Strategy SCALP_01).
 
@@ -109,19 +132,73 @@ DỮ LIỆU THỊ TRƯỜNG (${signal.symbol}/USD):
 - Vol Force: ${signal.entry_vol_status} (${signal.entry_vol_ratio}x)
 - Funding: ${signal.funding}
 
+4. SWING CONTEXT (HTF - Higher Timeframe):
+- Last Updated: ${swingContext?.lastUpdated || 'N/A'}
+- Regime: ${swingContext?.regime || 'N/A'}
+- Bias: ${swingContext?.bias || 'N/A'}
+- HTF Zone: ${swingContext?.formattedZone || 'N/A'}
+- Zone Proximity: ${swingContext?.zoneProximity || 'N/A'}
+- Trigger Score: ${swingContext?.trigger_score !== null && swingContext?.trigger_score !== undefined ? swingContext.trigger_score : 'N/A'}/100
+- Trend Alignment: ${swingContext?.trendAlignment || 'UNKNOWN'}
+
 TIN TỨC:
 ${signal.news && signal.news.length > 0 ? signal.news.map(n => `- [${n.eventTime}] ${n.title} (${n.impact})`).join('\n') : '- None'}
 
-QUY TẮC:
-1. Confluence: 15m+5m+1m đồng thuận -> Mạnh.
-2. Risk: RSI_7 > 75 (Long risk), RSI_7 < 25 (Short risk).
-3. TP/SL: Scalping tight (TP ~0.9%, SL ~0.6%).
-4. Volume: Ưu tiên Vol Force >= 1.2x; nếu Vol Force thấp dễ false breakout.
+TIMEFRAME HIERARCHY (Cao hơn = Ưu tiên hơn):
+1. Daily/4H (Swing Regime) - Xu hướng lớn, quyết định bias chính
+2. 15M (Scalp Regime) - Xu hướng trung, filter setup
+3. 5M (Scalp Bias) - Xu hướng nhỏ, timing zone
+4. 1M (Scalp Entry) - Execution timing only
+→ NGUYÊN TẮC: Trade THEO xu hướng lớn, ENTRY ở timeframe nhỏ
+
+QUY TẮC CƠ BẢN:
+1. Confluence: 15m+5m+1m đồng thuận -> Mạnh
+2. Risk: RSI_7 > 75 (Long risk), RSI_7 < 25 (Short risk)
+3. TP/SL: Scalping tight (TP ~0.9%, SL ~0.6%)
+4. Volume: Ưu tiên Vol Force >= 1.2x; nếu Vol Force thấp dễ false breakout
+
+QUY TẮC SWING CONTEXT NÂNG CAO:
+5a. HTF Alignment (Trend Alignment):
+   - ALIGNED (HTF và Scalp cùng hướng): Confidence +10-15%, setup mạnh
+   - DIVERGENT (HTF và Scalp ngược hướng): 
+     * Nếu HTF trigger_score > 70 -> Ưu tiên HTF, scalp ngược chiều cần TRÁNH hoặc giảm confidence -20%
+     * Nếu HTF trigger_score < 50 -> Scalp có thể vào counter-trend nhẹ nhàng nhưng phải có reversal setup rõ ràng
+   - NEUTRAL (HTF NO_TRADE): Dựa vào scalp timeframes, cẩn thận hơn
+
+5b. HTF Zone Proximity (Zone Proximity):
+   - AT_ZONE (Price đang ở HTF Demand/Supply):
+     * Nếu scalp CÙNG HƯỚNG với zone (Long tại Demand, Short tại Supply) -> Confidence +15%, probability bounce cao
+     * Nếu scalp NGƯỢC HƯỚNG zone -> Giảm confidence -10%, risk cao (break zone cần volume mạnh)
+   - NEAR_ZONE: Cẩn thận, price có thể test zone trước khi tiếp tục
+   - FAR_FROM_ZONE: Zone ít ảnh hưởng
+
+5c. HTF Zone Strength:
+   - Strength >= 3/5: Zone mạnh, respect zone hơn
+   - Strength < 3/5: Zone yếu, có thể break dễ hơn
+
+5d. HTF Regime Considerations:
+   - TREND_UP/TREND_DOWN: Trend rõ ràng, ưu tiên trade theo trend
+   - RANGE: Dễ false breakout, giảm position size, tighten SL
+   - TRANSITION: Không rõ ràng, cẩn thận hoặc NO_TRADE
+
+CONFLICT RESOLUTION:
+- Khi HTF (Swing) mâu thuẫn với LTF (Scalp):
+  1. Check HTF trigger_score: 
+     - Score >= 80: HTF trend rất mạnh, LTF counter-trend TRÁNH
+     - Score 50-79: HTF trend khá mạnh, LTF counter-trend cần reversal setup cực rõ (RSI extreme + volume spike)
+     - Score < 50: HTF yếu, LTF có thể lead reversal
+  2. Check Zone Proximity:
+     - AT_ZONE + Zone strength >= 3: Respect zone, trade theo zone direction
+     - FAR_FROM_ZONE: Zone ít ảnh hưởng, dựa vào LTF hơn
+  3. Check HTF Regime:
+     - RANGE: LTF có thể scalp cả 2 chiều tại range edges
+     - TREND: Ưu tiên trade theo trend, counter-trend rất rủi ro
 
 QUAN TRỌNG - FORMAT REASON:
 - Luôn dùng format RSI_7, RSI_14 (dấu gạch dưới, KHÔNG dùng ngoặc đơn)
 - Ví dụ: "Khung 1M RSI_7 = 30.55 cho thấy quá bán"
 - KHÔNG viết RSI(7) hoặc RSI 7 hoặc 7.=
+- Trong reason, PHẢI đề cập đến HTF context nếu có impact (alignment, zone proximity, score)
 
 OUTPUT JSON:
 {
@@ -130,8 +207,8 @@ OUTPUT JSON:
   "entry": number,
   "stop_loss_logic": "string",
   "take_profit_logic": ["string"],
-  "reason": "Vietnamese explanation, ưu tiên format đánh số 1. 2. 3. (dùng RSI_7, RSI_14)",
-  "risk_warning": "string"
+  "reason": "Vietnamese explanation, ưu tiên format đánh số 1. 2. 3. PHẢI mention HTF context nếu relevant (dùng RSI_7, RSI_14)",
+  "risk_warning": "string, mention HTF conflict nếu có"
 }
 `
     }

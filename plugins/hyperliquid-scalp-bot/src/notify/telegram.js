@@ -1,11 +1,12 @@
 import http from '../utils/httpClient.js'
 import { canSendAlert, markAlertSent } from './alertCooldown.js'
+import { formatSwingAlert } from './swingAlert.js'
 
 /**
  * Escape MarkdownV2 special characters để tránh lỗi Telegram API 400.
  * Ref: Telegram MarkdownV2 requires escaping: _ * [ ] ( ) ~ ` > # + - = | { } . !
  */
-function escapeMarkdownV2(text) {
+export function escapeMarkdownV2(text) {
   if (text === null || text === undefined) return ''
   const s = String(text)
   // Escape backslash first
@@ -20,7 +21,7 @@ function escapeMarkdownV2(text) {
  * Escape content placed INSIDE inline code block: `...`
  * In MarkdownV2, inside code we only need to escape backslash and backtick.
  */
-function escapeInlineCode(text) {
+export function escapeInlineCode(text) {
   if (text === null || text === undefined) return ''
   return String(text)
     .replace(/\\/g, '\\\\')
@@ -31,7 +32,7 @@ function escapeInlineCode(text) {
  * Sanitize content placed inside triple-backtick code block.
  * Avoid breaking the fence by stripping triple backticks.
  */
-function sanitizeForCodeBlock(text) {
+export function sanitizeForCodeBlock(text) {
   if (text === null || text === undefined) return ''
   return String(text).replace(/```/g, "'''")
 }
@@ -203,13 +204,20 @@ function formatReason(reason) {
     .join('\n')
 }
 
-export function notify(decision, plan = null, strategy = null) {
+export function notify(decision, plan = null, strategy = null, triggerInfo = null) {
+  const strategyName = strategy || 'SCALP_01'
+  
+  // SWING_01 uses different format
+  if (strategyName === 'SWING_01' || strategyName === 'SWING_01_MANUAL') {
+    return notifySwing(decision, triggerInfo, strategyName)
+  }
+
+  // Scalp strategies format (existing logic)
   const icon = decision.action === 'LONG' ? '🟢' : (decision.action === 'SHORT' ? '🔴' : '⚪')
   const confidencePercent = Math.round(decision.confidence * 100)
   const symbol = decision.symbol || decision?.market?.symbol || 'N/A'
   
   // Format strategy name với icon phù hợp
-  const strategyName = strategy || 'SCALP_01'
   const strategyIcon = strategyName.includes('MANUAL') ? '🔧' : '⚡'
   const strategyLabel = strategyName.includes('MANUAL') ? `${strategyIcon} ${strategyName} (Manual)` : `${strategyIcon} ${strategyName} (Auto)`
 
@@ -313,4 +321,33 @@ ${tpBlock}
   
   console.log('📢 Processing alert:', decision.action)
   return message
+}
+
+/**
+ * Notify for Swing01 (different format)
+ */
+function notifySwing(decision, triggerInfo, strategyName) {
+  if (!triggerInfo) {
+    console.warn('[Swing01] No triggerInfo provided')
+    return null
+  }
+
+  const symbol = decision.symbol || 'BTC'
+  
+  // Format AI output
+  const aiOutput = {
+    verdict: decision.verdict || decision.action || 'NO_TRADE',
+    confidence: decision.confidence || 0,
+    reasoning: decision.reasoning || decision.reason || '',
+    invalidation_note: decision.invalidation_note || ''
+  }
+
+  // Format alert message (already in MarkdownV2 format)
+  const alertText = formatSwingAlert(triggerInfo, aiOutput, symbol)
+  
+  // Send message (formatSwingAlert already returns MarkdownV2 formatted text)
+  sendMessage(alertText)
+  
+  console.log('📢 Processing swing alert:', aiOutput.verdict)
+  return alertText
 }

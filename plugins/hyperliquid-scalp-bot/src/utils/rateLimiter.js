@@ -222,6 +222,20 @@ export function shouldSaveSkipLog(symbol, strategy) {
  * @returns {boolean} - true nếu được phép lưu, false nếu đang trong cooldown
  */
 export function shouldSaveNoTradeLog(symbol, strategy, action, aiAction = null) {
+  // Validate inputs
+  if (!symbol || typeof symbol !== 'string') {
+    console.warn(`[RateLimiter] Invalid symbol in shouldSaveNoTradeLog: ${symbol}`)
+    return false // DON'T save if symbol is invalid (will cause DB error)
+  }
+  if (!strategy || typeof strategy !== 'string') {
+    console.warn(`[RateLimiter] Invalid strategy in shouldSaveNoTradeLog: ${strategy}`)
+    return false
+  }
+  if (!action || typeof action !== 'string') {
+    console.warn(`[RateLimiter] Invalid action in shouldSaveNoTradeLog: ${action}`)
+    return false
+  }
+  
   const key = `${symbol.toUpperCase()}_${strategy}`
   const last = lastDbWrites.get(key)
   
@@ -278,6 +292,20 @@ export function shouldSaveNoTradeLog(symbol, strategy, action, aiAction = null) 
  * @param {string} aiAction - AI action (LONG, SHORT) - chỉ cần khi action === 'OPEN'
  */
 export function markDbWrite(symbol, strategy, action, aiAction = null) {
+  // Validate inputs before marking
+  if (!symbol || typeof symbol !== 'string') {
+    console.warn(`[RateLimiter] Invalid symbol in markDbWrite: ${symbol}`)
+    return
+  }
+  if (!strategy || typeof strategy !== 'string') {
+    console.warn(`[RateLimiter] Invalid strategy in markDbWrite: ${strategy}`)
+    return
+  }
+  if (!action || typeof action !== 'string') {
+    console.warn(`[RateLimiter] Invalid action in markDbWrite: ${action}`)
+    return
+  }
+  
   const key = `${symbol.toUpperCase()}_${strategy}`
   lastDbWrites.set(key, {
     action,
