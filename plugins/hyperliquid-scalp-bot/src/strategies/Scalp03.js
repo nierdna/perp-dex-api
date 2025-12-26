@@ -2,9 +2,9 @@ import { BaseStrategy } from './BaseStrategy.js'
 import { parsePlan } from '../utils/parsePlan.js'
 import { getSwingData, getEnhancedSwingData } from '../data/swingDataCache.js'
 
-export class Scalp01 extends BaseStrategy {
+export class Scalp03 extends BaseStrategy {
     constructor() {
-        super('SCALP_01')
+        super('SCALP_03')
     }
 
     checkConditions(signal) {
@@ -46,7 +46,7 @@ export class Scalp01 extends BaseStrategy {
         // Default parser từ util
         const plan = parsePlan(decision, currentPrice)
 
-        // Fallback plan cho SCALP_01 nếu AI trả LONG/SHORT nhưng thiếu SL/TP rõ ràng
+        // Fallback plan cho SCALP_03 nếu AI trả LONG/SHORT nhưng thiếu SL/TP rõ ràng
         if (decision?.action !== 'LONG' && decision?.action !== 'SHORT') return plan
 
         const entry = Number.isFinite(plan?.entry) ? plan.entry : (Number.isFinite(currentPrice) ? currentPrice : null)
@@ -104,7 +104,7 @@ export class Scalp01 extends BaseStrategy {
         const swingContext = getEnhancedSwingData(signal.symbol, signal.price, scalpDirection)
         
         return `
-Vai trò: Bạn là một chuyên gia giao dịch Crypto Scalping chuyên nghiệp (Strategy SCALP_01).
+Vai trò: Bạn là một chuyên gia giao dịch Crypto Scalping chuyên nghiệp (Strategy SCALP_03).
 
 MỤC TIÊU: Tìm kiếm lợi nhuận ngắn hạn với xác suất thắng > 70% dựa trên đa khung thời gian.
 

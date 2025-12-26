@@ -39,9 +39,9 @@ export async function runScalp(symbol = null) {
   if (!isWorthy) {
     console.log('💤 Market quiet. Skip AI.')
     // Lưu log SKIP để tracking (với cooldown)
-    if (shouldSaveSkipLog(signal.symbol, 'SCALP_01')) {
+    if (shouldSaveSkipLog(signal.symbol, 'SCALP_03')) {
       await saveLog({
-        strategy: 'SCALP_01',
+        strategy: 'SCALP_03',
         symbol: signal.symbol,
         timeframe: 'Multi-TF',
         price: signal.price,
@@ -51,7 +51,7 @@ export async function runScalp(symbol = null) {
         ai_full_response: null,
         market_snapshot: indicators // Lưu Full Data Input
       })
-      markDbWrite(signal.symbol, 'SCALP_01', 'SKIP')
+      markDbWrite(signal.symbol, 'SCALP_03', 'SKIP')
     }
     return
   }
@@ -78,9 +78,9 @@ export async function runScalp(symbol = null) {
 
   // 7. Lưu Log vào DB (kèm entry/SL/TP nếu có, với cooldown cho NO_TRADE/REJECTED/OPEN)
   let logId = null
-  if (outcome === 'OPEN' || shouldSaveNoTradeLog(signal.symbol, 'SCALP_01', action, aiAction)) {
-    logId = await saveLog({
-      strategy: 'SCALP_01',
+  if (outcome === 'OPEN' || shouldSaveNoTradeLog(signal.symbol, 'SCALP_03', action, aiAction)) {
+      logId = await saveLog({
+        strategy: 'SCALP_03',
       symbol: signal.symbol,
       timeframe: 'Multi-TF',
       price: signal.price,
@@ -95,7 +95,7 @@ export async function runScalp(symbol = null) {
       take_profit_prices: takeProfitPrices,
       outcome
     })
-    markDbWrite(signal.symbol, 'SCALP_01', action, aiAction)
+    markDbWrite(signal.symbol, 'SCALP_03', action, aiAction)
   }
 
   // Nếu OPEN thì register vào WS monitor để tự update WIN/LOSS
@@ -115,7 +115,7 @@ export async function runScalp(symbol = null) {
   if (outcome !== 'OPEN') return
 
   // Không đặt lệnh, chỉ thông báo
-  notify(decision, plan, 'SCALP_01')
+  notify(decision, plan, 'SCALP_03')
 }
 
 function checkConditions(signal) {

@@ -13,7 +13,7 @@ paths:
         
         **Parameters:**
         - `symbol`: Trading symbol (e.g., BTC, ETH). Default: BTC
-        - `strategy`: Strategy to execute (SCALP_01, SCALP_02). Default: SCALP_01
+        - `strategy`: Strategy to execute (SCALP_03, SCALP_04). Default: SCALP_03
         - `force`: Set to `true` to skip technical filters and force AI analysis. Default: false
         - `notify`: Set to `true` to send Telegram notification. Default: false
         
@@ -29,12 +29,12 @@ paths:
             example: BTC
         - name: strategy
           in: query
-          description: Strategy to execute. Default is SCALP_01.
+          description: Strategy to execute. Default is SCALP_03.
           required: false
           schema:
             type: string
-            enum: [SCALP_01, SCALP_02]
-            example: SCALP_02
+            enum: [SCALP_03, SCALP_04]
+            example: SCALP_04
         - name: force
           in: query
           description: If true, skip technical filters and force AI analysis.
@@ -62,7 +62,7 @@ paths:
                     example: Cycle executed successfully
                   strategy:
                     type: string
-                    example: SCALP_02
+                    example: SCALP_04
                   symbol:
                     type: string
                     example: BTC

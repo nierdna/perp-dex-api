@@ -19,7 +19,7 @@ app.get('/ai-scalp', async (req, res) => {
     try {
         // Lấy params
         const symbol = req.query?.symbol || 'BTC'
-        const strategyName = req.query?.strategy || 'SCALP_01'
+        const strategyName = req.query?.strategy || 'SCALP_03'
         const force = req.query?.force === 'true' // Check force param
         // Manual API call: mặc định KHÔNG gửi Telegram (tránh spam). Bật bằng ?notify=true nếu cần.
         const notify = req.query?.notify === 'true'
@@ -30,7 +30,7 @@ app.get('/ai-scalp', async (req, res) => {
         const strategy = getStrategy(strategyName)
         if (!strategy) {
             return res.status(400).json({
-                error: `Strategy '${strategyName}' not found. Available: SCALP_01, SCALP_02`
+                error: `Strategy '${strategyName}' not found. Available: SCALP_03, SCALP_04`
             })
         }
         

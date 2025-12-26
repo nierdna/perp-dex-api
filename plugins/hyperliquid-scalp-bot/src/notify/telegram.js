@@ -205,7 +205,7 @@ function formatReason(reason) {
 }
 
 export function notify(decision, plan = null, strategy = null, triggerInfo = null) {
-  const strategyName = strategy || 'SCALP_01'
+  const strategyName = strategy || 'SCALP_03'
   
   // SWING_01 uses different format
   if (strategyName === 'SWING_01' || strategyName === 'SWING_01_MANUAL') {

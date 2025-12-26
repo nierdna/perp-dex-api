@@ -1,13 +1,13 @@
 import { BaseStrategy } from './BaseStrategy.js'
 import { getSwingData, getEnhancedSwingData } from '../data/swingDataCache.js'
 
-export class Scalp02 extends BaseStrategy {
+export class Scalp04 extends BaseStrategy {
     constructor() {
-        super('SCALP_02')
+        super('SCALP_04')
     }
 
     checkConditions(signal) {
-        // SCALP_02 Implementation based on SRS v1.0
+        // SCALP_04 Implementation based on SRS v1.0
         // Philosophy: Trade Continuation, Not Prediction.
 
         // Fallback: entry_close_1m = price nếu không có
@@ -21,7 +21,7 @@ export class Scalp02 extends BaseStrategy {
 
         // Nếu không phải Trend rõ ràng -> Bỏ qua
         if (!isBullRegime && !isBearRegime) {
-            // console.log(`[SCALP_02] Rejected: No clear trend (regime=${signal.regime_15m})`)
+            // console.log(`[SCALP_04] Rejected: No clear trend (regime=${signal.regime_15m})`)
             return false
         }
 
@@ -30,11 +30,11 @@ export class Scalp02 extends BaseStrategy {
         // -----------------------------------------
         // Bias must match Regime
         if (isBullRegime && signal.bias_5m !== 'bullish') {
-            // console.log(`[SCALP_02] Rejected: Bull regime but 5m bias=${signal.bias_5m}`)
+            // console.log(`[SCALP_04] Rejected: Bull regime but 5m bias=${signal.bias_5m}`)
             return false
         }
         if (isBearRegime && signal.bias_5m !== 'bearish') {
-            // console.log(`[SCALP_02] Rejected: Bear regime but 5m bias=${signal.bias_5m}`)
+            // console.log(`[SCALP_04] Rejected: Bear regime but 5m bias=${signal.bias_5m}`)
             return false
         }
 
@@ -42,11 +42,11 @@ export class Scalp02 extends BaseStrategy {
         // - LONG: RSI_7 >= 50 (thay vì 55)
         // - SHORT: RSI_7 <= 50 (thay vì 45)
         if (isBullRegime && signal.bias_rsi7 < 50) {
-            // console.log(`[SCALP_02] Rejected: Bull regime but RSI_7=${signal.bias_rsi7} < 50`)
+            // console.log(`[SCALP_04] Rejected: Bull regime but RSI_7=${signal.bias_rsi7} < 50`)
             return false
         }
         if (isBearRegime && signal.bias_rsi7 > 50) {
-            // console.log(`[SCALP_02] Rejected: Bear regime but RSI_7=${signal.bias_rsi7} > 50`)
+            // console.log(`[SCALP_04] Rejected: Bear regime but RSI_7=${signal.bias_rsi7} > 50`)
             return false
         }
 
@@ -71,25 +71,25 @@ export class Scalp02 extends BaseStrategy {
 
             // Điều kiện 1: Giá đang nằm trên EMA26 (Structure hold)
             if (entryClose < signal.entry_ema26) {
-                // console.log(`[SCALP_02] Rejected LONG: Price ${entryClose} < EMA26 ${signal.entry_ema26}`)
+                // console.log(`[SCALP_04] Rejected LONG: Price ${entryClose} < EMA26 ${signal.entry_ema26}`)
                 return false
             }
 
             // Điều kiện 2: Trigger - Price nằm trên EMA9 HOẶC vừa cắt lên EMA9
             const priceAboveEma9 = entryClose > signal.entry_ema9
             if (!priceAboveEma9) {
-                // console.log(`[SCALP_02] Rejected LONG: Price ${entryClose} <= EMA9 ${signal.entry_ema9}`)
+                // console.log(`[SCALP_04] Rejected LONG: Price ${entryClose} <= EMA9 ${signal.entry_ema9}`)
                 return false
             }
 
             // RSI check cho điểm Entry: Không dùng RSI Continuation Zone cứng nhắc (60-85) mà dùng RSI hợp lệ để vào lệnh (không quá cao)
             // Nếu RSI > 80 thì risk cao -> Skip
             if (rsi1m > 80) {
-                // console.log(`[SCALP_02] Rejected LONG: RSI_7=${rsi1m} > 80 (too high)`)
+                // console.log(`[SCALP_04] Rejected LONG: RSI_7=${rsi1m} > 80 (too high)`)
                 return false
             }
 
-            // console.log(`[SCALP_02] ✅ LONG Setup passed: Price=${entryClose}, EMA9=${signal.entry_ema9}, EMA26=${signal.entry_ema26}, RSI_7=${rsi1m}`)
+            // console.log(`[SCALP_04] ✅ LONG Setup passed: Price=${entryClose}, EMA9=${signal.entry_ema9}, EMA26=${signal.entry_ema26}, RSI_7=${rsi1m}`)
             return true
         }
 
@@ -97,24 +97,24 @@ export class Scalp02 extends BaseStrategy {
         if (isBearRegime) {
             // Structure hold
             if (entryClose > signal.entry_ema26) {
-                // console.log(`[SCALP_02] Rejected SHORT: Price ${entryClose} > EMA26 ${signal.entry_ema26}`)
+                // console.log(`[SCALP_04] Rejected SHORT: Price ${entryClose} > EMA26 ${signal.entry_ema26}`)
                 return false
             }
 
             // Trigger
             const priceBelowEma9 = entryClose < signal.entry_ema9
             if (!priceBelowEma9) {
-                // console.log(`[SCALP_02] Rejected SHORT: Price ${entryClose} >= EMA9 ${signal.entry_ema9}`)
+                // console.log(`[SCALP_04] Rejected SHORT: Price ${entryClose} >= EMA9 ${signal.entry_ema9}`)
                 return false
             }
 
             // RSI check
             if (rsi1m < 20) {
-                // console.log(`[SCALP_02] Rejected SHORT: RSI_7=${rsi1m} < 20 (too low)`)
+                // console.log(`[SCALP_04] Rejected SHORT: RSI_7=${rsi1m} < 20 (too low)`)
                 return false
             }
 
-            // console.log(`[SCALP_02] ✅ SHORT Setup passed: Price=${entryClose}, EMA9=${signal.entry_ema9}, EMA26=${signal.entry_ema26}, RSI_7=${rsi1m}`)
+            // console.log(`[SCALP_04] ✅ SHORT Setup passed: Price=${entryClose}, EMA9=${signal.entry_ema9}, EMA26=${signal.entry_ema26}, RSI_7=${rsi1m}`)
             return true
         }
 
@@ -125,7 +125,7 @@ export class Scalp02 extends BaseStrategy {
         const atrValue = signal.entry_atr || signal.bias_atr || 0
         const volatilityState = (atrValue / signal.price * 100 > 0.5) ? 'High' : 'Normal'
         
-        // Determine scalp direction from regime (Scalp02 is continuation strategy)
+        // Determine scalp direction from regime (Scalp04 is continuation strategy)
         let scalpDirection = null
         if (signal.regime_15m === 'trending_bull') scalpDirection = 'LONG'
         else if (signal.regime_15m === 'trending_bear') scalpDirection = 'SHORT'
@@ -135,7 +135,7 @@ export class Scalp02 extends BaseStrategy {
         const swingContext = getEnhancedSwingData(signal.symbol, signal.entry_close_1m || signal.price, scalpDirection)
 
         return `
-Strategy: SCALP_02 (Trend Continuation)
+Strategy: SCALP_04 (Trend Continuation)
 Role: Senior Crypto Trader.
 Objective: Capture momentum in strong trends.
 

@@ -19,7 +19,7 @@ const pool = process.env.DATABASE_URL
 const CREATE_TABLE_QUERY = `
   CREATE TABLE IF NOT EXISTS logs_trade (
     id SERIAL PRIMARY KEY,
-    strategy VARCHAR(50) DEFAULT 'SCALP_01',
+    strategy VARCHAR(50) DEFAULT 'SCALP_03',
     symbol VARCHAR(10) NOT NULL,
     timeframe VARCHAR(50) NOT NULL,
     price NUMERIC,
@@ -68,7 +68,7 @@ export async function saveLog(data) {
     RETURNING id
   `
     const values = [
-        data.strategy || 'SCALP_01',
+        data.strategy || 'SCALP_03',
         data.symbol,
         data.timeframe,
         data.price,

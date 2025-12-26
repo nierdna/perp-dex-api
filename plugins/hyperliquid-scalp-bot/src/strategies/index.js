@@ -1,11 +1,11 @@
-import { Scalp01 } from './Scalp01.js'
-import { Scalp02 } from './Scalp02.js'
+import { Scalp03 } from './Scalp03.js'
+import { Scalp04 } from './Scalp04.js'
 import { Swing01 } from './Swing01.js'
 
 // Registry lưu trữ các strategy instance
 const strategies = {
-    SCALP_01: new Scalp01(),
-    SCALP_02: new Scalp02(),
+    SCALP_03: new Scalp03(),
+    SCALP_04: new Scalp04(),
     SWING_01: new Swing01()
 }
 
@@ -14,10 +14,10 @@ const strategies = {
  * @returns {Array<BaseStrategy>}
  */
 export function getActiveStrategies() {
-    // Có thể đọc từ env ACTIVE_STRATEGIES=SCALP_01,SCALP_02
+    // Có thể đọc từ env ACTIVE_STRATEGIES=SCALP_03,SCALP_04
     const activeNames = process.env.ACTIVE_STRATEGIES
         ? process.env.ACTIVE_STRATEGIES.split(',').map(s => s.trim())
-        : ['SCALP_01'] // Default
+        : ['SCALP_03'] // Default
 
     return activeNames
         .map(name => strategies[name])
