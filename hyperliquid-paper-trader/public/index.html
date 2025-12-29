@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyperliquid Paper Trader</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>🚀 HyperPaper</h2>
+            </div>
+            <nav>
+                <a href="#" class="active" onclick="showHome()">📊 Dashboard</a>
+                <a href="#" onclick="alert('Coming Soon')">⚙️ Strategies</a>
+                <a href="#" onclick="alert('Coming Soon')">🔧 Settings</a>
+            </nav>
+            <div class="server-status">
+                <span class="status-dot online"></span> SYSTEM ONLINE
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+
+
+            <!-- HOME VIEW -->
+            <div id="home-view">
+                <section class="section-header">
+                    <h2>Active Strategies</h2>
+                    <button class="btn btn-primary" onclick="openModal('strategyModal')">+ New Strategy</button>
+                </section>
+
+                <div class="strategy-grid" id="strategy-grid">
+                    <div class="loading">Loading Strategies...</div>
+                </div>
+            </div>
+
+            <!-- DETAIL VIEW -->
+            <div id="detail-view" style="display: none;">
+                <button class="btn btn-secondary" onclick="showHome()" style="margin-bottom: 20px;">← Back to
+                    Dashboard</button>
+
+                <section class="section-header" style="margin-top:0">
+                    <h2 id="detail-title">Strategy Details</h2>
+                    <div class="row">
+                        <button class="btn btn-primary" onclick="openModal('orderModal')">⚡ Quick Trade</button>
+                    </div>
+                </section>
+
+                <div class="server-status" style="margin-bottom: 30px; font-size: 16px;" id="detail-stats">
+                    <!-- Injected Stats -->
+                </div>
+
+                <h3>Active Positions</h3>
+                <div class="table-container" style="margin-bottom:30px; margin-top: 10px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Side</th>
+                                <th>Entry</th>
+                                <th>Size</th>
+                                <th>TP/SL</th>
+                                <th>PnL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-positions-table"></tbody>
+                    </table>
+                </div>
+
+                <h3>Trade History</h3>
+                <div class="table-container" style="margin-top: 10px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Result</th>
+                                <th>Symbol</th>
+                                <th>Side</th>
+                                <th>Entry</th>
+                                <th>Exit</th>
+                                <th>PnL</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-history-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: NEW STRATEGY -->
+    <div id="strategyModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('strategyModal')">&times;</span>
+            <h2>Create New Strategy</h2>
+            <form id="createStrategyForm">
+                <input type="text" id="newStratId" placeholder="Strategy ID (e.g. SCALP_01)" required>
+                <input type="number" id="newStratCapital" placeholder="Initial Capital ($)" required>
+                <button type="submit" class="btn btn-primary">Create Strategy</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: PLACE ORDER -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('orderModal')">&times;</span>
+            <h2>Place Market Order</h2>
+            <form id="placeOrderForm">
+                <select id="orderStrategyId" required>
+                    <option value="" disabled selected>Select Strategy</option>
+                </select>
+                <input type="text" id="orderSymbol" value="BTC" readonly>
+                <div class="row">
+                    <select id="orderSide" required>
+                        <option value="LONG">LONG 🟢</option>
+                        <option value="SHORT">SHORT 🔴</option>
+                    </select>
+                    <input type="number" id="orderSize" placeholder="Size (USD)" required>
+                </div>
+                <div class="row">
+                    <input type="number" id="orderSL" placeholder="Stop Loss">
+                    <input type="number" id="orderTP" placeholder="Take Profit">
+                </div>
+                <button type="submit" class="btn btn-primary">Execute Trade</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

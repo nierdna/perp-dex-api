@@ -1,0 +1,123 @@
+openapi: 3.0.0
+info:
+  title: Hyperliquid Paper Trader API
+  description: API for managing strategies and placing paper trades on Hyperliquid.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api
+    description: Local Server
+
+paths:
+  /strategies:
+    post:
+      summary: Initialize a new Strategy Wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - capital
+              properties:
+                id:
+                  type: string
+                  example: "SWING_01"
+                capital:
+                  type: number
+                  example: 1000
+      responses:
+        200:
+          description: Strategy created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /order:
+    post:
+      summary: Place a Paper Trade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - strategyId
+                - symbol
+                - side
+                - size
+              properties:
+                strategyId:
+                  type: string
+                  example: "SWING_01"
+                symbol:
+                  type: string
+                  example: "BTC"
+                side:
+                  type: string
+                  enum: [LONG, SHORT]
+                  example: "LONG"
+                size:
+                  type: number
+                  description: Position Size (Notional Value in USD)
+                  example: 500
+                sl:
+                  type: number
+                  description: Stop Loss Price
+                  example: 95000
+                tp:
+                  type: number
+                  description: Take Profit Price
+                  example: 105000
+      responses:
+        200:
+          description: Order placed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  position:
+                    type: object
+
+  /strategies/{id}:
+    get:
+      summary: Get Strategy Status & History
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Strategy Details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  current_balance:
+                    type: number
+                  positions:
+                    type: array
+                    description: Active Positions
+                    items:
+                      type: object
+                  recent_history:
+                    type: array
+                    description: Closed Positions History
+                    items:
+                      type: object

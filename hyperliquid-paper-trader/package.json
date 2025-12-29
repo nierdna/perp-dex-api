@@ -1,0 +1,21 @@
+{
+    "name": "hyperliquid-paper-trader",
+    "version": "1.0.0",
+    "description": "Real-time Paper Trading / Forward Testing Bot for Hyperliquid",
+    "main": "src/index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node src/index.js",
+        "dev": "node --watch src/index.js"
+    },
+    "dependencies": {
+        "ws": "^8.16.0",
+        "dotenv": "^16.3.1",
+        "pg": "^8.16.3",
+        "express": "^5.2.1",
+        "cors": "^2.8.5",
+        "body-parser": "^1.20.2",
+        "swagger-ui-express": "^5.0.1",
+        "yamljs": "^0.3.0"
+    }
+}
