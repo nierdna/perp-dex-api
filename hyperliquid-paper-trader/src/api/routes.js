@@ -43,6 +43,31 @@ router.post('/order', async (req, res) => {
     }
 })
 
+// 2.1 Close Position
+router.post('/position/close', async (req, res) => {
+    try {
+        const { id } = req.body;
+        if (!id) return res.status(400).json({ error: 'Missing position id' });
+        await engine.closePositionManually(id);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// 2.2 Update TP/SL
+router.post('/position/update', async (req, res) => {
+    try {
+        const { id, tp, sl } = req.body; // id, tp, sl
+        if (!id) return res.status(400).json({ error: 'Missing position id' });
+
+        const result = await engine.updateTpSl(id, tp, sl);
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // 3. Get All Strategies
 router.get('/strategies', async (req, res) => {
     try {

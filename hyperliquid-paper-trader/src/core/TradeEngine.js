@@ -113,46 +113,87 @@ export class TradeEngine {
         } catch (error) {
             console.error('❌ Error closing position:', error)
         }
+    }
+
+    async reducePosition(pos, reduceSize, exitPrice) {
+        // Partial Close Logic
+        const pnlPercent = (pos.side === 'LONG')
+            ? (exitPrice - parseFloat(pos.entry_price)) / parseFloat(pos.entry_price)
+            : (parseFloat(pos.entry_price) - exitPrice) / parseFloat(pos.entry_price);
+
+        const pnlDollar = reduceSize * pnlPercent;
+        const result = pnlDollar >= 0 ? 'WIN' : 'LOSS';
+
+        console.log(`📉 Reducing ${pos.symbol} ${pos.side} by $${reduceSize}. PnL: $${pnlDollar.toFixed(2)}`);
+
+        // 1. Record the 'Closed' portion as a historical trade (Optional: some systems don't do this for partials, but we should for PnL tracking)
+        // We insert a CLOSED record for the portion closed.
+        await db.query(`
+            INSERT INTO positions (strategy_id, symbol, side, entry_price, size, exit_price, pnl, result, close_reason, status, closed_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'PARTIAL_CLOSE', 'CLOSED', NOW())
+        `, [
+            pos.strategy_id,
+            pos.symbol,
+            pos.side,
+            pos.entry_price,
+            reduceSize,
+            exitPrice,
+            pnlDollar,
+            result
+        ]);
+
+        // 2. Update the Balance
+        await db.query(`UPDATE strategies SET current_balance = current_balance + $1 WHERE id = $2`, [pnlDollar, pos.strategy_id]);
+
+        // 3. Update the Active Position Size
+        const newSize = parseFloat(pos.size) - reduceSize;
+        await db.query(`UPDATE positions SET size = $1, updated_at = NOW() WHERE id = $2`, [newSize, pos.id]);
+
+        // 4. Update Memory
+        pos.size = newSize;
+
+        return { pnl: pnlDollar };
+    }
 
     async closePositionManually(id) {
-            const pos = this.activePositions.find(p => p.id === parseInt(id));
-            if (!pos) throw new Error("Position not found or already closed");
+        const pos = this.activePositions.find(p => p.id === parseInt(id));
+        if (!pos) throw new Error("Position not found or already closed");
 
-            const currentPrice = this.priceCache[pos.symbol];
-            if (!currentPrice) throw new Error("Market price not available");
+        const currentPrice = this.priceCache[pos.symbol];
+        if (!currentPrice) throw new Error("Market price not available");
 
-            await this.closePosition(pos, "MANUAL", currentPrice, "USER_CLOSE");
-            return { success: true };
-        }
+        await this.closePosition(pos, "MANUAL", currentPrice, "USER_CLOSE");
+        return { success: true };
+    }
 
     async updateTpSl(id, tp, sl) {
-            const posIndex = this.activePositions.findIndex(p => p.id === parseInt(id));
-            if (posIndex === -1) throw new Error("Position not found or already closed");
+        const posIndex = this.activePositions.findIndex(p => p.id === parseInt(id));
+        if (posIndex === -1) throw new Error("Position not found or already closed");
 
-            const pos = this.activePositions[posIndex];
+        const pos = this.activePositions[posIndex];
 
-            // Basic Validation
-            const currentPrice = this.priceCache[pos.symbol];
-            if (currentPrice) {
-                if (pos.side === 'LONG') {
-                    if (sl && parseFloat(sl) >= currentPrice) throw new Error(`Long SL (${sl}) must be below Current Price (${currentPrice})`)
-                    if (tp && parseFloat(tp) <= currentPrice) throw new Error(`Long TP (${tp}) must be above Current Price (${currentPrice})`)
-                } else if (pos.side === 'SHORT') {
-                    if (sl && parseFloat(sl) <= currentPrice) throw new Error(`Short SL (${sl}) must be above Current Price (${currentPrice})`)
-                    if (tp && parseFloat(tp) >= currentPrice) throw new Error(`Short TP (${tp}) must be below Current Price (${currentPrice})`)
-                }
+        // Basic Validation
+        const currentPrice = this.priceCache[pos.symbol];
+        if (currentPrice) {
+            if (pos.side === 'LONG') {
+                if (sl && parseFloat(sl) >= currentPrice) throw new Error(`Long SL (${sl}) must be below Current Price (${currentPrice})`)
+                if (tp && parseFloat(tp) <= currentPrice) throw new Error(`Long TP (${tp}) must be above Current Price (${currentPrice})`)
+            } else if (pos.side === 'SHORT') {
+                if (sl && parseFloat(sl) <= currentPrice) throw new Error(`Short SL (${sl}) must be above Current Price (${currentPrice})`)
+                if (tp && parseFloat(tp) >= currentPrice) throw new Error(`Short TP (${tp}) must be below Current Price (${currentPrice})`)
             }
-
-            // Update DB
-            await db.query("UPDATE positions SET tp = $1, sl = $2, updated_at = NOW() WHERE id = $3", [tp, sl, id]);
-
-            // Update Memory
-            this.activePositions[posIndex].tp = tp;
-            this.activePositions[posIndex].sl = sl;
-
-            return { success: true, position: this.activePositions[posIndex] };
         }
+
+        // Update DB
+        await db.query("UPDATE positions SET tp = $1, sl = $2, updated_at = NOW() WHERE id = $3", [tp, sl, id]);
+
+        // Update Memory
+        this.activePositions[posIndex].tp = tp;
+        this.activePositions[posIndex].sl = sl;
+
+        return { success: true, position: this.activePositions[posIndex] };
     }
+
 
     // --- API Methods ---
 
@@ -184,7 +225,41 @@ export class TradeEngine {
             throw new Error(`Strategy ${strategyId} not found. Please init first.`)
         }
 
-        // 2.5 Validation
+        // 2.5 One-Way Logic (Auto-Flip)
+        // Check if there is an open position for this strategy & symbol
+        const existingPos = this.activePositions.find(p => p.strategy_id === strategyId && p.symbol === symbol);
+
+        if (existingPos) {
+            if (existingPos.side !== side) {
+                // FLIP: Close the opposite position first
+                console.log(`🔄 FLIP: Closing ${existingPos.side} position to open ${side}`);
+                await this.closePosition(existingPos, "WIN/LOSS", currentPrice, "FLIP");
+                // Note: WIN/LOSS result is calculated inside closePosition based on price anyway, 
+                // but we should probably let closePosition handle the logic or update it to be more flexible.
+                // For now, closePosition calculates PnL based on exitPrice, so the 'result' string passed here might be overwritten or unused if we rely on PnL calc.
+                // Actually closePosition takes (pos, result, exitPrice, reason). 
+                // We should calculate result (WIN/LOSS) before calling, OR let closePosition do it. 
+                // Existing closePosition assumes we pass the result. Let's calculate it quickly or rely on PnL sign.
+
+                // Let's refine closePosition slightly to calc result if not passed, or just calc here.
+                let result = 'LOSS';
+                const entry = parseFloat(existingPos.entry_price);
+                if (existingPos.side === 'LONG') {
+                    if (currentPrice > entry) result = 'WIN';
+                } else {
+                    if (currentPrice < entry) result = 'WIN';
+                }
+
+                // We re-call the exact close logic being used by checkTrade, but manually.
+                await this.closePosition(existingPos, result, currentPrice, "FLIP");
+            } else {
+                // SAME SIDE: Adding to position (Pyramiding) or Error? 
+                // Taking simple approach: Block multiple same-side positions for now to keep it strict One-Way 1-Position.
+                throw new Error(`Position already open for ${symbol} ${side}. managing multiple same-side positions not supported in simple mode.`);
+            }
+        }
+
+        // 2.6 Validation (SL/TP)
         if (side === 'LONG') {
             if (sl && parseFloat(sl) >= currentPrice) throw new Error(`Long SL (${sl}) must be below Entry (${currentPrice})`)
             if (tp && parseFloat(tp) <= currentPrice) throw new Error(`Long TP (${tp}) must be above Entry (${currentPrice})`)
