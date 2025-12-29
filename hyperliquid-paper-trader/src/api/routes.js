@@ -55,6 +55,18 @@ router.post('/position/close', async (req, res) => {
     }
 });
 
+// 2.1.5 Close All Positions
+router.post('/position/close-all', async (req, res) => {
+    try {
+        const { strategyId } = req.body;
+        if (!strategyId) return res.status(400).json({ error: 'Missing strategyId' });
+        const result = await engine.closeAllPositions(strategyId);
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // 2.2 Update TP/SL
 router.post('/position/update', async (req, res) => {
     try {

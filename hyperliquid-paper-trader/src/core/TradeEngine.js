@@ -166,6 +166,24 @@ export class TradeEngine {
         return { success: true };
     }
 
+    async closeAllPositions(strategyId) {
+        const positionsToClose = this.activePositions.filter(p => p.strategy_id === strategyId);
+        if (positionsToClose.length === 0) return { success: true, count: 0 };
+
+        const currentPrice = this.priceCache[positionsToClose[0].symbol]; // Assuming same symbol or getting price per symbol
+        // Better: iterate and get price for each
+
+        let count = 0;
+        for (const pos of positionsToClose) {
+            const price = this.priceCache[pos.symbol];
+            if (price) {
+                await this.closePosition(pos, "MANUAL", price, "USER_CLOSE_ALL");
+                count++;
+            }
+        }
+        return { success: true, count };
+    }
+
     async updateTpSl(id, tp, sl) {
         const posIndex = this.activePositions.findIndex(p => p.id === parseInt(id));
         if (posIndex === -1) throw new Error("Position not found or already closed");
@@ -212,50 +230,96 @@ export class TradeEngine {
 
     async placeOrder(strategyId, symbol, side, size, sl, tp) {
         // 1. Get current price
-        // Only support connected symbol for now (BTC)
         const currentPrice = this.priceCache[symbol]
         if (!currentPrice) {
             throw new Error(`Market price for ${symbol} not available yet`)
         }
 
-        // 2. Validate Strategy
+        // 2. Validate Strategy & Balance
         const strategyRes = await db.query("SELECT * FROM strategies WHERE id = $1", [strategyId])
         if (strategyRes.rows.length === 0) {
-            // Auto-create if not exists? Or throw error. Let's throw.
             throw new Error(`Strategy ${strategyId} not found. Please init first.`)
         }
+        const strategy = strategyRes.rows[0];
+        const currentBalance = parseFloat(strategy.current_balance);
 
-        // 2.5 One-Way Logic (Auto-Flip)
-        // Check if there is an open position for this strategy & symbol
+        // Calculate Used Margin
+        const strategyPositions = this.activePositions.filter(p => p.strategy_id === strategyId);
+        const usedMargin = strategyPositions.reduce((sum, p) => sum + parseFloat(p.size), 0);
+        const availableBalance = currentBalance - usedMargin;
+
+        console.log(`💰 Balance: ${currentBalance}, Used: ${usedMargin}, Available: ${availableBalance}`);
+
+        // 3. Logic Check (Netting vs New)
         const existingPos = this.activePositions.find(p => p.strategy_id === strategyId && p.symbol === symbol);
+        size = parseFloat(size);
 
         if (existingPos) {
             if (existingPos.side !== side) {
-                // FLIP: Close the opposite position first
-                console.log(`🔄 FLIP: Closing ${existingPos.side} position to open ${side}`);
-                await this.closePosition(existingPos, "WIN/LOSS", currentPrice, "FLIP");
-                // Note: WIN/LOSS result is calculated inside closePosition based on price anyway, 
-                // but we should probably let closePosition handle the logic or update it to be more flexible.
-                // For now, closePosition calculates PnL based on exitPrice, so the 'result' string passed here might be overwritten or unused if we rely on PnL calc.
-                // Actually closePosition takes (pos, result, exitPrice, reason). 
-                // We should calculate result (WIN/LOSS) before calling, OR let closePosition do it. 
-                // Existing closePosition assumes we pass the result. Let's calculate it quickly or rely on PnL sign.
+                // NETTING LOGIC (One-Way)
+                const currentPosSize = parseFloat(existingPos.size);
 
-                // Let's refine closePosition slightly to calc result if not passed, or just calc here.
-                let result = 'LOSS';
-                const entry = parseFloat(existingPos.entry_price);
-                if (existingPos.side === 'LONG') {
-                    if (currentPrice > entry) result = 'WIN';
+                if (Math.abs(currentPosSize - size) < 0.01) {
+                    // EXACT MATCH: Full Close
+                    console.log(`🔄 Netting: Full Close ${existingPos.symbol}`);
+                    let result = 'LOSS';
+                    const entry = parseFloat(existingPos.entry_price);
+                    if (existingPos.side === 'LONG') { if (currentPrice > entry) result = 'WIN'; }
+                    else { if (currentPrice < entry) result = 'WIN'; }
+
+                    await this.closePosition(existingPos, result, currentPrice, "NETTING_CLOSE");
+                    return { status: 'CLOSED', message: 'Position closed via netting' };
+
+                } else if (size < currentPosSize) {
+                    // PARTIAL CLOSE (Reduce Only)
+                    // No Margin Check needed for reducing
+                    console.log(`📉 Netting: Reducing ${existingPos.symbol} by ${size}`);
+                    await this.reducePosition(existingPos, size, currentPrice);
+                    return { status: 'REDUCED', message: 'Position reduced via netting' };
+
                 } else {
-                    if (currentPrice < entry) result = 'WIN';
-                }
+                    // FLIP (Close + Open Remainder)
+                    const remainingSize = size - currentPosSize;
 
-                // We re-call the exact close logic being used by checkTrade, but manually.
-                await this.closePosition(existingPos, result, currentPrice, "FLIP");
+                    // Margin Check for Remainder (taking into account freed margin)
+                    // The 'availableBalance' assumes 'currentPosSize' is used. 
+                    // Closing 'existinPos' frees 'currentPosSize'.
+                    // So effective available = availableBalance + currentPosSize.
+                    if (remainingSize > (availableBalance + currentPosSize)) {
+                        throw new Error(`Insufficient balance for Flip. Need $${remainingSize}, Valid Max: $${availableBalance + currentPosSize}`);
+                    }
+
+                    console.log(`🔄 Netting: Flipping ${existingPos.symbol}`);
+                    // 1. Close Old
+                    let result = 'LOSS';
+                    const entry = parseFloat(existingPos.entry_price);
+                    if (existingPos.side === 'LONG') { if (currentPrice > entry) result = 'WIN'; }
+                    else { if (currentPrice < entry) result = 'WIN'; }
+                    await this.closePosition(existingPos, result, currentPrice, "FLIP_CLOSE");
+
+                    // 2. Open New (Remainder)
+                    console.log(`🚀 Netting: Opening remaining ${remainingSize} ${side}`);
+                    size = remainingSize;
+                    // Continue to Insert...
+                }
             } else {
-                // SAME SIDE: Adding to position (Pyramiding) or Error? 
-                // Taking simple approach: Block multiple same-side positions for now to keep it strict One-Way 1-Position.
-                throw new Error(`Position already open for ${symbol} ${side}. managing multiple same-side positions not supported in simple mode.`);
+                // SAME SIDE: Pyramiding
+                if (size > availableBalance) {
+                    throw new Error(`Insufficient balance. Available: $${availableBalance}, Req: $${size}`);
+                }
+                console.log(`📈 Pyramiding: Adding ${size} to ${existingPos.symbol}`);
+                const newSize = parseFloat(existingPos.size) + size;
+
+                // Update DB
+                await db.query(`UPDATE positions SET size = $1, updated_at = NOW() WHERE id = $2`, [newSize, existingPos.id]);
+                // Update Memory
+                existingPos.size = newSize;
+                return existingPos;
+            }
+        } else {
+            // NEW POSITION
+            if (size > availableBalance) {
+                throw new Error(`Insufficient balance. Available: $${availableBalance}, Req: $${size}`);
             }
         }
 

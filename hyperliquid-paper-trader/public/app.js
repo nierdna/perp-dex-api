@@ -164,7 +164,7 @@ function renderDetailView(data) {
     // 3. Render History
     const historyTbody = document.getElementById('detail-history-table');
     if (!data.recent_history || data.recent_history.length === 0) {
-        historyTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#8f95b2; padding: 20px;">No trade history</td></tr>';
+        historyTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#8f95b2; padding: 20px;">No trade history</td></tr>';
     } else {
         historyTbody.innerHTML = data.recent_history.map(h => `
             <tr>
@@ -172,6 +172,7 @@ function renderDetailView(data) {
                 <td>${h.symbol}</td>
                 <td>${h.side}</td>
                 <td>${formatCurrency(h.entry_price)}</td>
+                <td>${formatCurrency(h.size)}</td>
                 <td>${formatCurrency(h.exit_price)}</td>
                 <td class="${parseFloat(h.pnl) >= 0 ? 'positive' : 'negative'}">${formatCurrency(h.pnl)}</td>
                 <td>${h.close_reason}</td>
@@ -258,7 +259,6 @@ document.getElementById('updatePositionForm').onsubmit = async (e) => {
     }
 };
 
-
 // Actions
 window.closePosition = async (id) => {
     if (!confirm("Are you sure you want to close this position?")) return;
@@ -272,6 +272,24 @@ window.closePosition = async (id) => {
     const json = await res.json();
     if (json.error) alert(json.error);
     else {
+        fetchData();
+    }
+};
+
+window.closeAllPositions = async () => {
+    if (!currentStrategyId) return;
+    if (!confirm(`Are you sure you want to CLOSE ALL positions for ${currentStrategyId}?`)) return;
+
+    const res = await fetch(`${API_URL}/position/close-all`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ strategyId: currentStrategyId })
+    });
+
+    const json = await res.json();
+    if (json.error) alert(json.error);
+    else {
+        // alert(`Closed ${json.count} positions.`); // Optional feedback
         fetchData();
     }
 };
