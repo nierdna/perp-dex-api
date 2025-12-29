@@ -32,10 +32,15 @@ export class Swing01 extends BaseStrategy {
         const setupState = triggerInfo.setup_state || ''
 
         // Conditions for AI call:
-        // 1. Trigger score >= 80
+        // 1. Trigger score >= 70 (or 65+ with strong zone)
         // 2. Regime != TRANSITION
-        // 3. Setup = MATURE
-        if (score < 80) {
+        // 3. Setup = MATURE (or FORMING with LTF confirmation)
+        const zone = triggerInfo.htf_zone || {}
+        const zoneStrength = zone.strength || 0
+        const hasStrongZone = zoneStrength >= 4
+
+        // Dynamic threshold: 70+ or 65+ with strong zone
+        if (score < 70 && !(score >= 65 && hasStrongZone)) {
             recordSuppressedTrigger(signal.symbol || 'BTC', `Score too low: ${score}`)
             return false
         }
@@ -45,8 +50,12 @@ export class Swing01 extends BaseStrategy {
             return false
         }
 
-        if (setupState !== 'MATURE') {
-            recordSuppressedTrigger(signal.symbol || 'BTC', `Setup not MATURE: ${setupState}`)
+        // Allow MATURE or FORMING with LTF confirmation
+        const ltf = triggerInfo.ltf_confirmation || {}
+        const isLtfConfirmed = ltf.confirmed || false
+
+        if (setupState !== 'MATURE' && !(setupState === 'FORMING' && isLtfConfirmed)) {
+            recordSuppressedTrigger(signal.symbol || 'BTC', `Setup not ready: ${setupState}`)
             return false
         }
 

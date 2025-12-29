@@ -172,14 +172,26 @@ export async function executeStrategy(symbol, strategy, skipFilter = false, opti
     // 4. AI Analysis
     process.stdout.write(`   [${strategyName}] 🤖 AI Analyzing... `)
     const prompt = strategy.buildAiPrompt(signal)
-    const decision = await getDecision(signal, prompt)
+    let decision = await getDecision(signal, prompt)
     console.log('✅ Done')
+    
+    // 4.5. Post-AI Validation (Strategy-specific hard rules)
+    // Validate decision against hard rules (e.g., RSI extremes for SCALP_03)
+    if (strategy.validateDecision && typeof strategy.validateDecision === 'function') {
+        const validatedDecision = strategy.validateDecision(decision, signal)
+        if (validatedDecision.action !== decision.action) {
+            console.log(`   ⚠️ Decision overridden: ${decision.action} → ${validatedDecision.action} (Hard rule violation)`)
+            decision = validatedDecision
+        }
+    }
+    
     console.log(`   👉 Action: ${decision.action} | Confidence: ${Math.round(decision.confidence * 100)}%`)
 
     // 5. Build Plan
     // Parse plan via strategy method (or default)
+    // Pass signal parameter for ATR-based calculations
     const plan = (decision.action === 'LONG' || decision.action === 'SHORT')
-        ? strategy.parsePlan(decision, market.price)
+        ? strategy.parsePlan(decision, market.price, signal)
         : null
 
     const takeProfitPrices = plan?.take_profit

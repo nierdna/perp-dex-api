@@ -7,7 +7,31 @@ export class Scalp03 extends BaseStrategy {
         super('SCALP_03')
     }
 
+    /**
+     * Get volatility regime based on ATR percentage
+     * @param {number} atr - ATR value
+     * @param {number} price - Current price
+     * @returns {string} - 'HIGH', 'NORMAL', 'LOW', or 'UNKNOWN'
+     */
+    getVolatilityRegime(atr, price) {
+        if (!atr || !price || price <= 0) return 'UNKNOWN'
+        const atrPct = (atr / price) * 100
+        if (atrPct > 1.0) return 'HIGH'
+        if (atrPct > 0.5) return 'NORMAL'
+        return 'LOW'
+    }
+
     checkConditions(signal) {
+        // Volatility regime filter (adjust filters based on volatility)
+        const atr = signal.entry_atr || signal.bias_atr || 0
+        const volRegime = this.getVolatilityRegime(atr, signal.price)
+        
+        // In HIGH volatility, require stronger volume (avoid noise)
+        if (volRegime === 'HIGH') {
+            const volRatio = Number(signal.entry_vol_ratio)
+            if (Number.isFinite(volRatio) && volRatio < 1.0) return false // Stricter volume requirement
+        }
+
         // 1. Cross Signal Check
         const hasEntryCross = (signal.entry_cross !== 'none')
 
@@ -19,15 +43,44 @@ export class Scalp03 extends BaseStrategy {
 
         if (!hasEntryCross && !hasReversalSetup) return false
 
+        // 2.5 RSI Guardrails for Reversal Setup
+        if (hasReversalSetup) {
+            // Reject if RSI too extreme (likely false reversal)
+            if (signal.entry_1m === 'long_ready' && signal.entry_rsi7 < 15) return false
+            if (signal.entry_1m === 'short_ready' && signal.entry_rsi7 > 85) return false
+        }
+
+        // 2.6 Volume Check for Reversal Setup (stricter than cross signals)
+        if (hasReversalSetup) {
+            const volRatio = Number(signal.entry_vol_ratio)
+            if (Number.isFinite(volRatio) && volRatio < 0.5) return false // Reversal needs stronger volume confirmation
+        }
+
         // 3. Trend Filters (Only for Cross Signals)
         if (hasEntryCross) {
             // 3.1 Align with 5m bias (SRS)
             if (signal.entry_cross === 'golden_cross' && signal.bias_5m !== 'bullish') return false
             if (signal.entry_cross === 'death_cross' && signal.bias_5m !== 'bearish') return false
 
-            // 3.2 Avoid counter-trend vs 15m regime (SRS: avoid unless reversal is strong)
-            if (signal.entry_cross === 'golden_cross' && signal.regime_15m === 'trending_bear') return false
-            if (signal.entry_cross === 'death_cross' && signal.regime_15m === 'trending_bull') return false
+            // 3.2 Counter-trend filter (with exceptions for strong reversals)
+            const isCounterTrend = (signal.entry_cross === 'golden_cross' && signal.regime_15m === 'trending_bear') ||
+                                   (signal.entry_cross === 'death_cross' && signal.regime_15m === 'trending_bull')
+            
+            if (isCounterTrend) {
+                // Check for strong reversal conditions
+                const hasRsiExtreme = (signal.entry_cross === 'golden_cross' && signal.entry_rsi7 < 20) ||
+                                      (signal.entry_cross === 'death_cross' && signal.entry_rsi7 > 80)
+                const volRatio = Number(signal.entry_vol_ratio)
+                const hasVolumeSpike = Number.isFinite(volRatio) && volRatio >= 2.0
+                const swingContext = getSwingData(signal.symbol)
+                const hasHtfZone = swingContext?.htf_zone && swingContext.htf_zone.strength >= 3
+                const htfScoreWeak = swingContext?.trigger_score !== null && swingContext?.trigger_score !== undefined && swingContext.trigger_score < 50
+                
+                // Reject counter-trend unless strong reversal conditions met
+                if (!hasRsiExtreme && !hasVolumeSpike && !hasHtfZone && !htfScoreWeak) {
+                    return false
+                }
+            }
 
             // 3.3 RSI risk guardrails for cross signals (reversal setups are exempt)
             if (signal.entry_cross === 'golden_cross' && (signal.entry_rsi7 > 75 || signal.bias_rsi7 > 75)) return false
@@ -42,7 +95,45 @@ export class Scalp03 extends BaseStrategy {
         return true
     }
 
-    parsePlan(decision, currentPrice) {
+    /**
+     * Validate AI decision against hard rules (post-AI validation)
+     * Override decision if it violates core scalping rules
+     * @param {Object} decision - AI decision object
+     * @param {Object} signal - Signal data with indicators
+     * @returns {Object} - Validated decision (may override action to NO_TRADE)
+     */
+    validateDecision(decision, signal) {
+        if (!decision || !signal) return decision
+
+        const entryRsi7 = signal.entry_rsi7
+        const action = decision.action
+
+        // Hard rule: SHORT khi RSI_7 < 25 = short đáy, rất nguy hiểm
+        if (action === 'SHORT' && Number.isFinite(entryRsi7) && entryRsi7 < 25) {
+            return {
+                ...decision,
+                action: 'NO_TRADE',
+                confidence: 0,
+                reason: `❌ VI PHẠM RULE: RSI_7 = ${entryRsi7.toFixed(2)} < 25 (quá bán). Short tại đáy LTF = short squeeze risk cực cao. Chờ RSI_7 hồi lên 60-70 hoặc chờ breakdown structure rõ ràng trước khi short.`,
+                risk_warning: `RSI_7 quá bán (${entryRsi7.toFixed(2)}) - KHÔNG được short. Đây là điểm chốt short hoặc chờ long hồi, không phải mở short mới.`
+            }
+        }
+
+        // Hard rule: LONG khi RSI_7 > 75 = long đỉnh, rất nguy hiểm
+        if (action === 'LONG' && Number.isFinite(entryRsi7) && entryRsi7 > 75) {
+            return {
+                ...decision,
+                action: 'NO_TRADE',
+                confidence: 0,
+                reason: `❌ VI PHẠM RULE: RSI_7 = ${entryRsi7.toFixed(2)} > 75 (quá mua). Long tại đỉnh LTF = long squeeze risk cực cao. Chờ RSI_7 hồi xuống 40-50 hoặc chờ pullback structure rõ ràng trước khi long.`,
+                risk_warning: `RSI_7 quá mua (${entryRsi7.toFixed(2)}) - KHÔNG được long. Đây là điểm chốt long hoặc chờ short hồi, không phải mở long mới.`
+            }
+        }
+
+        return decision
+    }
+
+    parsePlan(decision, currentPrice, signal) {
         // Default parser từ util
         const plan = parsePlan(decision, currentPrice)
 
@@ -52,27 +143,57 @@ export class Scalp03 extends BaseStrategy {
         const entry = Number.isFinite(plan?.entry) ? plan.entry : (Number.isFinite(currentPrice) ? currentPrice : null)
         if (!Number.isFinite(entry) || entry <= 0) return plan
 
-        const slPct = 0.006 // ~0.6%
-        const tpPct = 0.009 // ~0.9%
-
-        // Stop loss fallback
-        if (!plan?.stop_loss || !Number.isFinite(plan.stop_loss.price)) {
-            const slPrice = decision.action === 'LONG' ? entry * (1 - slPct) : entry * (1 + slPct)
-            plan.stop_loss = {
-                price: Math.round(slPrice * 100) / 100,
-                description: `SL mặc định ~0.6% ${decision.action === 'LONG' ? 'dưới' : 'trên'} entry (fallback theo SRS)`
-            }
-        }
-
-        // Take profit fallback (ít nhất TP1)
-        if (!Array.isArray(plan?.take_profit) || plan.take_profit.length === 0 || !Number.isFinite(plan.take_profit[0]?.price)) {
-            const tp1Price = decision.action === 'LONG' ? entry * (1 + tpPct) : entry * (1 - tpPct)
-            plan.take_profit = [
-                {
-                    price: Math.round(tp1Price * 100) / 100,
-                    description: `TP1 mặc định ~0.9% ${decision.action === 'LONG' ? 'trên' : 'dưới'} entry (fallback theo SRS)`
+        // ATR-based SL/TP (adapts to volatility)
+        const atr = signal?.entry_atr || signal?.bias_atr || 0
+        if (atr > 0) {
+            // SL = 1.5 × ATR (tight scalping stop)
+            const slPrice = decision.action === 'LONG' 
+                ? entry - (atr * 1.5)
+                : entry + (atr * 1.5)
+            
+            // TP = 2.0 × ATR (1.33R target)
+            const tpPrice = decision.action === 'LONG'
+                ? entry + (atr * 2.0)
+                : entry - (atr * 2.0)
+            
+            // Only set if not already provided by AI
+            if (!plan?.stop_loss || !Number.isFinite(plan.stop_loss.price)) {
+                plan.stop_loss = {
+                    price: Math.round(slPrice * 100) / 100,
+                    description: `SL = 1.5 × ATR (${atr.toFixed(2)}) - tight scalping stop`
                 }
-            ]
+            }
+            
+            if (!Array.isArray(plan?.take_profit) || plan.take_profit.length === 0 || !Number.isFinite(plan.take_profit[0]?.price)) {
+                plan.take_profit = [{
+                    price: Math.round(tpPrice * 100) / 100,
+                    description: `TP = 2.0 × ATR (1.33R target)`
+                }]
+            }
+        } else {
+            // Fallback to fixed % if ATR not available
+            const slPct = 0.006 // ~0.6%
+            const tpPct = 0.009 // ~0.9%
+
+            // Stop loss fallback
+            if (!plan?.stop_loss || !Number.isFinite(plan.stop_loss.price)) {
+                const slPrice = decision.action === 'LONG' ? entry * (1 - slPct) : entry * (1 + slPct)
+                plan.stop_loss = {
+                    price: Math.round(slPrice * 100) / 100,
+                    description: `SL mặc định ~0.6% ${decision.action === 'LONG' ? 'dưới' : 'trên'} entry (fallback theo SRS)`
+                }
+            }
+
+            // Take profit fallback (ít nhất TP1)
+            if (!Array.isArray(plan?.take_profit) || plan.take_profit.length === 0 || !Number.isFinite(plan.take_profit[0]?.price)) {
+                const tp1Price = decision.action === 'LONG' ? entry * (1 + tpPct) : entry * (1 - tpPct)
+                plan.take_profit = [
+                    {
+                        price: Math.round(tp1Price * 100) / 100,
+                        description: `TP1 mặc định ~0.9% ${decision.action === 'LONG' ? 'trên' : 'dưới'} entry (fallback theo SRS)`
+                    }
+                ]
+            }
         }
 
         // Ensure entry is set
@@ -151,11 +272,15 @@ TIMEFRAME HIERARCHY (Cao hơn = Ưu tiên hơn):
 4. 1M (Scalp Entry) - Execution timing only
 → NGUYÊN TẮC: Trade THEO xu hướng lớn, ENTRY ở timeframe nhỏ
 
-QUY TẮC CƠ BẢN:
+QUY TẮC CƠ BẢN (CỨNG - KHÔNG VI PHẠM):
 1. Confluence: 15m+5m+1m đồng thuận -> Mạnh
-2. Risk: RSI_7 > 75 (Long risk), RSI_7 < 25 (Short risk)
+2. RSI_7 HARD RULES (KHÔNG ĐƯỢC VI PHẠM):
+   - RSI_7 < 25 → KHÔNG ĐƯỢC SHORT (short đáy = short squeeze risk cực cao)
+   - RSI_7 > 75 → KHÔNG ĐƯỢC LONG (long đỉnh = long squeeze risk cực cao)
+   - RSI quá bán = điểm chốt short hoặc chờ long hồi, KHÔNG phải mở short mới
+   - RSI quá mua = điểm chốt long hoặc chờ short hồi, KHÔNG phải mở long mới
 3. TP/SL: Scalping tight (TP ~0.9%, SL ~0.6%)
-4. Volume: Ưu tiên Vol Force >= 1.2x; nếu Vol Force thấp dễ false breakout
+4. Volume: Ưu tiên Vol Force >= 1.2x; nếu Vol Force < 0.3x → giảm confidence -30% hoặc NO_TRADE
 
 QUY TẮC SWING CONTEXT NÂNG CAO:
 5a. HTF Alignment (Trend Alignment):

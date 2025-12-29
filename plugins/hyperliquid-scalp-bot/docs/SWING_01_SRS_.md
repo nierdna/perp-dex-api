@@ -127,19 +127,32 @@ Weight:
 - LTF: 10
 - Momentum: 5
 
-Threshold:
-- <70 Ignore
+Threshold (Updated v2.0):
+- <65 Ignore (unless strong zone)
+- 65–69 Watch (if zone strength >= 4)
 - 70–79 Watch
 - >=80 Swing-grade
+
+**Dynamic Threshold** (NEW):
+- Score >= 70 → Allow
+- Score >= 65 + Zone strength >= 4 → Allow (strong confluence)
+- Otherwise → Reject
 
 ---
 
 ## 10. DeepSeek AI Reviewer (Senior Trader)
 
-### Khi nào gọi AI
-- Trigger score >= 80
+### Khi nào gọi AI (Updated v2.0)
+- Trigger score >= 70 (or 65+ with strong zone)
 - Regime != TRANSITION
-- Setup = MATURE
+- Setup = MATURE (or FORMING with LTF confirmation)
+
+**Dynamic Conditions** (NEW):
+- Score >= 70 → Allow
+- Score >= 65 + Zone strength >= 4 → Allow
+- Setup = MATURE → Allow
+- Setup = FORMING + LTF confirmed → Allow
+- Otherwise → Reject
 
 ### Prompt DeepSeek – Senior Trader Reviewer
 
@@ -240,4 +253,19 @@ This is NOT a trade signal. Trader decides execution and risk.
 
 ---
 
-Version: v1.2 – Stability + AI Reviewer Prompt Included
+Version: v2.0 – Enhanced Thresholds + Early Entry Support
+
+### Changelog v2.0 (Leader Trader Review Improvements)
+
+#### High Priority Improvements:
+- **Reduced Trigger Score Threshold**: Allow 70+ (was 80+) or 65+ with strong zone (strength >= 4)
+- **Allow FORMING Setup**: Allow FORMING setup state if LTF confirmation is present
+- **Dynamic Threshold**: More flexible scoring to capture good setups without being too strict
+
+**Rationale**: 
+- Score 70-79 can still be good setups, especially with strong zone confluence
+- FORMING + LTF confirmation = early entry opportunity with confluence
+- Previous threshold (80+) was too strict, missing good opportunities
+
+### Changelog v1.2 (Previous)
+- Stability + AI Reviewer Prompt Included

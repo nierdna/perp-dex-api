@@ -1,4 +1,5 @@
 import { BaseStrategy } from './BaseStrategy.js'
+import { parsePlan } from '../utils/parsePlan.js'
 import { getSwingData, getEnhancedSwingData } from '../data/swingDataCache.js'
 
 export class Scalp04 extends BaseStrategy {
@@ -6,9 +7,33 @@ export class Scalp04 extends BaseStrategy {
         super('SCALP_04')
     }
 
+    /**
+     * Get volatility regime based on ATR percentage
+     * @param {number} atr - ATR value
+     * @param {number} price - Current price
+     * @returns {string} - 'HIGH', 'NORMAL', 'LOW', or 'UNKNOWN'
+     */
+    getVolatilityRegime(atr, price) {
+        if (!atr || !price || price <= 0) return 'UNKNOWN'
+        const atrPct = (atr / price) * 100
+        if (atrPct > 1.0) return 'HIGH'
+        if (atrPct > 0.5) return 'NORMAL'
+        return 'LOW'
+    }
+
     checkConditions(signal) {
         // SCALP_04 Implementation based on SRS v1.0
         // Philosophy: Trade Continuation, Not Prediction.
+
+        // Volatility regime filter (adjust filters based on volatility)
+        const atr = signal.entry_atr || signal.bias_atr || 0
+        const volRegime = this.getVolatilityRegime(atr, signal.price)
+        
+        // In HIGH volatility, require stronger volume (avoid noise)
+        if (volRegime === 'HIGH') {
+            const volRatio = Number(signal.entry_vol_ratio)
+            if (Number.isFinite(volRatio) && volRatio < 1.0) return false // Stricter volume requirement
+        }
 
         // Fallback: entry_close_1m = price nếu không có
         const entryClose = signal.entry_close_1m || signal.price
@@ -38,16 +63,22 @@ export class Scalp04 extends BaseStrategy {
             return false
         }
 
-        // RSI Filter (Trend Strength) - Nới lỏng một chút
-        // - LONG: RSI_7 >= 50 (thay vì 55)
-        // - SHORT: RSI_7 <= 50 (thay vì 45)
-        if (isBullRegime && signal.bias_rsi7 < 50) {
-            // console.log(`[SCALP_04] Rejected: Bull regime but RSI_7=${signal.bias_rsi7} < 50`)
+        // RSI Filter (Trend Strength) - Require stronger momentum
+        // - LONG: RSI_7 >= 55 (was 50, now stricter)
+        // - SHORT: RSI_7 <= 45 (was 50, now stricter)
+        if (isBullRegime && signal.bias_rsi7 < 55) {
+            // console.log(`[SCALP_04] Rejected: Bull regime but RSI_7=${signal.bias_rsi7} < 55`)
             return false
         }
-        if (isBearRegime && signal.bias_rsi7 > 50) {
-            // console.log(`[SCALP_04] Rejected: Bear regime but RSI_7=${signal.bias_rsi7} > 50`)
+        if (isBearRegime && signal.bias_rsi7 > 45) {
+            // console.log(`[SCALP_04] Rejected: Bear regime but RSI_7=${signal.bias_rsi7} > 45`)
             return false
+        }
+
+        // 2.5 Volume Confirmation for Continuation
+        const volRatio = Number(signal.entry_vol_ratio)
+        if (Number.isFinite(volRatio) && volRatio < 0.8) {
+            return false // Continuation requires volume confirmation
         }
 
         // (Optional) Min Trend Distance |EMA9 - EMA26|
@@ -72,6 +103,12 @@ export class Scalp04 extends BaseStrategy {
             // Điều kiện 1: Giá đang nằm trên EMA26 (Structure hold)
             if (entryClose < signal.entry_ema26) {
                 // console.log(`[SCALP_04] Rejected LONG: Price ${entryClose} < EMA26 ${signal.entry_ema26}`)
+                return false
+            }
+
+            // Check for late entry (price too far from EMA26)
+            const distanceFromEma26 = Math.abs(entryClose - signal.entry_ema26) / signal.entry_ema26
+            if (distanceFromEma26 > 0.02) {  // > 2% = late entry
                 return false
             }
 
@@ -101,6 +138,12 @@ export class Scalp04 extends BaseStrategy {
                 return false
             }
 
+            // Check for late entry (price too far from EMA26)
+            const distanceFromEma26 = Math.abs(entryClose - signal.entry_ema26) / signal.entry_ema26
+            if (distanceFromEma26 > 0.02) {  // > 2% = late entry
+                return false
+            }
+
             // Trigger
             const priceBelowEma9 = entryClose < signal.entry_ema9
             if (!priceBelowEma9) {
@@ -119,6 +162,60 @@ export class Scalp04 extends BaseStrategy {
         }
 
         return false
+    }
+
+    parsePlan(decision, currentPrice, signal) {
+        // Default parser từ util
+        const plan = parsePlan(decision, currentPrice)
+
+        // Fallback plan cho SCALP_04 nếu AI trả LONG/SHORT nhưng thiếu SL/TP rõ ràng
+        if (decision?.action !== 'LONG' && decision?.action !== 'SHORT') return plan
+
+        const entry = Number.isFinite(plan?.entry) ? plan.entry : (Number.isFinite(currentPrice) ? currentPrice : null)
+        if (!Number.isFinite(entry) || entry <= 0) return plan
+
+        // ATR-based SL/TP (as per prompt requirements)
+        const atr = signal?.entry_atr || signal?.bias_atr || 0
+        if (atr > 0) {
+            // SL = 1.0 × ATR (tight stop)
+            const slPrice = decision.action === 'LONG' 
+                ? entry - (atr * 1.0)
+                : entry + (atr * 1.0)
+            
+            // TP = 2.0 × ATR (2R target)
+            const tpPrice = decision.action === 'LONG'
+                ? entry + (atr * 2.0)
+                : entry - (atr * 2.0)
+            
+            plan.stop_loss = {
+                price: Math.round(slPrice * 100) / 100,
+                description: `SL = 1.0 × ATR (${atr.toFixed(2)})`
+            }
+            
+            plan.take_profit = [{
+                price: Math.round(tpPrice * 100) / 100,
+                description: `TP = 2.0 × ATR (2R target)`
+            }]
+        } else {
+            // Fallback to fixed % if ATR not available
+            const slPct = 0.006
+            const tpPct = 0.012
+            plan.stop_loss = {
+                price: decision.action === 'LONG' 
+                    ? entry * (1 - slPct) 
+                    : entry * (1 + slPct),
+                description: 'SL fallback ~0.6%'
+            }
+            plan.take_profit = [{
+                price: decision.action === 'LONG'
+                    ? entry * (1 + tpPct)
+                    : entry * (1 - tpPct),
+                description: 'TP fallback ~1.2%'
+            }]
+        }
+        
+        plan.entry = entry
+        return plan
     }
 
     buildAiPrompt(signal) {
