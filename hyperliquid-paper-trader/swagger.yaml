@@ -4,8 +4,8 @@ info:
   description: API for managing strategies and placing paper trades on Hyperliquid.
   version: 1.0.0
 servers:
-  - url: http://localhost:3000/api
-    description: Local Server
+  - url: /api
+    description: API Server
 
 paths:
   /strategies:
