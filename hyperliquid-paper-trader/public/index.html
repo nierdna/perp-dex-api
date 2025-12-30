@@ -19,6 +19,7 @@
             <nav>
                 <a href="#" class="active" onclick="showHome()">📊 Dashboard</a>
                 <a href="/api-docs" target="_blank">📄 API Docs</a>
+                <a href="/guide.html" target="_blank">📖 User Guide</a>
             </nav>
             <div class="server-status">
                 <span class="status-dot online"></span> SYSTEM ONLINE
@@ -166,6 +167,17 @@
                     <button class="btn btn-secondary btn-sm" onclick="changePage(1)" id="btn-next">Next →</button>
                 </div>
             </div>
+
+            <!-- VIEW: USER GUIDE -->
+            <div id="guide-view" style="display:none;">
+                <section class="section-header">
+                    <h2>📖 Hướng Dẫn Sử Dụng</h2>
+                </section>
+                <div id="guide-content" class="markdown-content"
+                    style="background: white; padding: 30px; border-radius: 12px; max-width: 900px; margin: 0 auto;">
+                    <p style="text-align: center; color: #666;">Đang tải...</p>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -230,6 +242,8 @@
         </div>
     </div>
 
+    <!-- Marked.js for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="app.js"></script>
 </body>
 

@@ -103,6 +103,22 @@ window.showDetail = async (id) => {
     await fetchStrategyDetail(id);
 };
 
+window.showGuide = async () => {
+    currentStrategyId = null;
+    document.getElementById('home-view').style.display = 'none';
+    document.getElementById('detail-view').style.display = 'none';
+    document.getElementById('guide-view').style.display = 'block';
+
+    try {
+        const res = await fetch('/user-guide');
+        const markdown = await res.text();
+        const html = marked.parse(markdown);
+        document.getElementById('guide-content').innerHTML = html;
+    } catch (e) {
+        document.getElementById('guide-content').innerHTML = '<p style="color:red">Không tải được hướng dẫn</p>';
+    }
+};
+
 async function fetchStrategyDetail(id) {
     try {
         const res = await fetch(`${API_URL}/strategies/${id}?page=${currentPage}&limit=${currentLimit}`);

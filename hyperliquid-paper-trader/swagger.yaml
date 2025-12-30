@@ -42,7 +42,8 @@ paths:
 
   /strategies/risk:
     post:
-      summary: Update Strategy Risk Settings (Max Daily Loss)
+      summary: Update Strategy Risk Settings
+      description: Update Max Daily Loss, Max Position Size, and Max Open Positions
       requestBody:
         required: true
         content:
@@ -51,15 +52,22 @@ paths:
               type: object
               required:
                 - id
-                - max_daily_loss
               properties:
                 id:
                   type: string
                   example: "SCALP_01"
                 max_daily_loss:
                   type: number
-                  description: Max daily loss percentage (e.g. 5 for 5%)
+                  description: Max daily loss percentage (e.g. 5 for 5% of current balance). 0 = disabled
                   example: 5
+                max_position_size:
+                  type: number
+                  description: Max position size percentage (e.g. 10 for 10% of current balance per trade). 0 = disabled
+                  example: 10
+                max_open_positions:
+                  type: integer
+                  description: Max number of concurrent open positions. 0 = unlimited
+                  example: 3
       responses:
         200:
           description: Settings updated
@@ -130,6 +138,18 @@ paths:
           required: true
           schema:
             type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for trade history pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of trades per page
       responses:
         200:
           description: Strategy Details
@@ -149,9 +169,20 @@ paths:
                       type: object
                   recent_history:
                     type: array
-                    description: Closed Positions History
+                    description: Closed Positions History (paginated)
                     items:
                       type: object
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      total:
+                        type: integer
+                      totalPages:
+                        type: integer
 
     get:
       summary: Get All Strategies

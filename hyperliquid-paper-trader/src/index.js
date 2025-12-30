@@ -28,15 +28,39 @@ import YAML from 'yamljs'
 const swaggerDocument = YAML.load('./swagger.yaml')
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
-// Import routes after engine is exported
+// Serve static files (Frontend UI)
+app.use(express.static('public'));
+
+// Serve USER_GUIDE.md
+import { readFile } from 'fs/promises';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+app.get('/user-guide', async (req, res) => {
+    try {
+        const guidePath = join(__dirname, '..', 'USER_GUIDE.md');
+        const content = await readFile(guidePath, 'utf-8');
+        res.type('text/markdown').send(content);
+    } catch (e) {
+        res.status(500).send('Guide not found');
+    }
+});
+
+// API Routes
 import { router } from './api/routes.js'
 app.use('/api', router)
 
 // Serve Frontend
 import path from 'path';
-import { fileURLToPath } from 'url';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// The __filename and __dirname variables are already defined above for the user-guide route.
+// We can reuse them or redefine if scope is an issue, but typically they are module-scoped.
+// For consistency and clarity, let's ensure they are defined once or used from the most recent definition.
+// Since the user-guide block redefines them, we'll use those.
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename); // This line is now redundant if using the above __dirname
 app.use(express.static(path.join(__dirname, '../public')));
 
 

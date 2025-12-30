@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Guide - Hyperliquid Paper Trader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin: 20px 40px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .back-link:hover {
+            color: #764ba2;
+        }
+
+        .content {
+            padding: 40px;
+            line-height: 1.8;
+            color: #1a202c;
+        }
+
+        .content h1 {
+            font-size: 32px;
+            margin: 40px 0 20px 0;
+            color: #2d3748;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .content h2 {
+            font-size: 26px;
+            margin: 30px 0 15px 0;
+            color: #2d3748;
+        }
+
+        .content h3 {
+            font-size: 22px;
+            margin: 25px 0 12px 0;
+            color: #4a5568;
+        }
+
+        .content h4 {
+            font-size: 18px;
+            margin: 20px 0 10px 0;
+            color: #718096;
+        }
+
+        .content p {
+            margin-bottom: 16px;
+            color: #2d3748;
+        }
+
+        .content ul,
+        .content ol {
+            margin: 16px 0 16px 30px;
+        }
+
+        .content li {
+            margin-bottom: 10px;
+        }
+
+        .content code {
+            background: #edf2f7;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #667eea;
+            border: 1px solid #e2e8f0;
+        }
+
+        .content pre {
+            background: #2d3748;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        .content pre code {
+            background: none;
+            color: #68d391;
+            padding: 0;
+            border: none;
+        }
+
+        .content blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 20px;
+            margin: 20px 0;
+            color: #4a5568;
+            font-style: italic;
+            background: #f7fafc;
+            padding: 15px 15px 15px 20px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .content table th,
+        .content table td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .content table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        .content table tr:nth-child(even) {
+            background: #f7fafc;
+        }
+
+        .content a {
+            color: #667eea;
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            transition: 0.2s;
+        }
+
+        .content a:hover {
+            border-bottom-color: #667eea;
+        }
+
+        .content hr {
+            border: none;
+            border-top: 2px solid #e2e8f0;
+            margin: 40px 0;
+        }
+
+        .content strong {
+            color: #2d3748;
+            font-weight: 700;
+        }
+
+        .content em {
+            color: #4a5568;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #718096;
+            font-size: 18px;
+        }
+
+        .error {
+            text-align: center;
+            padding: 60px;
+            color: #e53e3e;
+            font-size: 18px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+
+            .content h1 {
+                font-size: 28px;
+            }
+
+            .content h2 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📖 Hướng Dẫn Sử Dụng</h1>
+            <p>Hyperliquid Paper Trader - Complete Guide</p>
+        </div>
+
+        <a href="/" class="back-link">← Quay lại Dashboard</a>
+
+        <div id="content" class="content">
+            <div class="loading">⏳ Đang tải hướng dẫn...</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        async function loadGuide() {
+            const contentDiv = document.getElementById('content');
+
+            try {
+                const res = await fetch('/user-guide');
+                if (!res.ok) throw new Error('Failed to load guide');
+
+                const markdown = await res.text();
+                const html = marked.parse(markdown);
+                contentDiv.innerHTML = html;
+            } catch (e) {
+                contentDiv.innerHTML = '<div class="error">❌ Không tải được hướng dẫn. Vui lòng thử lại.</div>';
+                console.error(e);
+            }
+        }
+
+        // Load on page ready
+        loadGuide();
+    </script>
+</body>
+
+</html>
