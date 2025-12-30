@@ -7,6 +7,7 @@ export class TradeEngine {
         this.activePositions = []
         this.priceCache = {} // { 'BTC': 100000 }
         this.isReady = false
+        this.lastRiskCheck = {} // Track last risk check time per strategy for throttling
     }
 
     async init() {
@@ -30,12 +31,16 @@ export class TradeEngine {
     async onPriceUpdate(price) {
         if (!this.activePositions.length) return
 
-        // Optimize: Check risk for active strategies (throttled? for now every tick is fine for small scale)
+        // Check risk for active strategies (throttled to once per 5 seconds per strategy)
         const activeStrategyIds = [...new Set(this.activePositions.map(p => p.strategy_id))];
+        const now = Date.now();
+
         for (const stratId of activeStrategyIds) {
-            // We don't await this to avoid blocking the loop too much, or we await if we want strictness
-            // Let's await to be safe against race conditions
-            await this.checkRisk(stratId);
+            // Throttle: Only check risk if >5 seconds since last check
+            if (!this.lastRiskCheck[stratId] || (now - this.lastRiskCheck[stratId] > 5000)) {
+                await this.checkRisk(stratId);
+                this.lastRiskCheck[stratId] = now;
+            }
         }
 
         for (const pos of this.activePositions) {
@@ -137,12 +142,13 @@ export class TradeEngine {
         if (!maxDailyLossPercent || maxDailyLossPercent <= 0) return; // No limit
 
         // 2. Calculate Realized PnL Today (UTC)
-        const startOfDay = new Date().toISOString().split('T')[0] + " 00:00:00";
+        const now = new Date();
+        const startOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
         const historyRes = await db.query(`
             SELECT SUM(pnl) as realized_pnl 
             FROM positions 
             WHERE strategy_id = $1 AND status = 'CLOSED' AND closed_at >= $2
-        `, [strategyId, startOfDay]);
+        `, [strategyId, startOfDayUTC.toISOString()]);
 
         const realizedPnL = parseFloat(historyRes.rows[0].realized_pnl || 0);
 
@@ -167,7 +173,7 @@ export class TradeEngine {
         }
 
         const totalDailyPnL = realizedPnL + unrealizedPnL;
-        const limitAmount = parseFloat(strategy.initial_capital) * (maxDailyLossPercent / 100);
+        const limitAmount = parseFloat(strategy.current_balance) * (maxDailyLossPercent / 100); // Use current balance for dynamic risk
 
         // console.log(`🛡️ Risk Check [${strategyId}]: Daily PnL: $${totalDailyPnL.toFixed(2)} / Limit: -$${limitAmount.toFixed(2)}`);
 
@@ -329,9 +335,9 @@ export class TradeEngine {
         // 2.2 Check Max Position Size
         const maxPosSize = parseFloat(strategy.max_position_size);
         if (maxPosSize > 0) {
-            const maxAllowed = parseFloat(strategy.initial_capital) * (maxPosSize / 100);
+            const maxAllowed = parseFloat(strategy.current_balance) * (maxPosSize / 100); // Use current balance for dynamic risk
             if (size > maxAllowed) {
-                throw new Error(`🚫 Position size $${size} exceeds max allowed $${maxAllowed.toFixed(2)} (${maxPosSize}% of capital)`);
+                throw new Error(`🚫 Position size $${size} exceeds max allowed $${maxAllowed.toFixed(2)} (${maxPosSize}% of current balance $${strategy.current_balance})`);
             }
         }
 

@@ -292,9 +292,23 @@ document.getElementById('riskForm').onsubmit = async (e) => {
     e.preventDefault();
     if (!currentStrategyId) return;
 
-    const maxLoss = document.getElementById('riskMaxLoss').value || 0;
-    const maxPosSize = document.getElementById('riskMaxPosSize').value || 0;
-    const maxOpenPos = document.getElementById('riskMaxOpenPos').value || 0;
+    const maxLoss = parseFloat(document.getElementById('riskMaxLoss').value) || 0;
+    const maxPosSize = parseFloat(document.getElementById('riskMaxPosSize').value) || 0;
+    const maxOpenPos = parseInt(document.getElementById('riskMaxOpenPos').value) || 0;
+
+    // Validation
+    if (maxLoss < 0 || maxLoss > 100) {
+        alert("❌ Max Daily Loss must be between 0-100%");
+        return;
+    }
+    if (maxPosSize < 0 || maxPosSize > 100) {
+        alert("❌ Max Position Size must be between 0-100%");
+        return;
+    }
+    if (maxOpenPos < 0) {
+        alert("❌ Max Open Positions cannot be negative");
+        return;
+    }
 
     const res = await fetch(`${API_URL}/strategies/risk`, {
         method: 'POST',
