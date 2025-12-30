@@ -5,6 +5,9 @@ const API_URL = 'http://localhost:3000/api';
 let strategies = [];
 let positions = [];
 let currentStrategyId = null;
+let currentStrategyData = null; // Store current strategy data
+let currentPage = 1;
+let currentLimit = 10;
 
 // --- Init ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -81,6 +84,7 @@ function renderStrategies() {
 
 window.showHome = () => {
     currentStrategyId = null;
+    currentPage = 1; // Reset pagination
     document.getElementById('home-view').style.display = 'block';
     document.getElementById('detail-view').style.display = 'none';
     fetchData();
@@ -88,6 +92,7 @@ window.showHome = () => {
 
 window.showDetail = async (id) => {
     currentStrategyId = id;
+    currentPage = 1; // Reset pagination when switching strategies
     document.getElementById('home-view').style.display = 'none';
     document.getElementById('detail-view').style.display = 'block';
     document.getElementById('detail-title').innerText = `Strategy: ${id}`;
@@ -100,9 +105,10 @@ window.showDetail = async (id) => {
 
 async function fetchStrategyDetail(id) {
     try {
-        const res = await fetch(`${API_URL}/strategies/${id}`);
+        const res = await fetch(`${API_URL}/strategies/${id}?page=${currentPage}&limit=${currentLimit}`);
         if (!res.ok) return;
         const data = await res.json();
+        currentStrategyData = data; // Store for later use
         renderDetailView(data);
     } catch (e) { console.error(e); }
 }
@@ -189,6 +195,17 @@ function renderDetailView(data) {
                 <td>${h.close_reason}</td>
             </tr>
         `).join('');
+    }
+
+    // 4. Update Pagination Controls
+    if (data.pagination) {
+        const { page, totalPages, total } = data.pagination;
+        const start = total === 0 ? 0 : (page - 1) * currentLimit + 1;
+        const end = Math.min(page * currentLimit, total);
+
+        document.getElementById('page-info').innerText = `Page ${page} of ${totalPages} (Showing ${start}-${end} of ${total})`;
+        document.getElementById('btn-prev').disabled = page <= 1;
+        document.getElementById('btn-next').disabled = page >= totalPages;
     }
 }
 
@@ -339,6 +356,25 @@ window.openUpdateModal = (id, tp, sl) => {
     document.getElementById('updateTP').value = tp && tp !== 'null' ? tp : '';
     document.getElementById('updateSL').value = sl && sl !== 'null' ? sl : '';
     openModal('updateModal');
+};
+
+window.openRiskModal = () => {
+    if (!currentStrategyData) return;
+
+    // Pre-fill form with current values
+    document.getElementById('riskMaxLoss').value = currentStrategyData.max_daily_loss || '';
+    document.getElementById('riskMaxPosSize').value = currentStrategyData.max_position_size || '';
+    document.getElementById('riskMaxOpenPos').value = currentStrategyData.max_open_positions || '';
+
+    openModal('riskModal');
+};
+
+// Pagination
+window.changePage = (delta) => {
+    if (!currentStrategyId) return;
+    currentPage += delta;
+    if (currentPage < 1) currentPage = 1;
+    fetchStrategyDetail(currentStrategyId);
 };
 
 // Utils

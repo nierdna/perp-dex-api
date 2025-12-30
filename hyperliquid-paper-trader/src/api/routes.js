@@ -122,7 +122,10 @@ router.get('/strategies', async (req, res) => {
 // 4. Get Strategy Status
 router.get('/strategies/:id', async (req, res) => {
     try {
-        const data = await engine.getStrategy(req.params.id)
+        const page = parseInt(req.query.page) || 1
+        const limit = parseInt(req.query.limit) || 10
+
+        const data = await engine.getStrategy(req.params.id, page, limit)
         if (!data) return res.status(404).json({ error: 'Strategy not found' })
         res.json(data)
     } catch (e) {

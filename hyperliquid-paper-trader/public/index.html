@@ -49,7 +49,7 @@
                 <section class="section-header" style="margin-top:0">
                     <h2 id="detail-title">Strategy Details</h2>
                     <div class="row">
-                        <button class="btn btn-secondary" onclick="openModal('riskModal')" style="margin-right:10px">🛡️
+                        <button class="btn btn-secondary" onclick="openRiskModal()" style="margin-right:10px">🛡️
                             Risk Settings</button>
                         <button class="btn btn-primary" onclick="openModal('orderModal')">⚡ Quick Trade</button>
                     </div>
@@ -156,6 +156,14 @@
                         </thead>
                         <tbody id="detail-history-table"></tbody>
                     </table>
+                </div>
+
+                <!-- Pagination Controls -->
+                <div id="pagination-controls"
+                    style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding: 10px; background: rgba(59, 130, 246, 0.1); border-radius: 8px;">
+                    <button class="btn btn-secondary btn-sm" onclick="changePage(-1)" id="btn-prev">← Previous</button>
+                    <span id="page-info" style="color: #8f95b2; font-size: 14px;">Page 1 of 1</span>
+                    <button class="btn btn-secondary btn-sm" onclick="changePage(1)" id="btn-next">Next →</button>
                 </div>
             </div>
         </main>

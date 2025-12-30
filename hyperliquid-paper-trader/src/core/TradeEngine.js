@@ -445,23 +445,42 @@ export class TradeEngine {
         return newPos
     }
 
-    async getStrategy(id) {
+    async getStrategy(id, page = 1, limit = 10) {
         const strat = await db.query("SELECT * FROM strategies WHERE id = $1", [id])
         if (!strat.rows.length) return null
 
-        // Get active positions and history limit 10
+        // Get active positions
         const active = this.activePositions.filter(p => p.strategy_id === id)
+
+        // Get total count for pagination
+        const countRes = await db.query(`
+            SELECT COUNT(*) as total FROM positions 
+            WHERE strategy_id = $1 AND status = 'CLOSED'
+        `, [id])
+        const totalTrades = parseInt(countRes.rows[0].total)
+
+        // Get paginated history
+        const offset = (page - 1) * limit
         const history = await db.query(`
             SELECT * FROM positions 
             WHERE strategy_id = $1 AND status = 'CLOSED' 
-            ORDER BY closed_at DESC, updated_at DESC LIMIT 10
-        `, [id])
+            ORDER BY closed_at DESC, updated_at DESC 
+            LIMIT $2 OFFSET $3
+        `, [id, limit, offset])
+
+        const totalPages = Math.ceil(totalTrades / limit)
 
         return {
             ...strat.rows[0],
             positions: active,
             recent_history: history.rows,
-            current_price: this.priceCache[this.ws.symbol] || null
+            current_price: this.priceCache[this.ws.symbol] || null,
+            pagination: {
+                page,
+                limit,
+                total: totalTrades,
+                totalPages
+            }
         }
     }
 }
