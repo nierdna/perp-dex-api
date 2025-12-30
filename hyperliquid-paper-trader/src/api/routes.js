@@ -80,6 +80,24 @@ router.post('/position/update', async (req, res) => {
     }
 });
 
+// 2.3 Update Risk Settings
+router.post('/strategies/risk', async (req, res) => {
+    try {
+        const { id, max_daily_loss, max_position_size, max_open_positions } = req.body;
+        if (!id) return res.status(400).json({ error: 'Missing strategy id' });
+
+        await engine.updateRiskSettings(
+            id,
+            parseFloat(max_daily_loss || 0),
+            parseFloat(max_position_size || 0),
+            parseInt(max_open_positions || 0)
+        );
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // 3. Get All Strategies
 router.get('/strategies', async (req, res) => {
     try {

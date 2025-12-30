@@ -114,7 +114,18 @@ function renderDetailView(data) {
     statsDiv.innerHTML = `
         <span style="color:#8f95b2">Current Balance:</span> <b style="font-size:1.2em">${formatCurrency(data.current_balance)}</b>
         <span style="margin-left:20px; color:#8f95b2">PnL:</span> <b class="${pnl >= 0 ? 'positive' : 'negative'}" style="font-size:1.2em">${formatCurrency(pnl)}</b>
+        <span style="margin-left:20px; color:#8f95b2">Daily Loss Limit:</span> <b style="font-size:1.2em">${data.max_daily_loss > 0 ? data.max_daily_loss + '%' : 'OFF'}</b>
     `;
+
+    // Populate Risk Modal default
+    if (document.getElementById('riskModal').style.display === 'flex') {
+        // Only update if not typing? Or just set it when opening modal.
+        // Let's set it in showDetail or a separate interaction.
+        // Better: Set input value when opening modal requires modifying openModal logic or adding specific handler.
+        // For simplicity, let's just leave it blank or user types. 
+        // Or update it here:
+        if (data.max_daily_loss) document.getElementById('riskMaxLoss').placeholder = data.max_daily_loss;
+    }
 
     // 2. Render Active Positions
     const activeTbody = document.getElementById('detail-positions-table');
@@ -256,6 +267,35 @@ document.getElementById('updatePositionForm').onsubmit = async (e) => {
     else {
         closeModal('updateModal');
         fetchData(); // Will refresh detail view via render()
+    }
+
+};
+
+document.getElementById('riskForm').onsubmit = async (e) => {
+    e.preventDefault();
+    if (!currentStrategyId) return;
+
+    const maxLoss = document.getElementById('riskMaxLoss').value || 0;
+    const maxPosSize = document.getElementById('riskMaxPosSize').value || 0;
+    const maxOpenPos = document.getElementById('riskMaxOpenPos').value || 0;
+
+    const res = await fetch(`${API_URL}/strategies/risk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            id: currentStrategyId,
+            max_daily_loss: maxLoss,
+            max_position_size: maxPosSize,
+            max_open_positions: maxOpenPos
+        })
+    });
+
+    const json = await res.json();
+    if (json.error) alert(json.error);
+    else {
+        alert("Risk settings updated! 🛡️");
+        closeModal('riskModal');
+        fetchData();
     }
 };
 

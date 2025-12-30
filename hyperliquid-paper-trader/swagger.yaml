@@ -40,6 +40,37 @@ paths:
                   message:
                     type: string
 
+  /strategies/risk:
+    post:
+      summary: Update Strategy Risk Settings (Max Daily Loss)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - max_daily_loss
+              properties:
+                id:
+                  type: string
+                  example: "SCALP_01"
+                max_daily_loss:
+                  type: number
+                  description: Max daily loss percentage (e.g. 5 for 5%)
+                  example: 5
+      responses:
+        200:
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
   /order:
     post:
       summary: Place a Paper Trade
@@ -121,3 +152,117 @@ paths:
                     description: Closed Positions History
                     items:
                       type: object
+
+    get:
+      summary: Get All Strategies
+      responses:
+        200:
+          description: List of all strategies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    initial_capital:
+                      type: number
+                    current_balance:
+                      type: number
+                    pnl:
+                      type: string
+                    roi:
+                      type: string
+
+  /position/close:
+    post:
+      summary: Manually Close a Position
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  example: "123"
+      responses:
+        200:
+          description: Position closed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /position/update:
+    post:
+      summary: Update TP/SL for a Position
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  example: "123"
+                tp:
+                  type: number
+                  description: Take Profit Price
+                  example: 105000
+                sl:
+                  type: number
+                  description: Stop Loss Price
+                  example: 95000
+      responses:
+        200:
+          description: Position updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  position:
+                    type: object
+
+  /position/close-all:
+    post:
+      summary: Close All Position for a Strategy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - strategyId
+              properties:
+                strategyId:
+                  type: string
+                  example: "SCALP_01"
+      responses:
+        200:
+          description: All positions closed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+

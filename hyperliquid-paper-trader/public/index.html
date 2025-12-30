@@ -18,8 +18,7 @@
             </div>
             <nav>
                 <a href="#" class="active" onclick="showHome()">📊 Dashboard</a>
-                <a href="#" onclick="alert('Coming Soon')">⚙️ Strategies</a>
-                <a href="#" onclick="alert('Coming Soon')">🔧 Settings</a>
+                <a href="/api-docs" target="_blank">📄 API Docs</a>
             </nav>
             <div class="server-status">
                 <span class="status-dot online"></span> SYSTEM ONLINE
@@ -50,9 +49,71 @@
                 <section class="section-header" style="margin-top:0">
                     <h2 id="detail-title">Strategy Details</h2>
                     <div class="row">
+                        <button class="btn btn-secondary" onclick="openModal('riskModal')" style="margin-right:10px">🛡️
+                            Risk Settings</button>
                         <button class="btn btn-primary" onclick="openModal('orderModal')">⚡ Quick Trade</button>
                     </div>
                 </section>
+
+                <div class="server-status" style="margin-bottom: 30px; font-size: 16px;" id="detail-stats">
+                    <!-- Injected Stats -->
+                </div>
+
+
+
+                <!-- MODAL: UPDATE POSITION -->
+                <div id="updateModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close" onclick="closeModal('updateModal')">&times;</span>
+                        <h2>Update Position</h2>
+                        <form id="updatePositionForm">
+                            <input type="hidden" id="updatePosId">
+                            <div class="row">
+                                <div style="flex:1; margin-right:10px;">
+                                    <label>New Stop Loss</label>
+                                    <input type="number" step="0.01" id="updateSL" placeholder="Stop Loss">
+                                </div>
+                                <div style="flex:1">
+                                    <label>New Take Profit</label>
+                                    <input type="number" step="0.01" id="updateTP" placeholder="Take Profit">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="margin-top:20px">Update Orders</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- MODAL: RISK SETTINGS -->
+                <div id="riskModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close" onclick="closeModal('riskModal')">&times;</span>
+                        <h2>🛡️ Risk Management</h2>
+                        <p style="font-size: 14px; color: #8f95b2; margin-bottom: 20px;">
+                            Safety first! Set limits to protect your capital.
+                        </p>
+                        <form id="riskForm">
+                            <label>Max Daily Loss Limit (%)</label>
+                            <input type="number" step="0.1" id="riskMaxLoss" placeholder="e.g. 5 (5% of capital)">
+                            <p style="font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 15px;">
+                                * Daily PnL limit. If exceeded, all positions close and trading locks until tomorrow.
+                            </p>
+
+                            <label>Max Position Size (%)</label>
+                            <input type="number" step="0.1" id="riskMaxPosSize" placeholder="e.g. 10 (10% per trade)">
+                            <p style="font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 15px;">
+                                * Maximum size for a single trade as % of initial capital. Prevents over-leveraging.
+                            </p>
+
+                            <label>Max Open Positions</label>
+                            <input type="number" id="riskMaxOpenPos" placeholder="e.g. 3 (max 3 concurrent trades)">
+                            <p style="font-size: 12px; color: #666; margin-top: 5px; margin-bottom: 15px;">
+                                * Maximum number of positions that can be open simultaneously. 0 = unlimited.
+                            </p>
+
+                            <button type="submit" class="btn btn-primary" style="margin-top:20px">Save Settings</button>
+                        </form>
+                    </div>
+                </div>
 
                 <div class="server-status" style="margin-bottom: 30px; font-size: 16px;" id="detail-stats">
                     <!-- Injected Stats -->

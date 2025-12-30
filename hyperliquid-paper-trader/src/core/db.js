@@ -25,8 +25,11 @@ export async function initDB() {
     await client.query(`
       CREATE TABLE IF NOT EXISTS strategies (
         id VARCHAR(50) PRIMARY KEY,
-        initial_capital NUMERIC(20, 2) NOT NULL,
-        current_balance NUMERIC(20, 2) NOT NULL,
+        initial_capital DECIMAL NOT NULL,
+        current_balance DECIMAL NOT NULL,
+        max_daily_loss DECIMAL DEFAULT 0, -- % (0 = disabled)
+        max_position_size DECIMAL DEFAULT 0, -- % of capital (0 = disabled)
+        max_open_positions INTEGER DEFAULT 0, -- number (0 = unlimited)
         created_at TIMESTAMP DEFAULT NOW()
       );
     `)
@@ -57,6 +60,9 @@ export async function initDB() {
     await client.query(`
       ALTER TABLE positions ADD COLUMN IF NOT EXISTS result VARCHAR(10) DEFAULT NULL;
       ALTER TABLE positions ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP DEFAULT NULL;
+      ALTER TABLE strategies ADD COLUMN IF NOT EXISTS max_daily_loss DECIMAL DEFAULT 0;
+      ALTER TABLE strategies ADD COLUMN IF NOT EXISTS max_position_size DECIMAL DEFAULT 0;
+      ALTER TABLE strategies ADD COLUMN IF NOT EXISTS max_open_positions INTEGER DEFAULT 0;
     `)
 
     console.log('✅ Database Schema Initialized')

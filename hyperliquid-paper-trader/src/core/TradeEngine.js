@@ -29,6 +29,15 @@ export class TradeEngine {
 
     async onPriceUpdate(price) {
         if (!this.activePositions.length) return
+
+        // Optimize: Check risk for active strategies (throttled? for now every tick is fine for small scale)
+        const activeStrategyIds = [...new Set(this.activePositions.map(p => p.strategy_id))];
+        for (const stratId of activeStrategyIds) {
+            // We don't await this to avoid blocking the loop too much, or we await if we want strictness
+            // Let's await to be safe against race conditions
+            await this.checkRisk(stratId);
+        }
+
         for (const pos of this.activePositions) {
             this.checkTrade(pos, price)
         }
@@ -110,9 +119,69 @@ export class TradeEngine {
 
             this.activePositions = this.activePositions.filter(p => p.id !== id)
 
+            // Check Risk after close (though close might have been triggered by risk)
+            // this.checkRisk(strategy_id) 
+
         } catch (error) {
             console.error('❌ Error closing position:', error)
         }
+    }
+
+    async checkRisk(strategyId) {
+        // 1. Get Strategy Logic
+        const stratRes = await db.query("SELECT * FROM strategies WHERE id = $1", [strategyId]);
+        if (!stratRes.rows.length) return;
+        const strategy = stratRes.rows[0];
+
+        const maxDailyLossPercent = parseFloat(strategy.max_daily_loss);
+        if (!maxDailyLossPercent || maxDailyLossPercent <= 0) return; // No limit
+
+        // 2. Calculate Realized PnL Today (UTC)
+        const startOfDay = new Date().toISOString().split('T')[0] + " 00:00:00";
+        const historyRes = await db.query(`
+            SELECT SUM(pnl) as realized_pnl 
+            FROM positions 
+            WHERE strategy_id = $1 AND status = 'CLOSED' AND closed_at >= $2
+        `, [strategyId, startOfDay]);
+
+        const realizedPnL = parseFloat(historyRes.rows[0].realized_pnl || 0);
+
+        // 3. Calculate Unrealized PnL (Active)
+        let unrealizedPnL = 0;
+        const activePositions = this.activePositions.filter(p => p.strategy_id === strategyId);
+
+        for (const pos of activePositions) {
+            const currentPrice = this.priceCache[pos.symbol];
+            if (!currentPrice) continue;
+
+            const entry = parseFloat(pos.entry_price);
+            const size = parseFloat(pos.size);
+
+            let pnl = 0;
+            if (pos.side === 'LONG') {
+                pnl = (currentPrice - entry) / entry * size;
+            } else { // SHORT
+                pnl = (entry - currentPrice) / entry * size;
+            }
+            unrealizedPnL += pnl;
+        }
+
+        const totalDailyPnL = realizedPnL + unrealizedPnL;
+        const limitAmount = parseFloat(strategy.initial_capital) * (maxDailyLossPercent / 100);
+
+        // console.log(`🛡️ Risk Check [${strategyId}]: Daily PnL: $${totalDailyPnL.toFixed(2)} / Limit: -$${limitAmount.toFixed(2)}`);
+
+        // 4. Trigger Kill Switch
+        if (totalDailyPnL <= -limitAmount) {
+            console.warn(`🚨 RISK ALERT: Strategy ${strategyId} hit Daily Loss Limit ($${totalDailyPnL.toFixed(2)} < -$${limitAmount.toFixed(2)}). Closing ALL.`);
+            // Close All
+            await this.closeAllPositions(strategyId);
+            // Optionally set a flag in DB to block new orders until tomorrow
+            // For now, placeOrder validation will just fail if it checks the same logic or if we add a 'locked' state.
+            // Let's rely on placeOrder calling checkRisk or checking PnL.
+            return { locked: true, reason: 'DAILY_LOSS_LIMIT' };
+        }
+        return { locked: false };
     }
 
     async reducePosition(pos, reduceSize, exitPrice) {
@@ -212,6 +281,14 @@ export class TradeEngine {
         return { success: true, position: this.activePositions[posIndex] };
     }
 
+    async updateRiskSettings(id, maxDailyLoss, maxPositionSize, maxOpenPositions) {
+        await db.query(
+            "UPDATE strategies SET max_daily_loss = $1, max_position_size = $2, max_open_positions = $3 WHERE id = $4",
+            [maxDailyLoss, maxPositionSize, maxOpenPositions, id]
+        );
+        return { success: true };
+    }
+
 
     // --- API Methods ---
 
@@ -243,8 +320,29 @@ export class TradeEngine {
         const strategy = strategyRes.rows[0];
         const currentBalance = parseFloat(strategy.current_balance);
 
-        // Calculate Used Margin
+        // 2.1 Check Risk (Daily Loss)
+        const riskCheck = await this.checkRisk(strategyId);
+        if (riskCheck && riskCheck.locked) {
+            throw new Error(`🚫 Trading Locked: Max Daily Loss Hit (${riskCheck.reason})`);
+        }
+
+        // 2.2 Check Max Position Size
+        const maxPosSize = parseFloat(strategy.max_position_size);
+        if (maxPosSize > 0) {
+            const maxAllowed = parseFloat(strategy.initial_capital) * (maxPosSize / 100);
+            if (size > maxAllowed) {
+                throw new Error(`🚫 Position size $${size} exceeds max allowed $${maxAllowed.toFixed(2)} (${maxPosSize}% of capital)`);
+            }
+        }
+
+        // 2.3 Check Max Open Positions
+        const maxOpenPos = parseInt(strategy.max_open_positions);
         const strategyPositions = this.activePositions.filter(p => p.strategy_id === strategyId);
+        if (maxOpenPos > 0 && strategyPositions.length >= maxOpenPos) {
+            throw new Error(`🚫 Max open positions reached (${maxOpenPos}). Close a position before opening a new one.`);
+        }
+
+        // Calculate Used Margin
         const usedMargin = strategyPositions.reduce((sum, p) => sum + parseFloat(p.size), 0);
         const availableBalance = currentBalance - usedMargin;
 
