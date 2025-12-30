@@ -227,14 +227,19 @@ function renderDetailView(data) {
 
 function updateForms() {
     const select = document.getElementById('orderStrategyId');
-    if (select.children.length <= 1) {
-        strategies.forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = s.id;
-            opt.innerText = s.id;
-            select.appendChild(opt);
-        });
+
+    // Clear existing options (except the first placeholder if any)
+    while (select.options.length > 1) {
+        select.remove(1);
     }
+
+    // Add all current strategies
+    strategies.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.innerText = s.id;
+        select.appendChild(opt);
+    });
 }
 
 // --- Interaction ---
@@ -244,14 +249,20 @@ document.getElementById('createStrategyForm').onsubmit = async (e) => {
     const id = document.getElementById('newStratId').value;
     const capital = document.getElementById('newStratCapital').value;
 
-    await fetch(`${API_URL}/strategies`, {
+    const res = await fetch(`${API_URL}/strategies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, capital })
     });
 
-    closeModal('strategyModal');
-    fetchData();
+    if (res.ok) {
+        closeModal('strategyModal');
+        await fetchData(); // Fetch latest data
+        // Forms will be updated by render() which calls updateForms()
+    } else {
+        const json = await res.json();
+        alert(json.error || 'Failed to create strategy');
+    }
 };
 
 document.getElementById('placeOrderForm').onsubmit = async (e) => {
