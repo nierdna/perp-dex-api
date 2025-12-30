@@ -421,8 +421,27 @@ window.changePage = (delta) => {
 // Utils
 function formatCurrency(num) {
     if (!num && num !== 0) return '$0.00';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+    return `$${parseFloat(num).toFixed(2)}`;
 }
+
+// Mobile menu toggle
+window.toggleMobileMenu = () => {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('mobile-open');
+};
+
+// Close mobile menu when clicking outside
+document.addEventListener('click', (e) => {
+    const sidebar = document.getElementById('sidebar');
+    const toggle = document.querySelector('.mobile-menu-toggle');
+
+    if (window.innerWidth <= 768 &&
+        sidebar.classList.contains('mobile-open') &&
+        !sidebar.contains(e.target) &&
+        !toggle.contains(e.target)) {
+        sidebar.classList.remove('mobile-open');
+    }
+});
 
 // Modals
 window.openModal = (id) => document.getElementById(id).style.display = 'flex';
