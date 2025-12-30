@@ -1,5 +1,5 @@
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api'; // Use relative path - works on any domain/port
 
 // --- State ---
 let strategies = [];
